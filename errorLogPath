@@ -1,0 +1,211 @@
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-19T15:40:14.093Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-21T02:35:50.309Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-21T03:24:26.966Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-21T12:54:50.638Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-21T12:56:23.285Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-21T12:56:23.369Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-26T13:01:53.772Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-26T13:01:53.832Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-26T13:14:07.560Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-26T13:17:41.509Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-07-26T13:17:42.339Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-07T17:47:30.138Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'planId')from getPlanDetails function","timestamp":"2023-08-07T18:08:19.934Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'dataValues')from userProfile function","timestamp":"2023-08-07T18:08:22.029Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'planId')from getPlanDetails function","timestamp":"2023-08-07T18:08:23.266Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'planId')from getPlanDetails function","timestamp":"2023-08-07T18:08:23.293Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'fontStyle' in 'field list'from nameCustomController function","timestamp":"2023-08-08T05:24:46.053Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'fontStyle' in 'field list'from nameCustomController function","timestamp":"2023-08-08T05:24:52.512Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'fontStyle' in 'field list'from nameCustomController function","timestamp":"2023-08-08T05:24:55.532Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'fontStyle' in 'field list'from nameCustomController function","timestamp":"2023-08-08T05:25:06.126Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T05:51:01.208Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T05:51:01.291Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T06:06:11.070Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T06:06:11.084Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T06:06:11.114Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T06:10:38.417Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T06:10:38.434Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T17:11:58.186Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T17:11:58.209Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2023-08-08T17:11:58.254Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T17:30:49.611Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T17:30:50.218Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T17:45:38.457Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T17:45:39.054Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T17:46:49.909Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T17:46:50.589Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:06:31.600Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:06:32.253Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:09:29.268Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:09:29.990Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:11:01.662Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:11:02.326Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:14:32.179Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:14:32.596Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:14:37.661Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:14:38.252Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:15:39.179Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:15:39.518Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:17:09.391Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:17:09.815Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:19:25.580Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:19:26.070Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:21:40.753Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:21:41.127Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:21:44.626Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:21:45.003Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:21:55.890Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:21:56.188Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:26:56.166Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:26:56.361Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:28:13.146Z"}
+{"level":"error","message":"SequelizeDatabaseError: Duplicate column name 'UserId'from getProfile function","timestamp":"2023-08-08T18:28:13.330Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:30.204Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:31.109Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:32.107Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:33.319Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:34.698Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:35.604Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:28:36.708Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'actionId' in 'field list'from getTapDetails function","timestamp":"2023-08-08T18:29:02.485Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'actionId' in 'field list'from getTapDetails function","timestamp":"2023-08-08T18:29:15.689Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'actionId' in 'field list'from getTapDetails function","timestamp":"2023-08-08T18:31:05.779Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'actionId' in 'field list'from getTapDetails function","timestamp":"2023-08-08T18:31:14.259Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-08T18:31:25.179Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'actionId' in 'field list'from getTapDetails function","timestamp":"2023-08-08T18:31:28.441Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'actionId' in 'field list'from getTapDetails function","timestamp":"2023-08-09T05:16:02.735Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:24:16.613Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:24:19.142Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:24:22.019Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:24:39.515Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:24:41.942Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:24:44.357Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:23.007Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:27.082Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:32.892Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:37.069Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:41.781Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:48.727Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:49.342Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:54.463Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:27:58.778Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:39:34.918Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:39:37.040Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:39:38.432Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:39:39.716Z"}
+{"level":"error","message":"Error: WHERE parameter \"deviceLinkId\" has invalid \"undefined\" valuefrom selectTemplate function","timestamp":"2023-08-09T05:39:40.933Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T09:21:32.227Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T09:48:03.926Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T09:58:39.578Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:00:31.318Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:04:55.793Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:16:38.657Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:18:14.708Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:21:44.421Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:24:30.683Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:35:40.783Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:37:27.875Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:39:05.364Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:42:21.631Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:43:56.692Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:46:44.328Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:48:32.874Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:56:17.672Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T10:57:22.074Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-04-22T11:15:00.382Z"}
+{"level":"error","message":"Error: Message failed: 552 5.3.4 Message is too long.from orderEmail.js","timestamp":"2024-04-22T11:24:50.857Z"}
+{"level":"error","message":"Error: Message failed: 552 5.3.4 Message is too long.from orderEmail.js","timestamp":"2024-04-22T11:29:10.832Z"}
+{"level":"error","message":"Error: Message failed: 552 5.3.4 Message is too long.from orderEmail.js","timestamp":"2024-04-22T11:52:42.598Z"}
+{"level":"error","message":"Error: Message failed: 552 5.3.4 Message is too long.from orderEmail.js","timestamp":"2024-04-22T11:58:46.421Z"}
+{"level":"error","message":"TypeError: Cannot read properties of undefined (reading 'id')from FullyCustomController function","timestamp":"2024-04-22T12:17:27.584Z"}
+{"level":"error","message":"TypeError: Cannot read properties of undefined (reading 'id')from FullyCustomController function","timestamp":"2024-04-22T12:18:11.602Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getProfileByDevice function","timestamp":"2024-05-03T11:44:10.033Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getProfileByDevice function","timestamp":"2024-05-03T11:44:10.039Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom findAllProfiles function","timestamp":"2024-05-03T11:44:20.901Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom verifyGoogleUser function","timestamp":"2024-05-03T11:44:20.901Z"}
+{"level":"error","message":"SequelizeUniqueConstraintError: Validation errorfrom createUser function","timestamp":"2024-05-14T09:55:15.840Z"}
+{"level":"error","message":"SequelizeUniqueConstraintError: Validation errorfrom createUser function","timestamp":"2024-05-14T09:56:43.410Z"}
+{"level":"error","message":"SequelizeUniqueConstraintError: Validation errorfrom createUser function","timestamp":"2024-05-14T09:57:22.673Z"}
+{"level":"error","message":"SequelizeUniqueConstraintError: Validation errorfrom createUser function","timestamp":"2024-05-14T09:57:53.570Z"}
+{"level":"error","message":"SequelizeUniqueConstraintError: Validation errorfrom createUser function","timestamp":"2024-05-14T09:58:52.383Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom createUser function","timestamp":"2024-05-15T04:49:23.471Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'id')from getTapDetails function","timestamp":"2024-05-16T09:42:35.531Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'id')from getTapDetails function","timestamp":"2024-05-16T09:47:22.361Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:24.399Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:24.404Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:24.405Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:24.405Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:24.406Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:24.407Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:34.425Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:34.427Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:34.428Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:34.429Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:34.429Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:34.430Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.443Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.443Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.444Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.444Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.444Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.445Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.445Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.445Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.445Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.446Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.446Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.447Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.447Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.447Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom getShippingCharge function","timestamp":"2024-05-29T11:50:44.448Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom verifyGoogleUser function","timestamp":"2024-05-29T11:50:55.287Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom verifyGoogleUser function","timestamp":"2024-05-29T11:51:20.981Z"}
+{"level":"error","message":"SequelizeConnectionError: connect ETIMEDOUTfrom verifyGoogleUser function","timestamp":"2024-05-29T11:51:32.846Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-05-29T11:58:11.890Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'id')from getTapDetails function","timestamp":"2024-05-30T09:43:18.494Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'id')from getTapDetails function","timestamp":"2024-05-30T09:45:30.245Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'id')from getTapDetails function","timestamp":"2024-05-30T09:48:45.613Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'id')from getTapDetails function","timestamp":"2024-05-30T10:07:25.849Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'dataValues')from getProfile function","timestamp":"2024-06-05T06:12:57.141Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:14:30.501Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:16:27.406Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:20.646Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:30.147Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:45.456Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:49.372Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:50.406Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:52.364Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:53.380Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:17:55.376Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:18:20.291Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:18:20.396Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:18:43.412Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:19:03.404Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:19:14.079Z"}
+{"level":"error","message":"Error: Unable to find profilefrom getProfile function","timestamp":"2024-06-05T06:19:52.579Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'dataValues')from userProfile function","timestamp":"2024-06-05T06:34:03.893Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-05T06:44:05.094Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-05T06:44:49.089Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-05T07:06:25.284Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-05T07:08:30.550Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-05T07:11:36.523Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-05T07:21:31.463Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-05T07:26:37.402Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-06T04:46:46.494Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'amount')from initialePay function","timestamp":"2024-06-06T05:25:56.581Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'amount')from initialePay function","timestamp":"2024-06-06T05:28:34.125Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'amount')from initialePay function","timestamp":"2024-06-06T05:29:42.367Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-06T06:13:04.734Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-06T06:21:34.193Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-06T06:30:02.008Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'NameCustomDeviceInventory.deviceInventorId' in 'where clause'from nameCustomController function","timestamp":"2024-06-06T07:15:23.731Z"}
+{"level":"error","message":"SequelizeDatabaseError: Unknown column 'NameCustomDeviceInventory.deviceInventorId' in 'where clause'from nameCustomController function","timestamp":"2024-06-06T07:15:29.326Z"}
+{"level":"error","message":"Error: read ECONNRESETfrom orderEmail.js","timestamp":"2024-06-07T11:05:51.133Z"}
+{"level":"error","message":{"name":"SequelizeDatabaseError","original":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Socket' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"parameters":{},"parent":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Socket' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Socket' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;"},"timestamp":"2024-06-07T12:04:10.636Z"}
+{"level":"error","message":{"name":"SequelizeDatabaseError","original":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Card' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"parameters":{},"parent":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Card' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Card' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;"},"timestamp":"2024-06-07T12:12:02.775Z"}
+{"level":"error","message":{"name":"SequelizeDatabaseError","original":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Socket' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"parameters":{},"parent":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Socket' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Socket' AND `DeviceInventory`.`productColor` = 'Citroen green' LIMIT 1;"},"timestamp":"2024-06-07T12:12:02.792Z"}
+{"level":"error","message":{"name":"SequelizeDatabaseError","original":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Tile' AND `DeviceInventory`.`productColor` = 'Sapphire blue' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"parameters":{},"parent":{"code":"ER_BAD_FIELD_ERROR","errno":1054,"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Tile' AND `DeviceInventory`.`productColor` = 'Sapphire blue' LIMIT 1;","sqlMessage":"Unknown column 'DeviceInventory.productType' in 'where clause'","sqlState":"42S22"},"sql":"SELECT `id`, `deviceType`, `deviceColor`, `deviceImage`, `deviceDescription`, `price`, `availability`, `createdAt`, `updatedAt` FROM `DeviceInventories` AS `DeviceInventory` WHERE `DeviceInventory`.`productType` = 'Tile' AND `DeviceInventory`.`productColor` = 'Sapphire blue' LIMIT 1;"},"timestamp":"2024-06-07T12:12:02.808Z"}
+{"level":"error","message":"Cannot read properties of null (reading 'Carts')","timestamp":"2024-06-07T12:12:02.818Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-07T17:53:17.169Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-07T17:59:16.144Z"}
+{"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-07T18:05:12.830Z"}

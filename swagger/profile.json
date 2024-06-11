@@ -1,0 +1,225 @@
+{
+"openapi": "3.0.2",
+  "info": {
+    "title": "Bubbl API",
+    "description": "Bubbl API Swagger",
+    "version": "1.0"
+  },
+  "paths":{
+    "/create":{
+        "post":{
+            "tags":[
+                "Profile"
+            ],
+            "summary":"Create a Profile",
+            "description":"Create a new profile and link with the device",
+            "requestBody":{
+                "content":{
+                    "application.json":{
+                        "schema":{
+                            "$ref":"#/components/schemas/Profile"
+                        }
+                    },
+                    "application/raw":{
+                        "schema":{"$ref":"#/components/schemas/Profile"}
+                    }
+                }
+            },
+            "responses":{
+                "200":{
+                    "description":"Success",
+                    "content":{
+                        "application.json":{
+                            "schema":{
+                                "$ref":"#/components/schemas/Success"
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+    },
+    "/update":{
+        "post":{
+            "tags":[
+                "Profile"
+            ],
+            "summary":"Update Profile",
+            "description":"Update the profile that you have been created",
+            "requestBody":{
+                "content":{
+                    "application.json":{
+                        "schema":{
+                            "$ref":"#/components/schemas/ProfileUpdate"
+                        }
+                    },
+                    "application/raw":{
+                        "schema":{"$ref":"#/components/schemas/ProfileUpdate"}
+                    }
+                }
+            },
+            "responses":{
+                "200":{
+                    "description":"Success",
+                    "content":{
+                        "application.json":{
+                            "schema":{
+                                "$ref":"#/components/schemas/Success"
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+    },
+    "/all":{
+        "get":{
+            "tags":["Profile"],
+            "summary":"Get all Profile",
+            "description":"To get all the profiles that you have been created",
+            "responses":{
+                "200":{
+                    "description":"Success",
+                    "content":{
+                        "application.json":{
+                            "schemas":{
+                                "$ref":"#/components/schemas/GetProfile"
+                            },
+                            "schema":{
+                                "$ref":"#/components/schemas/Success"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+  },
+  "components":{
+    "schemas":{
+        "Profile":{
+            "required":[
+                "profileName",
+                "accountDeviceLinkId"
+            ],
+            "type":"object",
+            "properties":{
+                "profileName":{
+                    "type": "string",
+                    "example":"Office"
+                },
+                "accountDeviceLinkId":{
+                    "type":"number",
+                    "example":"1"
+                }
+                
+            }
+        },
+        "ProfileUpdate":{
+            "required":[
+                "profileId",
+                "firstName",
+                "lastName",
+                "designation",
+                "companyName",
+                "companyAddress",
+                "shortDescription",
+                "address",
+                "city",
+                "zipCode",
+                "state",
+                "country",
+                "phoneNumberEnable",
+                "emailEnable",
+                "websiteEnable",
+                "socialMediaEnable",
+                "digitalMediaEnable"
+            ],
+            "type":"object",
+            "properties":{
+                "profileId":{
+                    "type":"number",
+                    "example":"1"
+                },
+                "firstName":{
+                    "type":"string",
+                    "example":"John"
+                },
+                "lastName":{
+                    "type":"string",
+                    "example":"Doe"
+                },
+                "designation":{
+                    "type":"string",
+                    "example":"CEO"
+                },
+                "companyName":{
+                    "type":"string",
+                    "example":"Rv Matrix"
+                },
+                "companyAddress":{
+                    "type":"string",
+                    "example":"Nungambakkam"
+                },
+                "shortDescription":{
+                    "type":"string",
+                    "example":"This is a short Description defining yourself"
+                },
+                "address":{
+                    "type":"string",
+                    "example":"Type your Address here"
+                },
+                "city":{
+                    "type":"string",
+                    "example":"chennai"
+                },
+                "zipCode":{
+                    "type":"number",
+                    "example":"600034"
+                },
+                "state":{
+                    "type":"string",
+                    "example":"TamilNadu"
+                },
+                "country":{
+                    "type":"string",
+                    "example":"India"
+                },
+                "phoneNumberEnable":{
+                    "type":"boolean",
+                    "example":"0 or 1"
+                },
+                "emailEnable":{
+                    "type":"boolean",
+                    "example":"0 or 1"
+                },
+                "websiteEnable":{
+                    "type":"boolean",
+                    "example":"0 or 1"
+                },
+                "socialMediaEnable":{
+                    "type":"boolean",
+                    "example":"0 or 1"
+                }, 
+                "digitalMediaEnable":{
+                    "type":"boolean",
+                    "example":"0 or 1"
+                }
+
+            }
+
+        },
+        
+        "Success":{
+            "type":"object",
+            "properties":{
+                "success":{
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+  }
+}

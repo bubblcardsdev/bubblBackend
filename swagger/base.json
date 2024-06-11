@@ -1,0 +1,9 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Bubbl API",
+    "description": "Bubbl API Swagger",
+    "version": "1.0"
+  },
+  "paths": {}
+}

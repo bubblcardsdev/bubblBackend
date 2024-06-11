@@ -1,0 +1,14 @@
+{
+  "inputs": [
+    {
+      "inputFile": "./swagger/base.json"
+    },
+    {
+      "inputFile": "./swagger/auth.json"
+    },
+    {
+      "inputFile":"./swagger/profile.json"
+    }
+  ],
+  "output": "./swagger/index.json"
+}

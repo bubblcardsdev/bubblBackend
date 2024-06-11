@@ -1,0 +1,184 @@
+import _profile from "./profile.cjs";
+import _user from "./user.cjs";
+import _profilePhoneNumber from "./profilePhoneNumber.cjs";
+import _profileEmail from "./profileEmail.cjs";
+import _profileWebsite from "./profileWebsite.cjs";
+import _profileSocialMedia from "./profileSocialMedia.cjs";
+import _profileSocialMediaLink from "./profileSocialMediaLink.cjs";
+import _profileDigitalPayment from "./profileDigitalPayment.cjs";
+import _profileDigitalPaymentLink from "./profileDigitalPaymentLink.cjs";
+import _profileImages from "./profileimages.cjs";
+import _device from "./device.cjs";
+import _accountDeviceLink from "./accountdevicelink.cjs";
+import _deviceLink from "./deviceLink.cjs";
+import _deviceBranding from "./deviceBranding.cjs";
+import _template from "./template.cjs";
+import _mode from "./mode.cjs";
+import _cart from "./cart.cjs";
+import _order from "./order.cjs";
+import _inventory from "./deviceinventory.cjs";
+import _payment from "./payment.cjs";
+import _shipping from "./shipping.cjs";
+import _url from "./modedirecturl.cjs";
+import _leadgen from "./leadgen.cjs";
+import _plan from "./plan.cjs";
+import _planmanagement from "./bubblPlanManagement.cjs";
+import _planpayment from "./planpayment.cjs";
+import _claimlink from "./claimLink.cjs";
+import _contact from "./contactus.cjs";
+import _news from "./newsletter.cjs";
+import _analytis from "./analytics.cjs";
+import _shippingcharge from "./shippingcharge.cjs";
+import _admin from "./admin.cjs";
+import _nameCustom from "./namecustomcards.cjs";
+import _customizedImages from "./customizedimages.cjs";
+// import _deviceThumbnailInventory from "./deviceimageinventories.cjs";
+import _fullyCustomCards from "./fullycustomcards.cjs";
+import _nameCustomImageInventory from "./namecustomdeviceinventory.cjs";
+import _nameCustomImages from "./namecustomimages.cjs";
+import _actionLookup from "./actionlookup.cjs";
+import _uniqueNameDeviceLink from "./uniqueusernamedevicelink.cjs";
+import _userRd from "./userrd.cjs"
+
+export default function dbModel(sequelize, Sequelize) {
+  const User = _user(sequelize, Sequelize);
+  const Profile = _profile(sequelize, Sequelize);
+  const ProfilePhoneNumber = _profilePhoneNumber(sequelize, Sequelize);
+  const ProfileEmail = _profileEmail(sequelize, Sequelize);
+  const ProfileWebsite = _profileWebsite(sequelize, Sequelize);
+  const ProfileSocialMedia = _profileSocialMedia(sequelize, Sequelize);
+  const ProfileSocialMediaLink = _profileSocialMediaLink(sequelize, Sequelize);
+  const ProfileDigitalPayment = _profileDigitalPayment(sequelize, Sequelize);
+  const ProfileDigitalPaymentLink = _profileDigitalPaymentLink(
+    sequelize,
+    Sequelize
+  );
+  const ProfileImages = _profileImages(sequelize, Sequelize);
+  const Device = _device(sequelize, Sequelize);
+  const AccountDeviceLink = _accountDeviceLink(sequelize, Sequelize);
+  const DeviceLink = _deviceLink(sequelize, Sequelize);
+  const DeviceBranding = _deviceBranding(sequelize, Sequelize);
+  const Template = _template(sequelize, Sequelize);
+  const Mode = _mode(sequelize, Sequelize);
+  const Cart = _cart(sequelize, Sequelize);
+  const Order = _order(sequelize, Sequelize);
+  const DeviceInventory = _inventory(sequelize, Sequelize);
+  const Payment = _payment(sequelize, Sequelize);
+  const Shipping = _shipping(sequelize, Sequelize);
+  const ModeDirectUrl = _url(sequelize, Sequelize);
+  const LeadGen = _leadgen(sequelize, Sequelize);
+  const Plan = _plan(sequelize, Sequelize);
+  const BubblPlanManagement = _planmanagement(sequelize, Sequelize);
+  const PlanPayment = _planpayment(sequelize, Sequelize);
+  const ClaimLink = _claimlink(sequelize, Sequelize);
+  const ContactUs = _contact(sequelize, Sequelize);
+  const NewsLetter = _news(sequelize, Sequelize);
+  const Analytics = _analytis(sequelize, Sequelize);
+  const ShippingCharge = _shippingcharge(sequelize, Sequelize);
+  const Admin = _admin(sequelize, Sequelize);
+  const FullyCustom = _fullyCustomCards(sequelize, Sequelize);
+  const CustomCards = _nameCustom(sequelize, Sequelize);
+  const CustomizedImages = _customizedImages(sequelize, Sequelize);
+  // const DeviceThumbnailImage = _deviceThumbnailInventory(sequelize, Sequelize);
+  const NameDeviceImageInventory = _nameCustomImageInventory(
+    sequelize,
+    Sequelize
+  );
+  const NameCustomImages = _nameCustomImages(sequelize, Sequelize);
+  const ActionLookUp = _actionLookup(sequelize, Sequelize);
+  const UniqueNameDeviceLink = _uniqueNameDeviceLink(sequelize, Sequelize);
+  const UserRd = _userRd(sequelize, Sequelize);
+
+  User.hasMany(Profile, { as: "userProfiles" });
+  User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
+  User.hasMany(ClaimLink);
+  User.hasMany(BubblPlanManagement);
+  Profile.hasMany(ProfilePhoneNumber, { as: "profilePhoneNumbers" });
+  Profile.hasMany(ProfileEmail, { as: "profileEmails" });
+  Profile.hasMany(ProfileWebsite, { as: "profileWebsites" });
+  Profile.hasMany(ProfileDigitalPaymentLink, {
+    as: "profileDigitalPaymentLinks",
+  });
+  Profile.hasMany(ProfileSocialMediaLink, { as: "profileSocialMediaLinks" });
+  AccountDeviceLink.hasOne(DeviceLink);
+  DeviceLink.belongsTo(AccountDeviceLink);
+  AccountDeviceLink.belongsTo(Device);
+  Profile.hasOne(DeviceLink);
+  Template.hasOne(DeviceLink);
+  Mode.hasOne(DeviceLink);
+  //#region - Phase II association
+  Profile.belongsTo(Template);
+  Profile.belongsTo(Mode);
+  DeviceLink.hasOne(UniqueNameDeviceLink);
+  //#endregion
+  DeviceLink.belongsTo(Profile);
+  DeviceLink.belongsTo(Template);
+  DeviceLink.belongsTo(Mode);
+  DeviceLink.hasMany(DeviceBranding);
+  DeviceBranding.belongsTo(DeviceLink);
+  Order.hasMany(Cart);
+  Order.hasMany(Shipping);
+  Order.hasMany(Payment);
+  BubblPlanManagement.belongsTo(Plan);
+  Plan.hasMany(BubblPlanManagement);
+  // User.hasOne(BubblPlanManagement)
+
+  // for admin Associations
+  BubblPlanManagement.belongsTo(User);
+  PlanPayment.belongsTo(User);
+  // User.belongsTo(Order);
+  Order.belongsTo(User, { foreignKey: "customerId" });
+  // User.hasMany(Order);
+  AccountDeviceLink.belongsTo(User);
+
+  NameDeviceImageInventory.hasMany(NameCustomImages, {
+    foreignKey: "NameCustomDeviceId",
+  });
+  // CustomCards.belongsTo(NameCustomImages, {
+  //   foreignKey: "NameCustomDeviceId",
+  // });
+
+  return {
+    User,
+    Profile,
+    ProfilePhoneNumber,
+    ProfileEmail,
+    ProfileWebsite,
+    ProfileSocialMedia,
+    ProfileSocialMediaLink,
+    ProfileDigitalPayment,
+    ProfileDigitalPaymentLink,
+    ProfileImages,
+    Device,
+    AccountDeviceLink,
+    DeviceLink,
+    DeviceBranding,
+    Template,
+    Mode,
+    Cart,
+    DeviceInventory,
+    Order,
+    Payment,
+    Shipping,
+    ModeDirectUrl,
+    LeadGen,
+    Plan,
+    BubblPlanManagement,
+    PlanPayment,
+    ClaimLink,
+    ContactUs,
+    NewsLetter,
+    Analytics,
+    ShippingCharge,
+    Admin,
+    FullyCustom,
+    CustomCards,
+    // DeviceThumbnailImage,
+    CustomizedImages,
+    NameDeviceImageInventory,
+    NameCustomImages,
+    ActionLookUp,
+    UniqueNameDeviceLink,
+    UserRd
+  };
+}

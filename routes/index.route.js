@@ -1,0 +1,44 @@
+import express from "express";
+import authRouter from "./auth.js";
+import homeRouter from "./home.js";
+import fileUploadRouter from "./fileUpload.js";
+import statusRouter from "./status.js";
+import profileRouter from "./profile.js";
+import deviceRouter from "./device.js";
+import templateRouter from "./template.js";
+import modesRouter from "./modes.js";
+import cartRouter from "./cart.js";
+import orderRouter from "./order.js";
+import planRouter from "./plan.js";
+import claimLinkRouter from "./claimLink.js";
+import contactUsRouter from "./contactUs.js";
+import paymentRouter from "./payments.js";
+import analyticsRouter from "./analytics.js";
+import fullyCustomRouter from "./fullyCustom.js";
+import nameRouter from "./nameCustom.js";
+import uniqueNameRouter from "./uniqueName.js";
+import rdRouter from "./rdRouter.js";
+
+const router = express.Router();
+
+router.use("/", authRouter);
+router.use("/status", statusRouter);
+router.use("/home", homeRouter);
+router.use("/upload", fileUploadRouter);
+router.use("/profile", profileRouter);
+router.use("/device", deviceRouter);
+router.use("/template", templateRouter);
+router.use("/modes", modesRouter);
+router.use("/cart", cartRouter);
+router.use("/order", orderRouter);
+router.use("/plan", planRouter);
+router.use("/claim", claimLinkRouter);
+router.use("/contact", contactUsRouter);
+router.use("/pay", paymentRouter);
+router.use("/analytics", analyticsRouter);
+router.use("/fullCustom", fullyCustomRouter);
+router.use("/custom", nameRouter);
+router.use("/unique", uniqueNameRouter);
+router.use("/rd", rdRouter);
+
+export default router;
