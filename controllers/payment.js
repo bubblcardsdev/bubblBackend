@@ -16,17 +16,25 @@ async function initialePay(req, res) {
   try {
     const paymentObj = req.body;
     const orderId = paymentObj.orderId;
-    const getDataForPayment = await getDataForPaymentService(orderId);
+    let getDataForPayment;
+
+    if (Number(paymentObj.orderType) === 0) {
+      getDataForPayment = await getDataForPaymentService(orderId);
+    } else {
+      getDataForPayment = await getDataForPlanPaymentService(
+        paymentObj.planType
+      );
+    }
 
     console.log(getDataForPayment);
-
+    const orderType = paymentObj.orderType;
     const cost =
       getDataForPayment.shippingCost !== undefined
         ? Number(getDataForPayment.shippingCost)
         : 0;
     const val = getDataForPayment.totalPrice;
     const value = val + cost;
-    const orderType = paymentObj.orderType;
+
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
     const token = paymentObj.token;
     const shippingCost = cost.toString();
@@ -375,6 +383,37 @@ async function getDataForPaymentService(orderId) {
     console.log(orderObj, "obj");
 
     return orderObj;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getDataForPlanPaymentService(obj) {
+  try {
+    let price = 0;
+    if (obj === 0) {
+      const monthlyPrice = await model.Plan.findOne({
+        where: {
+          planName: "bubblPro",
+        },
+      });
+
+      price = monthlyPrice.monthlyPrice;
+    } else {
+      const yearlyPrice = await model.Plan.findOne({
+        where: {
+          planName: "bubblPro",
+        },
+      });
+
+      price = yearlyPrice.annualPrice;
+    }
+
+    const objs = {
+      totalPrice: price,
+    };
+
+    return objs;
   } catch (error) {
     throw error;
   }
