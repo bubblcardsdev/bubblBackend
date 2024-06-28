@@ -101,7 +101,7 @@ async function addToCart(req, res) {
       },
     });
 
-    let productCost = getProduct.price;
+    let productCost = getProduct.price * cartItem.quantity;
 
     console.log(productCost, "cost");
     if (checkCart === null) {
@@ -115,15 +115,15 @@ async function addToCart(req, res) {
         productStatus: cartItem.productStatus,
       });
     } else {
+      let quantity = checkCart.quantity;
+      let productPrice = checkCart.productPrice;
       if (checkCart.productStatus) {
-        let quantity = checkCart.quantity;
-        let productPrice = checkCart.productPrice;
         quantity += cartItem.quantity;
         productPrice += getProduct.productPrice;
 
         await model.Cart.update(
           {
-            quantity: quantity,
+            quantity: cartItem.quantity,
             productPrice: productCost,
           },
           {
