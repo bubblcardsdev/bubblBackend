@@ -20,6 +20,7 @@ import {
   changePasswordSchema,
   resendOtpSchema,
   updateUserSchema,
+  verifyEmailOtpSchema,
 } from "../validations/auth.js";
 import config from "../config/config.js";
 import { sendMessage } from "../middleware/sms.js";
@@ -31,7 +32,7 @@ import { verifyLinkedinAccount } from "../middleware/linkedin.js";
 import loggers from "../config/logger.js";
 
 function generateOtp() {
-  return Math.floor(1000 + Math.random() * 9000);
+  return Math.floor(100000 + Math.random() * 900000);
 }
 
 async function issueNewToken(req, res) {
@@ -85,6 +86,7 @@ async function login(req, res) {
       password,
       checkUser.password
     );
+    console.log(checkUser,comparedPassword)
     if (checkUser && comparedPassword) {
       const {
         id,
@@ -113,8 +115,35 @@ async function login(req, res) {
             },
           });
         } else {
+          const otp = generateOtp();
+
+          await model.User.update(
+            { otp },
+            { where: { email } }
+          ); 
+          const emailParse = email.toLowerCase();
+          const subject = `Welcome to Bubbl.cards – Let’s Get Started!`
+          const emailMessage = `
+      
+          <h2>Hello <strong>${firstName}</strong>,</h2>
+      
+          <p>Welcome to Bubbl.cards! We’re thrilled to have you with us and can’t wait for you to experience the future of networking with our innovative digital business cards.</p>
+      
+          <p>To finish your account setup simply enter the verification OTP below.  <strong>${otp}</strong></p>
+      
+          <p>Once verified, you can complete your profile setup!</p>
+      
+          <p>Check out our range of bubbl products and discover how we can streamline and enhance your professional connections today!</p>
+      
+          <p>Should you have any questions or need support, our team is here for you. Welcome to the future of Networking!</p>
+      
+          <p>Best wishes,</p>
+      
+          <p>The Bubbl.cards Team</p>`;
+      
+          await sendMail(emailParse, subject, emailMessage);
           return res.json({
-            success: false,
+            success: true,
             data: {
               message: "Please verify your Email",
               phoneVerified,
@@ -224,24 +253,48 @@ async function createUser(req, res) {
         userId: user.id,
       });
     }
+    const otp = generateOtp();
+
+    await model.User.update(
+      { otp },
+      { where: { email } }
+    );
 
     //aws issue removed email content
     //<p>To verify your Bubbl registration email please click this <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}">link</a>.</p>
 
-    const subject = "Bubbl Registration";
+    // const subject = "Bubbl Registration";
+    // const emailMessage = `
+
+    // <h2>Dear <strong>${firstName}</strong>,</h2>
+
+    // <p>Thank you for registering with Bubbl.cards! We are thrilled to have you on board and can't wait for you to experience the ease and convenience of our touch-enabled tech essentials.</p>
+
+    // <p>Please use the link given below to verify your account and start exploring our range of cutting-edge products.</p>
+
+    // <p>Verification Link: <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}?deviceID=${deviceID}">link</a>.</p>
+
+    // <p>Best regards,</p>
+
+    // <p>The Bubbl.cards team.</p>`;
+    const subject = `Welcome to Bubbl.cards – Let’s Get Started!`
     const emailMessage = `
 
-    <h2>Dear <strong>${firstName}</strong>,</h2>
+    <h2>Hello <strong>${firstName}</strong>,</h2>
 
-    <p>Thank you for registering with Bubbl.cards! We are thrilled to have you on board and can't wait for you to experience the ease and convenience of our touch-enabled tech essentials.</p>
+    <p>Welcome to Bubbl.cards! We’re thrilled to have you with us and can’t wait for you to experience the future of networking with our innovative digital business cards.</p>
 
-    <p>Please use the link given below to verify your account and start exploring our range of cutting-edge products.</p>
+    <p>To finish your account setup simply enter the verification OTP below.  <strong>${otp}</strong></p>
 
-    <p>Verification Link: <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}?deviceID=${deviceID}">link</a>.</p>
+    <p>Once verified, you can complete your profile setup!</p>
 
-    <p>Best regards,</p>
+    <p>Check out our range of bubbl products and discover how we can streamline and enhance your professional connections today!</p>
 
-    <p>The Bubbl.cards team.</p>`;
+    <p>Should you have any questions or need support, our team is here for you. Welcome to the future of Networking!</p>
+
+    <p>Best wishes,</p>
+
+    <p>The Bubbl.cards Team</p>`;
 
     await sendMail(emailParse, subject, emailMessage);
     return res.json({
@@ -775,6 +828,55 @@ async function verifyOtp(req, res) {
   }
 }
 
+async function verifyEmailOtp(req, res) {
+  const { email, otp } = req.body;
+  const { error } = verifyEmailOtpSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+
+  try {
+    const checkUser = await model.User.findOne({
+      where: { email, otp },
+    });
+    if (checkUser && checkUser.email === email && checkUser.otp === otp) {
+      await model.User.update(
+        { emailVerified: true },
+        { where: { email, otp } }
+      );
+      return res.json({
+        success: true,
+        data: {
+          message: "Email verified successfully",
+        },
+      });
+    } else {
+      return res.json({
+        success: false,
+        data: {
+          message: "Invalid Email verification Code",
+        },
+      });
+    }
+  } catch (error) {
+    loggers.error(error + "from verifyEmailOtp function");
+    return res.json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+}
+
 async function verifyEmail(req, res) {
   const { emailVerificationId } = req.body;
   const { error } = verifyEmailSchema.validate(req.body, {
@@ -1035,6 +1137,7 @@ export {
   resendOtp,
   verifyOtp,
   verifyEmail,
+  verifyEmailOtp,
   forgotPassword,
   changePassword,
   resetPassword,

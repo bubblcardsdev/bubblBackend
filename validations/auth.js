@@ -56,6 +56,11 @@ const verifyEmailSchema = Joi.object({
   emailVerificationId: Joi.string().required(),
 });
 
+const verifyEmailOtpSchema = Joi.object({
+  email: Joi.string().email().required(),
+  otp: Joi.string().required()
+});
+
 const forgotPasswordSchema = Joi.object({
   email: Joi.string().email().required(),
 });
@@ -78,4 +83,5 @@ export {
   verifyEmailSchema,
   forgotPasswordSchema,
   changePasswordSchema,
+  verifyEmailOtpSchema
 };
