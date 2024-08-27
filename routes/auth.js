@@ -15,6 +15,7 @@ import {
   resendOtp,
   resetPassword,
   verifyEmailOtp,
+  resendMailOtp,
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -27,6 +28,7 @@ router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
 router.post("/addphonenumber", addPhoneNumber);
 router.post("/resendotp", resendOtp);
+router.post("/resendMailotp", resendMailOtp);
 router.post("/verifyotp", verifyOtp);
 router.post("/verifyemail", verifyEmail);
 router.post(`/verifyemailOtp`, verifyEmailOtp);

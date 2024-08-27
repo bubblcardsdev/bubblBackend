@@ -46,6 +46,10 @@ const resendOtpSchema = Joi.object({
   phoneNumber: Joi.string().required(),
 });
 
+const resendMailOtpSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
 const verifyOtpSchema = Joi.object({
   countryCode: Joi.string().required(),
   phoneNumber: Joi.string().required(),
@@ -79,6 +83,7 @@ export {
   updateUserSchema,
   addPhoneNumberSchema,
   resendOtpSchema,
+  resendMailOtpSchema,
   verifyOtpSchema,
   verifyEmailSchema,
   forgotPasswordSchema,

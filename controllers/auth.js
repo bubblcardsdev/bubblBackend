@@ -21,6 +21,7 @@ import {
   resendOtpSchema,
   updateUserSchema,
   verifyEmailOtpSchema,
+  resendMailOtpSchema,
 } from "../validations/auth.js";
 import config from "../config/config.js";
 import { sendMessage } from "../middleware/sms.js";
@@ -779,6 +780,77 @@ async function resendOtp(req, res) {
   }
 }
 
+async function resendMailOtp(req, res) {
+  const { email } = req.body;
+
+  const { error } = resendMailOtpSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+
+  try {
+    const emailParse = email.toLowerCase();
+    const checkUser = await model.User.findOne({
+      where: { email },
+    });
+
+    if (checkUser) {
+      const otp = generateOtp();
+
+      await model.User.update({ otp }, { where: { email } });
+
+      const subject = `Welcome to Bubbl.cards – Let’s Get Started!`
+      const emailMessage = `
+  
+      <h2>Hello <strong>${checkUser?.firstName}</strong>,</h2>
+  
+      <p>Welcome to Bubbl.cards! We’re thrilled to have you with us and can’t wait for you to experience the future of networking with our innovative digital business cards.</p>
+  
+      <p>To finish your account setup simply enter the verification OTP below.  <strong>${otp}</strong></p>
+  
+      <p>Once verified, you can complete your profile setup!</p>
+  
+      <p>Check out our range of bubbl products and discover how we can streamline and enhance your professional connections today!</p>
+  
+      <p>Should you have any questions or need support, our team is here for you. Welcome to the future of Networking!</p>
+  
+      <p>Best wishes,</p>
+  
+      <p>The Bubbl.cards Team</p>`;
+  
+      await sendMail(emailParse, subject, emailMessage);
+
+      return res.json({
+        success: true,
+        data: {
+          message: "OTP send successfully",
+        },
+      });
+    } else {
+      return res.json({
+        success: false,
+        data: {
+          message: "Invalid Email",
+        },
+      });
+    }
+  } catch (error) {
+    loggers.error(error + "from resendMailOtp function");
+    return res.json({
+      success: false,
+      data: { error },
+    });
+  }
+}
+
 async function verifyOtp(req, res) {
   const { countryCode, phoneNumber, otp } = req.body;
   const { error } = verifyOtpSchema.validate(req.body, {
@@ -1141,4 +1213,5 @@ export {
   forgotPassword,
   changePassword,
   resetPassword,
+  resendMailOtp,
 };
