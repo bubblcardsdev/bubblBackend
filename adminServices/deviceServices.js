@@ -220,6 +220,7 @@ async function createDeviceBulkServices(deviceUid, deviceType) {
   }
   catch(e){
     console.log("createDeviceBulkServices Error ------",e)
+    return {deviceId:deviceUid,response:"Device Already Exists"}
   }
 }
 
