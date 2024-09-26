@@ -79,7 +79,7 @@ async function createDeviceController(req, res) {
 
 async function createDeviceBulkController(req, res) {
   const {deviceData} = req.body
-  var response = []
+  let response = []
   try {
     if(deviceData.length !== 0){
       deviceData.map(async(record)=>{
@@ -88,7 +88,8 @@ async function createDeviceBulkController(req, res) {
           deviceUid,
           deviceType
         );
-        response.push(creteDeviceFunction)
+        console.log("creteDeviceFunction-----------",creteDeviceFunction)
+        response.push("response----------",creteDeviceFunction)
       })
       console.log(response)
       return res.json({
