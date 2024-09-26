@@ -6,6 +6,7 @@ import {
   createDeviceServices,
   updateDeviceServices,
   getAllDeviceServices,
+  createDeviceBulkServices,
 } from "../../adminServices/deviceServices.js";
 
 async function deviceController(req, res) {
@@ -76,6 +77,36 @@ async function createDeviceController(req, res) {
   }
 }
 
+async function createDeviceBulkController(req, res) {
+  const {deviceData} = req.body
+  var response = []
+  try {
+    if(deviceData.length !== 0){
+      deviceData.map(async(record)=>{
+        const { deviceUid, deviceType } = record;
+        const creteDeviceFunction = await createDeviceBulkServices(
+          deviceUid,
+          deviceType
+        );
+        response.push(creteDeviceFunction)
+      })
+      console.log(response)
+      return res.json({
+        success: true,
+        message: "Success",
+        data: response
+      });
+    }
+    else{
+      return res.json({
+        success: false,
+        message: "Internal Error",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
 async function updateDeviceController(req, res) {
   const { deviceId, deviceUid } = req.body;
   try {
@@ -108,6 +139,7 @@ export {
   deActiveDeviceController,
   activateDeviceController,
   createDeviceController,
+  createDeviceBulkController,
   updateDeviceController,
   getAllServicesController,
 };

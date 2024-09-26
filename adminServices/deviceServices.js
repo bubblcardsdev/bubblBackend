@@ -201,6 +201,23 @@ async function createDeviceServices(res, deviceUid, deviceType) {
   }
 }
 
+async function createDeviceBulkServices(deviceUid, deviceType) {
+  const checkDeviceId = await model.Device.findOne({
+    where: {
+      deviceUid: deviceUid,
+    },
+  });
+  if (checkDeviceId === null) {
+     await model.Device.create({
+      deviceUid: deviceUid,
+      deviceType: deviceType,
+    });
+     return {deviceId:deviceUid,response:"Successfully Created"}
+  } else {
+    return {deviceId:deviceUid,response:"Device Already Exists"}
+  }
+}
+
 // update the device number
 async function updateDeviceServices(res, deviceId, deviceUid) {
   const updateDeviceServices = await model.Device.update(
@@ -232,4 +249,5 @@ export {
   createDeviceServices,
   updateDeviceServices,
   getAllDeviceServices,
+  createDeviceBulkServices
 };
