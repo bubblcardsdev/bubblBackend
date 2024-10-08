@@ -16,6 +16,7 @@ import {
   resetPassword,
   verifyEmailOtp,
   resendMailOtp,
+  createUser2,
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -23,6 +24,7 @@ const router = express.Router();
 
 router.post("/token", issueNewToken);
 router.post("/register", createUser);
+router.post("/registerAdmin", createUser2);
 router.post("/verifygoogleuser", verifyGoogleUser);
 router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
