@@ -7,10 +7,12 @@ import {
   createDeviceController,
   updateDeviceController,
   getAllServicesController,
+  createDeviceBulkController,
 } from "../../controllers/admin/deviceController.js";
 
 const deviceRouter = express.Router();
 deviceRouter.post("/createDevice", createDeviceController);
+deviceRouter.post("/createDeviceBulk", createDeviceBulkController);
 deviceRouter.put("/updateDevice", updateDeviceController);
 deviceRouter.get("/devicePrice", deviceController);
 deviceRouter.put("/replaceDevice", replaceDeviceController);
