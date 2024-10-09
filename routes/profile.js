@@ -20,7 +20,8 @@ import {
   deleteProfileImage,
   getUserDetails,
   getProfileName,
-  updateProfileName
+  updateProfileName,
+  createCompleteProfileBulk
   // getProfileOne
   // getProfileByMode,
 } from "../controllers/profile.js";
@@ -31,6 +32,8 @@ const router = express.Router();
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
 router.post("/create", authenticateToken, createProfile);
+router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
+
 router.get("/all", authenticateToken, findAllProfiles);
 router.get("/", getProfileByDevice);
 // router.get("/m", getProfileByMode);
