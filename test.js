@@ -842,8 +842,9 @@ const profileData = [
    const bodyArray = data?.map((record)=>{
         const body = {
             "templateId": 1,
-            "devdeviceUid": record?.device_id,
+            "deviceUid": record?.device_id,
             "profileName": "Work",
+            "email":record?.Email,
             "emailIds": [
               {
                 "emailIdNumber": null,

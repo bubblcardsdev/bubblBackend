@@ -2346,8 +2346,8 @@ async function createCompleteProfile(data,userId) {
         createProfileResponse?.createDeviceLink?.id,
         createProfileResponse?.createDeviceLink?.profileId
       );
-
       return { email: email, message: updateResponse?.message };
+      
     } else {
       return {
         email: email,
@@ -2372,7 +2372,7 @@ async function createCompleteProfileBulk(req, res) {
           where: { email: record?.email },
         });
         if (user?.id) {
-          const response = createCompleteProfile(record, user?.id);
+          const response = await createCompleteProfile(record, user?.id);
           res.json(response);
         } else {
           res.json({
