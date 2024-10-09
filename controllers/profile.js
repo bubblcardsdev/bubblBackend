@@ -2346,7 +2346,12 @@ async function createCompleteProfile(data,userId) {
         createProfileResponse?.createDeviceLink?.id,
         createProfileResponse?.createDeviceLink?.profileId
       );
-      return { email: email, message: updateResponse?.message };
+      if(updateResponse?.success){
+        return { email: email, message: "Profile updated successfully" };
+      }
+      else{
+        return { email: email, message: "Profile updated failed" };
+      }
       
     } else {
       return {

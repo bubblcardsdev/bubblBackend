@@ -849,7 +849,7 @@ const profileData = [
               {
                 "emailIdNumber": null,
                 "emailId": record?.Email,
-                "emailType": "work",
+                "emailType": "personal",
                 "checkBoxStatus": true,
                 "activeStatus": true
               }
