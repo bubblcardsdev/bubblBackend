@@ -1767,6 +1767,631 @@ async function updateProfileName(req, res) {
   }
 }
 
+async function createAccountLink(data, userId) {
+  try {
+    const { deviceUid } = data;
+    const device = await model.Device.findOne({
+      where: {
+        deviceUid: deviceUid,
+      },
+    });
+    if (device) {
+      const deviceId = device.id;
+      //find if device ever bound to user
+      const accountDeviceLink = await model.AccountDeviceLink.findOne({
+        where: {
+          deviceId,
+        },
+      });
+
+      //device never linked before
+      if (accountDeviceLink === null) {
+        const createAccountLink = await model.AccountDeviceLink.create({
+          deviceId,
+          userId,
+          isDeleted: false,
+        });
+        return {
+          success: true,
+          message: "Device Created Successfully",
+          createAccountLink,
+        };
+      } else {
+        //device already linked once and not deleted
+        const checkDeviceStatus = await model.AccountDeviceLink.findOne({
+          where: {
+            deviceId,
+            isDeleted: false,
+          },
+        }); //get the device row with deviceID
+
+        //if never linked before or deleted atleast once
+        if (checkDeviceStatus == null) {
+          //check if same user
+          const checkDeviceStatusForUser =
+            await model.AccountDeviceLink.findOne({
+              where: {
+                deviceId,
+                userId,
+              },
+            });
+
+          if (checkDeviceStatusForUser) {
+            // update the existing entry for the current user
+            await model.AccountDeviceLink.update(
+              {
+                isDeleted: false,
+              },
+              {
+                where: {
+                  userId: checkDeviceStatusForUser.userId,
+                  deviceId: checkDeviceStatusForUser.deviceId,
+                },
+              }
+            );
+
+            const createAccountLink = await model.AccountDeviceLink.findOne({
+              where: {
+                userId,
+              },
+            });
+            return {
+              success: true,
+              message: "Device link updated successfully",
+              createAccountLink,
+            };
+          } else {
+            const createAccountLink = await model.AccountDeviceLink.create({
+              deviceId,
+              userId,
+              isDeleted: false,
+            });
+            return {
+              success: true,
+              message: "Device Created Successfully",
+              createAccountLink,
+            };
+          }
+        } else {
+          return {
+            success: false,
+            message: "device is already linked to another user",
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.log("Create complete profile error------", e);
+  }
+}
+
+async function createProfile2(data, userId, accountDeviceLinkId) {
+  const { profileName } = data;
+  try {
+    const profile = await model.Profile.findOne({
+      where: {
+        profileName,
+        userId,
+      },
+    });
+    if (profile) {
+      return {
+        success: false,
+        message: "Profile name already exists",
+      };
+    }
+
+    const checkAccountDeviceLink = await model.AccountDeviceLink.findOne({
+      where: {
+        id: accountDeviceLinkId,
+        userId,
+      },
+    });
+    if (checkAccountDeviceLink === null) {
+      const create = await model.Profile.create({
+        userId,
+        profileName,
+      });
+
+      if (create) {
+        return {
+          success: true,
+          message: "profile created",
+          create,
+        };
+      }
+    } else {
+      const checkDeviceLink = await model.DeviceLink.findOne({
+        where: {
+          userId,
+          accountDeviceLinkId: checkAccountDeviceLink.id,
+        },
+      });
+      if (checkDeviceLink) {
+        const create = await model.Profile.create({
+          userId,
+          profileName,
+        });
+        await model.DeviceLink.update(
+          {
+            profileId: create.id,
+          },
+          {
+            where: {
+              accountDeviceLinkId: checkAccountDeviceLink.id,
+              userId,
+            },
+          }
+        );
+        let createDeviceLink = await model.DeviceLink.findOne({
+          where: {
+            accountDeviceLinkId,
+            userId,
+          },
+        });
+        return {
+          success: true,
+          message: "Profile created successfully",
+          createDeviceLink,
+        };
+      } else {
+        const createProfile = await model.Profile.create({
+          userId,
+          profileName,
+        });
+        const createDeviceLink = await model.DeviceLink.create({
+          userId,
+          accountDeviceLinkId: checkAccountDeviceLink.id,
+          profileId: createProfile.id,
+          activeStatus: true,
+          templateId: 1,
+          modeId: 2,
+        });
+        return {
+          success: true,
+          message: "Profile created and linked with Device",
+          createDeviceLink,
+        };
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    loggers.error(error + "from createProfile function");
+    return {
+      success: false,
+      message: error,
+    };
+  }
+}
+
+async function updateProfile2(data, userId, deviceLinkId,profileId) {
+  const {
+    templateId,
+    profileImage,
+    darkMode,
+    firstName,
+    lastName,
+    designation,
+    companyName,
+    companyAddress,
+    shortDescription,
+    address,
+    city,
+    zipCode,
+    state,
+    country,
+    brandingFontColor,
+    brandingBackGroundColor,
+    brandingAccentColor,
+    brandingFont,
+    phoneNumbers,
+    phoneNumberEnable,
+    emailIds,
+    emailEnable,
+    websites,
+    websiteEnable,
+    socialMediaNames,
+    socialMediaEnable,
+    digitalPaymentLinks,
+    digitalMediaEnable,
+  } = data;
+
+  const phoneNumbersLength = phoneNumbers.length;
+  const emailIdLength = emailIds.length;
+  const websiteLength = websites.length;
+  const socialMediaLength = socialMediaNames.length;
+  const digitalPaymentLinkLength = digitalPaymentLinks.length;
+
+  try {
+    const profile = await model.Profile.findOne({
+      where: {
+        id: profileId,
+        userId,
+      },
+    });
+
+    if (profile) {
+      await model.Profile.update(
+        {
+          id: profileId,
+          darkMode,
+          firstName,
+          lastName,
+          designation,
+          companyName,
+          companyAddress,
+          shortDescription,
+          address,
+          city,
+          zipCode,
+          state,
+          country,
+          brandingFontColor,
+          brandingBackGroundColor,
+          brandingAccentColor,
+          brandingFont,
+          phoneNumberEnable,
+          emailEnable,
+          websiteEnable,
+          socialMediaEnable,
+          digitalMediaEnable,
+          profileImage,
+          templateId: templateId,
+        },
+        {
+          where: {
+            id: profileId,
+            userId: userId,
+          },
+        }
+      );
+
+      if (templateId !== null) {
+        const deviceLink = await model.DeviceLink.findOne({
+          where: { id: deviceLinkId, userId: userId },
+        });
+
+        if (deviceLink) {
+          const deviceBranding = await model.DeviceBranding.findOne({
+            where: {
+              deviceLinkId: deviceLink.id,
+              profileId: profileId,
+              templateId: templateId,
+            },
+          });
+          console.log("Came in if device", deviceBranding);
+          if (deviceBranding) {
+            await model.DeviceBranding.update(
+              {
+                darkMode: darkMode,
+                brandingFontColor: brandingFontColor,
+                brandingBackGroundColor: brandingBackGroundColor,
+                brandingAccentColor: brandingAccentColor,
+              },
+              {
+                where: {
+                  deviceLinkId: deviceLink.id,
+                  profileId: profileId,
+                  templateId: templateId,
+                },
+              }
+            );
+          } else {
+            await model.DeviceBranding.create({
+              deviceLinkId: deviceLink.id,
+              profileId: profileId,
+              templateId: templateId,
+              darkMode: darkMode,
+              brandingFontColor: brandingFontColor,
+              brandingBackGroundColor: brandingBackGroundColor,
+              brandingAccentColor: brandingAccentColor,
+            });
+          }
+        } else {
+          console.log("Came in else device");
+          const deviceBrandingWithoutProfile =
+            await model.DeviceBranding.findOne({
+              where: {
+                profileId: profileId,
+                templateId: templateId,
+              },
+            });
+          if (deviceBrandingWithoutProfile) {
+            await model.DeviceBranding.update(
+              {
+                darkMode: darkMode,
+                brandingFontColor: brandingFontColor,
+                brandingBackGroundColor: brandingBackGroundColor,
+                brandingAccentColor: brandingAccentColor,
+              },
+              {
+                where: {
+                  // deviceLinkId: deviceLink.id,
+                  profileId: profileId,
+                  templateId: templateId,
+                },
+              }
+            );
+          } else {
+            await model.DeviceBranding.create({
+              // deviceLinkId: deviceLink.id,
+              profileId: profileId,
+              templateId: templateId,
+              darkMode: darkMode,
+              brandingFontColor: brandingFontColor,
+              brandingBackGroundColor: brandingBackGroundColor,
+              brandingAccentColor: brandingAccentColor,
+            });
+          }
+        }
+      }
+
+      if (phoneNumbersLength > 0) {
+        const phoneNumber = await phoneNumbers.map((phone) => {
+          return {
+            profileId: profileId,
+            phoneNumberId: phone.phoneNumberId,
+            countryCode: phone.countryCode,
+            phoneNumber: phone.phoneNumber,
+            phoneNumberType: phone.phoneNumberType,
+            checkBoxStatus: phone.checkBoxStatus,
+            activeStatus: phone.activeStatus,
+          };
+        });
+        for (let i = 0; i < phoneNumbersLength; i++) {
+          if (phoneNumber[i].phoneNumberId === null) {
+            await model.ProfilePhoneNumber.create({
+              profileId: phoneNumber[i].profileId,
+              phoneNumber: phoneNumber[i].phoneNumber,
+              phoneNumberType: phoneNumber[i].phoneNumberType,
+              countryCode: phoneNumber[i].countryCode,
+              checkBoxStatus: phoneNumber[i].checkBoxStatus,
+              activeStatus: phoneNumber[i].activeStatus,
+            });
+          } else {
+            await model.ProfilePhoneNumber.update(
+              {
+                profileId: phoneNumber[i].profileId,
+                phoneNumber: phoneNumber[i].phoneNumber,
+                phoneNumberType: phoneNumber[i].phoneNumberType,
+                countryCode: phoneNumber[i].countryCode,
+                checkBoxStatus: phoneNumber[i].checkBoxStatus,
+                activeStatus: phoneNumber[i].activeStatus,
+              },
+              {
+                where: {
+                  id: phoneNumber[i].phoneNumberId,
+                },
+              }
+            );
+          }
+        }
+      }
+
+      if (emailIdLength > 0) {
+        const emailId = await emailIds.map((email) => {
+          return {
+            profileId: profileId,
+            emailIdNumber: email.emailIdNumber,
+            emailId: email.emailId,
+            emailType: email.emailType,
+            checkBoxStatus: email.checkBoxStatus,
+            activeStatus: email.activeStatus,
+          };
+        });
+        for (let j = 0; j < emailIdLength; j++) {
+          if (emailId[j].emailIdNumber === null) {
+            await model.ProfileEmail.create({
+              profileId: emailId[j].profileId,
+              emailId: emailId[j].emailId,
+              emailType: emailId[j].emailType,
+              checkBoxStatus: emailId[j].checkBoxStatus,
+              activeStatus: emailId[j].activeStatus,
+            });
+          } else {
+            await model.ProfileEmail.update(
+              {
+                profileId: emailId[j].profileId,
+                emailId: emailId[j].emailId,
+                emailType: emailId[j].emailType,
+                checkBoxStatus: emailId[j].checkBoxStatus,
+                activeStatus: emailId[j].activeStatus,
+              },
+              {
+                where: {
+                  id: emailId[j].emailIdNumber,
+                },
+              }
+            );
+          }
+        }
+      }
+
+      if (websiteLength > 0) {
+        const website = await websites.map((web) => {
+          return {
+            profileId: profileId,
+            websiteId: web.websiteId,
+            website: web.website,
+            websiteType: web.websiteType,
+            checkBoxStatus: web.checkBoxStatus,
+            activeStatus: web.activeStatus,
+          };
+        });
+        for (let k = 0; k < websiteLength; k++) {
+          if (website[k].websiteId === null) {
+            await model.ProfileWebsite.create({
+              profileId: website[k].profileId,
+              website: website[k].website,
+              websiteType: website[k].websiteType,
+              checkBoxStatus: website[k].checkBoxStatus,
+              activeStatus: website[k].activeStatus,
+            });
+          } else {
+            await model.ProfileWebsite.update(
+              {
+                profileId: website[k].profileId,
+                website: website[k].website,
+                websiteType: website[k].websiteType,
+                checkBoxStatus: website[k].checkBoxStatus,
+                activeStatus: website[k].activeStatus,
+              },
+              {
+                where: {
+                  id: website[k].websiteId,
+                },
+              }
+            );
+          }
+        }
+      }
+
+      if (socialMediaLength > 0) {
+        await updateSocialMedia(socialMediaNames, socialMediaLength, profileId);
+      }
+
+      if (digitalPaymentLinkLength > 0) {
+        await updateProfileDigitalPaymentLinks(
+          digitalPaymentLinks,
+          digitalPaymentLinkLength,
+          profileId
+        );
+      }
+      const profile = await model.Profile.findOne({
+        where: {
+          id: profileId,
+          userId,
+        },
+        include: [
+          {
+            model: model.ProfilePhoneNumber,
+            as: "profilePhoneNumbers",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileEmail,
+            as: "profileEmails",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileWebsite,
+            as: "profileWebsites",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileSocialMediaLink,
+            as: "profileSocialMediaLinks",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileDigitalPaymentLink,
+            as: "profileDigitalPaymentLinks",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+        ],
+      });
+      let deviceLink;
+      if (deviceLinkId) {
+        deviceLink = await model.DeviceLink.findOne({
+          where: {
+            id: deviceLinkId,
+          },
+          include: {
+            model: model.DeviceBranding,
+          },
+        });
+      }
+
+      return {
+        success: true,
+        message: "updated",
+        profile,
+        deviceLink,
+      };
+    } else {
+      return {
+        success: false,
+        message: "Profile not found",
+      };
+    }
+  } catch (error) {
+    console.log(error);
+    loggers.error(error + "from updateProfile fun");
+    return {
+      success: false,
+      message: error,
+    };
+  }
+}
+
+async function createCompleteProfile(data,userId) {
+  const { email } = data;
+  const accountLinkResponse = await createAccountLink(data,userId);
+  if (accountLinkResponse?.success) {
+    const createProfileResponse = await createProfile2(data,userId,accountLinkResponse?.createAccountLink?.id);
+    if (createProfileResponse?.success) {
+      const updateResponse = await updateProfile2(
+        data,
+        userId,
+        createProfileResponse?.createDeviceLink?.id,
+        createProfileResponse?.createDeviceLink?.profileId
+      );
+
+      return { email: email, message: updateResponse?.message };
+    } else {
+      return {
+        email: email,
+        message: createProfileResponse?.message,
+      };
+    }
+  } else {
+    return {
+      email: email,
+      message: accountLinkResponse?.message,
+    };
+  }
+}
+
+async function createCompleteProfileBulk(req, res) {
+  try {
+    // eslint-disable-next-line no-unsafe-optional-chaining
+    const { profileData } = req?.body;
+    if (profileData?.length < 1) {
+      profileData.map(async (record) => {
+        const user = await model.User.findOne({
+          where: { email: record?.email },
+        });
+        if (user?.id) {
+          const response = createCompleteProfile(record, user?.id);
+          res.json(response);
+        } else {
+          res.json({
+            email: record?.email,
+            message: "User Not found",
+          });
+        }
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    loggers.error(error + "from updateProfile fun");
+    return res.json({
+      success: false,
+      message: error,
+    });
+  }
+}
+
 export {
   createProfile,
   getProfileByDevice,
@@ -1789,4 +2414,5 @@ export {
   getUserDetails,
   getProfileName,
   updateProfileName,
+  createCompleteProfileBulk,
 };

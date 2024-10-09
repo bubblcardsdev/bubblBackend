@@ -33,7 +33,7 @@ router.post("/resendotp", resendOtp);
 router.post("/resendMailotp", resendMailOtp);
 router.post("/verifyotp", verifyOtp);
 router.post("/verifyemail", verifyEmail);
-router.post(`/verifyemailOtp`, verifyEmailOtp);
+router.post("/verifyemailOtp", verifyEmailOtp);
 router.post("/login", login);
 router.post("/forgotpassword", forgotPassword);
 router.post("/changepassword", changePassword);
