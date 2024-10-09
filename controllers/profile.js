@@ -2363,24 +2363,26 @@ async function createCompleteProfile(data,userId) {
 }
 
 async function createCompleteProfileBulk(req, res) {
+  let response = [];
   try {
     // eslint-disable-next-line no-unsafe-optional-chaining
     const { profileData } = req?.body;
     if (profileData?.length > 0) {
-      profileData.map(async (record) => {
+     response = await Promise.all(profileData.map(async (record) => {
         const user = await model.User.findOne({
           where: { email: record?.email },
         });
         if (user?.id) {
           const response = await createCompleteProfile(record, user?.id);
-          res.json(response);
+          return response;
         } else {
-          res.json({
+          return{
             email: record?.email,
             message: "User Not found",
-          });
+          };
         }
-      });
+      }));
+      res.json(response);
     }
     else{
       res.json({
