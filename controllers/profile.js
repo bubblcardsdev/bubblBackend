@@ -2382,6 +2382,11 @@ async function createCompleteProfileBulk(req, res) {
         }
       });
     }
+    else{
+      res.json({
+        message:"Invalid Data"
+      });
+    }
   } catch (error) {
     console.log(error);
     loggers.error(error + "from updateProfile fun");

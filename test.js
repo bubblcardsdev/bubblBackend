@@ -1,6 +1,7 @@
-import { writeFile } from "fs/promises";
-import { fileURLToPath } from "url";
-import path from "path";
+/* eslint-disable no-unused-vars */
+// import { writeFile } from "fs/promises";
+// import { fileURLToPath } from "url";
+// import path from "path";
 
 const profileData = [
     {
@@ -871,23 +872,46 @@ const profileData = [
           };
         return body;
     });
+    
     return bodyArray;
    };
 
-   const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+   const test = [    {
+    "Name": "ShekharSingh",
+    "Batch": "2010",
+    "Email": "sshekharsingh@gmail.com",
+    "Phone": "9292671234",
+    "Country_Code": "1",
+    "device_id": "2fc65286-8916-44ad-88a2-0dc27a384f80"
+  },
+  {
+    "Name": "ponah",
+    "Batch": "2014",
+    "Email": "ponah83229@paxnw.com",
+    "Phone": "5857094419",
+    "Country_Code": "1",
+    "device_id": "fc7d319c-e5e1-405e-b18b-5fe92dbf0ade"
+  }
+ ];
 
-   const data = generateBody(profileData);
+const data = generateBody(test);
 
-   const dataAsString = JSON.stringify(data, null, 2); // Converts to a formatted JSON string
+console.log(JSON.stringify(data, null, 2));
 
-   // Resolve the path to create the file in the same folder
-   const filePath = path.resolve(__dirname, "new.js");
+//    const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
+//    const data = generateBody(profileData);
+
+//    const dataAsString = JSON.stringify(data, null, 2); // Converts to a formatted JSON string
+
+//    // Resolve the path to create the file in the same folder
+//    const filePath = path.resolve(__dirname, "new.js");
    
-   // Write data to the new.js file
-   try {
-     await writeFile(filePath, dataAsString); // Write the JSON string to the file
-     console.log("File created successfully with the data!");
-   } catch (err) {
-     console.error("Error writing to file:", err);
-   }
+//    // Write data to the new.js file
+//    try {
+//      await writeFile(filePath, dataAsString); // Write the JSON string to the file
+//      console.log("File created successfully with the data!");
+//    } catch (err) {
+//      console.error("Error writing to file:", err);
+//    }
