@@ -2366,7 +2366,7 @@ async function createCompleteProfileBulk(req, res) {
   try {
     // eslint-disable-next-line no-unsafe-optional-chaining
     const { profileData } = req?.body;
-    if (profileData?.length < 1) {
+    if (profileData?.length > 0) {
       profileData.map(async (record) => {
         const user = await model.User.findOne({
           where: { email: record?.email },
