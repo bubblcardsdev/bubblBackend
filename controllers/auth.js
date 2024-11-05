@@ -1285,53 +1285,6 @@ async function resetPassword(req, res) {
   }
 }
 
-async function verifyPayment(req, res) {
-  try {
-    
-
-            const checkDeviceType = await model.Cart.findAll({
-              where: {
-                orderId: req?.body?.order_id,
-              },
-            });
-
-            // const filterObj = checkDeviceType.find((obj) =>
-            //   obj.productType.includes("NC-")
-            // );
-
-            // const filePath = "../services/pdf/"
-
-            const checkCustomImage = await model.CustomCards.findAll({
-              where: {
-                orderId: req?.body?.order_id,
-              },
-            });
-            // const filePath = "../services/pdf/review.pdf";
-
-            // uploadFileToS3(res, userId, filePath);
-
-            if (checkDeviceType.includes("NC-")) {
-              NameCustomEmail(checkCustomImage, req?.body?.order_id);
-            } else {
-              OrderConfirmationMail(checkCustomImage, req?.body?.order_id, req?.body?.userId);
-            }
-          
-       res.json({
-        success:true,
-        message:"Success"
-       });
-      
-    
-  }
-  catch(e){
-    console.log(e);
-    res.json({
-      success:false,
-      message:e?.message || "Error",
-      e
-     });
-  }
-}
 
 
 export {
@@ -1352,5 +1305,4 @@ export {
   resetPassword,
   resendMailOtp,
   createUserBulkController,
-  verifyPayment
 };
