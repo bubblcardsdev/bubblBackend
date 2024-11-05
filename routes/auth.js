@@ -17,6 +17,7 @@ import {
   verifyEmailOtp,
   resendMailOtp,
   createUserBulkController,
+  verifyPayment
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -39,5 +40,6 @@ router.post("/forgotpassword", forgotPassword);
 router.post("/changepassword", changePassword);
 router.put("/updateuser", authenticateToken, updateUser);
 router.put("/reset", authenticateToken, resetPassword);
+router.post("/test",verifyPayment);
 
 export default router;
