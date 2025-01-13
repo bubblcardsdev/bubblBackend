@@ -209,3 +209,10 @@
 {"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-07T17:53:17.169Z"}
 {"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-07T17:59:16.144Z"}
 {"level":"error","message":"AssertionError [ERR_ASSERTION]: Missing where attribute in the options parameterfrom verifyPayment function","timestamp":"2024-06-07T18:05:12.830Z"}
+{"level":"error","message":"Unknown database 'bubbldb'","timestamp":"2025-01-13T10:21:18.418Z"}
+{"level":"error","message":"SequelizeConnectionError: Unknown database 'bubbldb'from login function","timestamp":"2025-01-13T10:21:53.905Z"}
+{"level":"error","message":"SequelizeConnectionError: Unknown database 'bubbldb'from createUser function","timestamp":"2025-01-13T10:22:15.277Z"}
+{"level":"error","message":"SequelizeConnectionError: Unknown database 'bubbldb'from getAllDevices function","timestamp":"2025-01-13T10:23:09.141Z"}
+{"level":"error","message":"SequelizeConnectionError: Unknown database 'bubbldb'from getAllDevices function","timestamp":"2025-01-13T10:23:11.407Z"}
+{"level":"error","message":"SequelizeConnectionError: Unknown database 'bubbldb'from getAllDevices function","timestamp":"2025-01-13T10:23:25.514Z"}
+{"level":"error","message":"SequelizeConnectionError: Unknown database 'bubbldb'from getAllDevices function","timestamp":"2025-01-13T10:23:29.997Z"}
