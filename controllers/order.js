@@ -619,12 +619,11 @@ async function proceedPayment(req, res) {
 
 async function getNonUserOrderById(req, res) {
  
-  const { orderId,email } = req.body;
+  const { orderId } = req.body;
   try {
     const order = await model.Order.findAll({
       where: {
         id: orderId,
-        email,
         cancelledOrder: false,
       },
       include: [
