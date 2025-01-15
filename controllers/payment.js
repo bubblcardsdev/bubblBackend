@@ -20,10 +20,7 @@ async function initialePay(req, res) {
     console.log(orderId, "orderId");
     let getDataForPayment;
 
-    if (Number(paymentObj.orderType) === 0) {
-      getDataForPayment = await getDataForPaymentService(orderId);
-    }
-    else if(Number(paymentObj.orderType) === 2){
+    if (Number(paymentObj.orderType) === 0 || Number(paymentObj.orderType) === 2) {
       getDataForPayment = await getDataForPaymentService(orderId);
     }
     else {
@@ -43,10 +40,11 @@ async function initialePay(req, res) {
     const value = getDataForPayment?.email === "kishorekk54321@gmail.com" ? 1 :  val + cost;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
-    let token = orderType === 2 ? btoa(getDataForPayment?.email) : paymentObj.token;
+    let token = orderType == 2 ? btoa(getDataForPayment?.email) : paymentObj.token;
     const shippingCost = cost.toString();
 
     console.log(value,"value");
+    console.log(token,"token",orderType);
 
     //  const cost =
     //       paymentObj.shippingCost !== undefined

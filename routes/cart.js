@@ -7,7 +7,8 @@ import {
   clearCart,
   addToNonUserCart,
   getNonUserCart,
-  cancelNonUserCart
+  cancelNonUserCart,
+  clearCartNonuser
 } from "../controllers/buydevice.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -24,6 +25,6 @@ router.put("/addToNonUserCart", addToNonUserCart);
 // router.post("/addToNonUserCart", addToNonUserCart);
 router.get("/nonUser/all", getNonUserCart);
 router.put("/nonUser/cancel", cancelNonUserCart);
-router.get("/nonUser/clearItems", clearCart);
+router.post("/nonUser/clearItems", clearCartNonuser);
 
 export default router;
