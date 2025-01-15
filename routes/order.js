@@ -22,6 +22,6 @@ router.put("/cancel", authenticateToken, cancelOrder);
 
 // checkout flow before login
 router.post("/checkoutNonUser", checkOutNonUser);
-router.post("/nonUser/oner", getNonUserOrderById);
+router.post("/nonUser/one", getNonUserOrderById);
 
 export default router;
