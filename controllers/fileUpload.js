@@ -39,35 +39,44 @@ async function profileImageUpload(req, res) {
         where: { profileId },
       });
 
-      if(profileImageCheck){
-        await model.ProfileImages.update({
-          image: squareImage.key,
-          // profileId: profileId,
-          // type: 0,
-        }, {where:{
-          profileId: profileId,
-          type: 0,
-        }});
-        await model.ProfileImages.update({
-          image: rectangleImage.key,
-          // profileId: profileId,
-        },{where:{
-          profileId: profileId,
-          type: 1,
-        }});
-      }else{
+      if (profileImageCheck) {
+        await model.ProfileImages.update(
+          {
+            image: squareImage.key,
+            // profileId: profileId,
+            // type: 0,
+          },
+          {
+            where: {
+              profileId: profileId,
+              type: 0,
+            },
+          }
+        );
+        await model.ProfileImages.update(
+          {
+            image: rectangleImage.key,
+            // profileId: profileId,
+          },
+          {
+            where: {
+              profileId: profileId,
+              type: 1,
+            },
+          }
+        );
+      } else {
         await model.ProfileImages.create({
           image: squareImage.key,
           profileId: profileId,
           type: 0,
-        }, );
+        });
         await model.ProfileImages.create({
           image: rectangleImage.key,
-         profileId: profileId,
+          profileId: profileId,
           type: 1,
-        },);
+        });
       }
-      
 
       const profileImageUrl = await model.ProfileImages.findAll({
         where: { profileId },
@@ -90,7 +99,7 @@ async function profileImageUpload(req, res) {
     }
   } catch (error) {
     console.log(error);
-    loggers.error(error+"from profileImageUpload function");
+    loggers.error(error + "from profileImageUpload function");
     return res.json({
       success: false,
       data: {
@@ -100,13 +109,19 @@ async function profileImageUpload(req, res) {
   }
 }
 
-async function pdfImageUpload(res, keyFileName, userId) {
+async function pdfImageUpload(res, keyFileName, userId, email = "") {
   try {
+    const whereClause = email
+      ? {
+          email,
+          orderStatus: "cart",
+        }
+      : {
+          customerId: userId,
+          orderStatus: "cart",
+        };
     let getOrder = await model.Order.findOne({
-      where: {
-        customerId: userId,
-        orderStatus: "cart",
-      },
+      where: whereClause,
     });
 
     await model.CustomizedImages.update(
@@ -121,7 +136,7 @@ async function pdfImageUpload(res, keyFileName, userId) {
     );
   } catch (error) {
     console.log(error, "Error Occuring");
-    loggers.error(error+"from pdfImageUpload function");
+    loggers.error(error + "from pdfImageUpload function");
   }
 }
 
@@ -170,7 +185,7 @@ async function brandingLogoUpload(req, res) {
       });
     }
   } catch (error) {
-    loggers.error(error+"from brandingLogoUpload function");
+    loggers.error(error + "from brandingLogoUpload function");
     return res.json({
       success: false,
       data: {
@@ -225,7 +240,7 @@ async function qrCodeImageUpload(req, res) {
       });
     }
   } catch (error) {
-    loggers.error(error+"from qrCodeImageUpload function");
+    loggers.error(error + "from qrCodeImageUpload function");
     return res.json({
       success: false,
       data: {
@@ -264,7 +279,7 @@ async function userImageUpload(req, res) {
     }
   } catch (error) {
     console.log(error);
-    loggers.error(error+"from userImageUpload function");
+    loggers.error(error + "from userImageUpload function");
     return res.json({
       success: false,
       data: {

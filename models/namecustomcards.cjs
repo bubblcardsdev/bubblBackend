@@ -27,6 +27,10 @@ module.exports = (sequelize, Sequelize) => {
           key: "id",
         },
       },
+      email:{
+        type: Sequelize.STRING,
+        allowNull:true
+      },
       customName: {
         type: Sequelize.STRING,
       },

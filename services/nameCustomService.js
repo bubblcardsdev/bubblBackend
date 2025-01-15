@@ -116,6 +116,132 @@ async function nameCustomService(
   });
 }
 
+
+async function nameCustomNonUserService(
+  res,
+  name,
+  quanitiy,
+  deviceType,
+  fontStyle,
+  price,
+  email,
+  productStatus,
+  deviceInventorId,
+  deviceColor
+) {
+
+
+  // Construct the file path dynamically
+  // const filePath = `.\${directory}\${filename}`;
+  const filePath = "./services/pdf/review.pdf";
+  // const filePath = "./pdf/review.pdf";
+
+  let getOrder = await model.Order.findOne({
+    where: {
+      email,
+      orderStatus: "cart",
+    },
+  });
+
+  // const pdfValue = await htmlImageConversion(name, userId, OrderId);
+  uploadFileToS3(res, null, filePath,email);
+
+  const product = await model.NameDeviceImageInventory.findOne({
+    where: {
+      id: deviceInventorId,
+    },
+  });
+
+  const productCost = product.price * quanitiy;
+
+  const checkCart = await model.Cart.findOne({
+    where: {
+      orderId: getOrder.id,
+      productType: deviceType,
+      productColor: deviceColor,
+    },
+  });
+
+  if (checkCart === null) {
+  await model.Cart.create({
+    productType: deviceType,
+    email,
+    orderId: getOrder.id,
+    quantity: quanitiy,
+    productColor: deviceColor,
+    productPrice: productCost,
+    productStatus: true,
+  });
+}
+
+else{
+  if (checkCart.productStatus) {
+    // quantity += cartItem.quantity;
+    // productPrice += getProduct.productPrice;
+
+    await model.Cart.update(
+      {
+        quantity:quanitiy,
+        productPrice: productCost,
+      },
+      {
+        where: {
+          id: checkCart.id,
+        },
+      }
+    );
+  } else {
+    await model.Cart.update(
+      {
+        quantity:quanitiy,
+        productPrice: productCost,
+        productStatus: true,
+      },
+      {
+        where: {
+          id: checkCart.id,
+        },
+      }
+    );
+  }
+}
+
+  const createName = await model.CustomCards.create({
+    customName: name,
+    quantity: quanitiy,
+    fontStyle: fontStyle,
+    productType: deviceType,
+    productPrice: productCost,
+    // productColor: fontColor,
+    productColor: deviceColor,
+    email,
+    orderId: getOrder.id,
+    productStatus: productStatus,
+    deviceInventorId: deviceInventorId,
+  });
+   const getCartPrice = await model.Cart.sum("productPrice", {
+      where: { orderId: getOrder.id, productStatus: true },
+    });
+
+  await model.Order.update(
+    {
+      totalPrice: getCartPrice,
+    },
+    {
+      where: {
+        id: getOrder.id,
+      },
+    }
+  );
+
+  return res.json({
+    success: true,
+    createName,
+    data: {
+      message: "Cart Updated successfully",
+    },
+  });
+}
 // service file for get all the name custom details
 async function getImageByCardServices(res) {
   let devices = await model.NameCustomImages.findAll({});
@@ -255,4 +381,5 @@ export {
   getCardImageByIdServices,
   NameCustomConfirmationEmail,
   getCardsByCardType,
+  nameCustomNonUserService
 };

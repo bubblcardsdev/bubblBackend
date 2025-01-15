@@ -4,6 +4,7 @@ import {
   getImageByCardServices,
   getCardImageByIdServices,
   getCardsByCardType,
+  nameCustomNonUserService,
 } from "../services/nameCustomService.js";
 
 async function nameCustomController(req, res) {
@@ -58,6 +59,54 @@ async function nameCustomController(req, res) {
   }
 }
 
+async function nameCustomNonUserController(req, res) {
+  const {
+    name,
+    quanitiy,
+    deviceType,
+    fontStyle,
+    price,
+    fontColor,
+    productStatus,
+    deviceInventorId,
+    deviceColor,
+    email
+  } = req.body;
+
+  console.log(
+    name,
+    quanitiy,
+    deviceType,
+    fontStyle,
+    price,
+    fontColor,
+    productStatus,
+    deviceInventorId,
+    deviceColor,
+    email
+  );
+
+  // return;
+  try {
+    const customDetails = await nameCustomNonUserService(
+      res,
+      name,
+      quanitiy,
+      deviceType,
+      fontStyle,
+      price,
+      email,
+      productStatus,
+      deviceInventorId,
+      deviceColor
+    );
+    return customDetails;
+  } catch (e) {
+    console.log(e);
+    loggers.error(e + "from nameCustomNonUserController function");
+  }
+}
+
 // func for get all name Custom
 async function getImageByCardController(req, res) {
   try {
@@ -98,4 +147,5 @@ export {
   getImageByCardController,
   getCardImageByIdController,
   getCardImageByTypeController,
+  nameCustomNonUserController,
 };

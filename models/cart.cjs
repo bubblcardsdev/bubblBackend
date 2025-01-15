@@ -15,7 +15,7 @@ module.exports = (sequelize, Sequelize) => {
     {
       customerId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "Users",
           key: "id",
@@ -51,6 +51,10 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
     },
     {

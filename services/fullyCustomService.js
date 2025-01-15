@@ -89,6 +89,112 @@ async function fullyCustomService(
   }
 }
 
+async function fullyCustomNonUserService(
+  quantity,
+  price,
+  email,
+  res,
+  deviceColor,
+  deviceType
+) {
+
+  let getOrder = await model.Order.findOne({
+    where: {
+      email,
+      orderStatus: "cart",
+    },
+  });
+
+  const fullCustom = await model.DeviceInventory.findOne({
+    where: {
+      deviceType: deviceType,
+      deviceColor: deviceColor,
+    },
+  });
+
+  const productPrice = fullCustom.price * quantity;
+
+  if (getOrder) {
+    const checkCart = await model.Cart.findOne({
+      where: {
+        orderId: getOrder.id,
+        productType: deviceType,
+        productColor: deviceColor,
+      },
+    });
+     if(checkCart === null) {
+      await model.Cart.create({
+        productType: deviceType,
+        email,
+        orderId: getOrder.id,
+        quantity: quantity,
+        productColor: deviceColor,
+        productPrice: productPrice,
+        productStatus: true,
+      });
+     }
+     else{
+      if (checkCart.productStatus) {
+
+        await model.Cart.update(
+          {
+            quantity: quantity,
+            productPrice: productPrice,
+          },
+          {
+            where: {
+              id: checkCart.id,
+            },
+          }
+        );
+      } else {
+        await model.Cart.update(
+          {
+            quantity: quantity,
+            productPrice: productPrice,
+            productStatus: true,
+          },
+          {
+            where: {
+              id: checkCart.id,
+            },
+          }
+        );
+      }
+     }
+  }
+
+  const createFullyCustoms = await model.FullyCustom.create({
+    quantity: quantity,
+    productPrice: productPrice,
+    email,
+    orderId: getOrder.id,
+    productStatus: false,
+  });
+
+  const getCartPrice = await model.Cart.sum("productPrice", {
+    where: { orderId: getOrder.id, productStatus: true },
+  });
+
+  await model.Order.update(
+    {
+      totalPrice: getCartPrice,
+    },
+    {
+      where: {
+        id: getOrder.id,
+      },
+    }
+  );
+
+  if (createFullyCustoms) {
+    return res.json({
+      success: true,
+      message: "Order Created",
+    });
+  }
+}
+
 async function fullyCustomMailService(orderId, userId) {
   const getUserMailId = await model.User.findOne({
     where: {
@@ -121,4 +227,4 @@ async function getPriceFromFullCustom(res) {
   }
 }
 
-export { fullyCustomService, fullyCustomMailService, getPriceFromFullCustom };
+export { fullyCustomService, fullyCustomMailService, getPriceFromFullCustom,fullyCustomNonUserService };

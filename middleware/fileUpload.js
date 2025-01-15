@@ -38,7 +38,7 @@ const generateSignedUrl = async function (Key) {
   return getSignedUrl(s3, getCommand, { expiresIn: 604800 });
 };
 
-async function uploadFileToS3(res, userId, filePath) {
+async function uploadFileToS3(res, userId, filePath,email="") {
   //create finale file name
   const fileName = path.parse(filePath).base;
   const keyFileName =
@@ -50,10 +50,10 @@ async function uploadFileToS3(res, userId, filePath) {
     Body: fs.createReadStream(filePath),
   });
 
-  pdfImageUpload(res, keyFileName, userId);
+  pdfImageUpload(res, keyFileName, userId,email);
 
   try {
-    const response = await s3.send(command);
+     await s3.send(command);
   } catch (err) {
     console.error(err);
   }

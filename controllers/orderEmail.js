@@ -7,15 +7,27 @@ import { v4 as uuidv4 } from "uuid";
 import puppeteer from "puppeteer";
 import loggers from "../config/logger.js";
 
-async function OrderConfirmationMail(getCustomName, orderId, userId) {
+async function OrderConfirmationMail(
+  getCustomName,
+  orderId,
+  userId,
+  email = ""
+) {
   try {
     let orderMailContent = "";
+    const whereClause = email
+      ? {
+          id: orderId,
+          email,
+          cancelledOrder: false,
+        }
+      : {
+          id: orderId,
+          customerId: userId,
+          cancelledOrder: false,
+        };
     const order = await model.Order.findAll({
-      where: {
-        id: orderId,
-        customerId: userId,
-        cancelledOrder: false,
-      },
+      where: whereClause,
       include: [
         {
           model: model.Cart,
