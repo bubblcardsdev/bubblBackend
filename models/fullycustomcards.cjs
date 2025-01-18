@@ -19,6 +19,7 @@ module.exports = (sequelize, Sequelize) => {
           model: "Users",
           key: "id",
         },
+        allowNull:true,
       },
       orderId: {
         type: Sequelize.INTEGER,
@@ -26,6 +27,10 @@ module.exports = (sequelize, Sequelize) => {
           model: "Orders",
           key: "id",
         },
+      },
+      email:{
+        type: Sequelize.STRING,
+        allowNull:true
       },
       quantity: {
         type: Sequelize.INTEGER,

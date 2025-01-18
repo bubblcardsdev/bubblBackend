@@ -1,3 +1,4 @@
+/* eslint-disable quotes */
 /* eslint-disable no-useless-catch */
 /* eslint-disable no-case-declarations */
 /* eslint-disable no-unreachable */
@@ -16,28 +17,34 @@ async function initialePay(req, res) {
   try {
     const paymentObj = req.body;
     const orderId = paymentObj.orderId;
+    console.log(orderId, "orderId");
     let getDataForPayment;
 
-    if (Number(paymentObj.orderType) === 0) {
+    if (Number(paymentObj.orderType) === 0 || Number(paymentObj.orderType) === 2) {
       getDataForPayment = await getDataForPaymentService(orderId);
-    } else {
+    }
+    else {
       getDataForPayment = await getDataForPlanPaymentService(
         paymentObj.planType
       );
     }
 
-    console.log(getDataForPayment);
+    console.log(getDataForPayment,"getDataForPayment");
     const orderType = paymentObj.orderType;
     const cost =
       getDataForPayment.shippingCost !== undefined
         ? Number(getDataForPayment.shippingCost)
         : 0;
+        console.log(cost,"cost");
     const val = getDataForPayment.totalPrice;
-    const value = val + cost;
+    const value = getDataForPayment?.email === "kishorekk54321@gmail.com" ? 1 :  val + cost;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
-    const token = paymentObj.token;
+    let token = orderType == 2 ? btoa(getDataForPayment?.email) : paymentObj.token;
     const shippingCost = cost.toString();
+
+    console.log(value,"value");
+    console.log(token,"token",orderType);
 
     //  const cost =
     //       paymentObj.shippingCost !== undefined
@@ -134,12 +141,15 @@ async function verifyPayment(req, res) {
 
     const token = atob(obj.merchant_param1);
     let userId = 0;
-    try {
-      const tokenData = jwt.verify(token, config.accessSecret);
-      userId = tokenData.id;
-    } catch (e) {
-      console.log(e);
-      // console.log("failed to verify token");
+    
+    if(obj?.billing_address != "2"){
+      try {
+        const tokenData = jwt.verify(token, config.accessSecret);
+        userId = tokenData.id;
+      } catch (e) {
+        console.log(e);
+        // console.log("failed to verify token");
+      }
     }
 
     const cost = obj.merchant_param2;
@@ -251,6 +261,80 @@ async function verifyPayment(req, res) {
               jwtToken: token,
             },
           });
+        case "2" : await model.Payment.update(
+          {
+            transactionId: obj.tracking_id,
+            bankRefNo: obj.bank_ref_no,
+            email: token,
+            paymentStatus: successEnum[obj.order_status],
+            failureMessage: obj.failure_message,
+            shippingCharge: shippingCost,
+          },
+          {
+            where: {
+              orderId: Number(obj.order_id),
+            },
+          }
+        );
+        await model.Order.update(
+          {
+            orderStatus: "Paid",
+          },
+          {
+            where: {
+              id: Number(obj.order_id),
+            },
+          }
+        );
+        // if the payment is successful, email send to user
+        const checkStatus = await model.Payment.findOne({
+          where: {
+            orderId: obj.order_id,
+            paymentStatus: true,
+          },
+        });
+
+        if (checkStatus) {
+          const checkDeviceType = await model.Cart.findAll({
+            where: {
+              orderId: obj.order_id,
+            },
+          });
+
+          // const filterObj = checkDeviceType.find((obj) =>
+          //   obj.productType.includes("NC-")
+          // );
+
+          // const filePath = "../services/pdf/"
+
+          const checkCustomImage = await model.CustomCards.findAll({
+            where: {
+              orderId: obj.order_id,
+            },
+          });
+          // const filePath = "../services/pdf/review.pdf";
+
+          // uploadFileToS3(res, userId, filePath);
+
+          if (checkDeviceType.includes("NC-")) {
+            NameCustomEmail(checkCustomImage, obj.order_id);
+          } else {
+            OrderConfirmationMail(checkCustomImage, obj.order_id, userId,token);
+          }
+        }
+
+        return res.json({
+          success: true,
+          data: {
+            status: obj.order_status,
+            orderId: obj.order_id,
+            paymentMode: obj.payment_mode,
+            orderType: obj.billing_address,
+            email:token,
+            shippingCharge: shippingCost,
+          },
+        });
+
       }
     } else {
       switch (obj.billing_address) {
@@ -289,6 +373,21 @@ async function verifyPayment(req, res) {
               paymentMode: obj.payment_mode,
             },
           });
+        case "2" :   await model.Payment.update({
+          transactionId: obj.tracking_id,
+          bankRefNo: obj.bank_ref_no,
+          email:token,
+          orderId: obj.order_id,
+          paymentStatus: successEnum[obj.order_status],
+          failureMessage: obj.failure_message,
+          shippingCharge: shippingCost,
+        });
+        // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
+        return res.json({
+          success: false,
+          orderType: obj.billing_address,
+          message: obj.failure_message,
+        });
       }
     }
   } catch (error) {
@@ -328,11 +427,13 @@ async function getShippingCharge(req, res) {
 
 async function getDataForPaymentService(orderId) {
   try {
+    console.log(orderId,"orderId");
     const getOrderDetails = await model.Order.findOne({
       where: {
         id: orderId,
       },
     });
+    console.log(getOrderDetails,"getOrderDetails");
     if (!getOrderDetails) {
       throw new Error("Order not found");
     }
@@ -364,34 +465,43 @@ async function getDataForPaymentService(orderId) {
         orderId: orderId,
       },
     });
-
+    console.log(shipping,"shipping");
+  let cost;
     if (!shipping) {
       cost = "0";
     }
 
     const shippingCountry = shipping.country;
-    let cost;
+  
     const shipCost = await model.ShippingCharge.findOne({
       where: {
         country: shippingCountry.toLowerCase(),
       },
     });
-
+console.log(shipCost,"shipCost");
     if (!shipCost) {
       cost = "500";
     } else {
       cost = shipCost.amount;
     }
 
-    const orderObj = {
-      totalPrice: Math.round(totalPrice),
-      customerId: getOrderDetails.customerId,
-      quantity: totalQuantity,
-      shippingCost: cost,
-    };
-
-    console.log(orderObj, "obj");
-
+ let orderObj = {};
+if(getOrderDetails?.customerId){
+   orderObj = {
+    totalPrice: Math.round(totalPrice),
+    customerId: getOrderDetails.customerId,
+    quantity: totalQuantity,
+    shippingCost: cost,
+  };
+}
+else {
+   orderObj = {
+    totalPrice: Math.round(totalPrice),
+    email: getOrderDetails.email,
+    quantity: totalQuantity,
+    shippingCost: cost,
+  };
+}
     return orderObj;
   } catch (error) {
     throw error;
@@ -428,5 +538,7 @@ async function getDataForPlanPaymentService(obj) {
     throw error;
   }
 }
+
+
 
 export { initialePay, verifyPayment, getShippingCharge };

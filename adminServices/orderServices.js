@@ -47,6 +47,7 @@ async function getTotalOrderServices() {
             "updatedAt",
           ],
         },
+        required: false,
       },
     ],
   });

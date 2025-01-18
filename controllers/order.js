@@ -374,6 +374,121 @@ async function checkOut(req, res) {
   }
 }
 
+async function checkOutNonUser(req, res) {
+  const {
+    orderId,
+    firstName,
+    lastName,
+    phoneNumber,
+    emailId,
+    flatNumber,
+    address,
+    city,
+    state,
+    zipcode,
+    country,
+    landmark,
+    isShipped,
+  } = req.body;
+
+  const { error } = shippingDetails.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+
+  try {
+    const order = await model.Order.findOne({
+      where: {
+        id: orderId,
+        email:emailId
+      },
+    });
+    if (order) {
+      const checkExisitingDetail = await model.Shipping.findOne({
+        where: {
+          orderId,
+        },
+      });
+      if (checkExisitingDetail) {
+        const updateShippingDetails = await model.Shipping.update(
+          {
+            firstName,
+            lastName,
+            phoneNumber,
+            emailId,
+            flatNumber,
+            address,
+            city,
+            state,
+            zipcode,
+            country,
+            landmark,
+            isShipped,
+          },
+          {
+            where: {
+              orderId,
+            },
+          }
+        );
+        return res.json({
+          success: true,
+          message: "Shipping details updated",
+          updateShippingDetails,
+        });
+      } else {
+        const createShippingDetails = await model.Shipping.create({
+          orderId: order.id,
+          firstName,
+          lastName,
+          phoneNumber,
+          emailId,
+          flatNumber,
+          address,
+          city,
+          state,
+          zipcode,
+          country,
+          landmark,
+          isShipped,
+        });
+
+        const createPayment = await model.Payment.create({
+          orderId: orderId,
+          email:emailId,
+          paymentStatus: false,
+          failureMessage: "",
+        });
+
+        return res.json({
+          success: true,
+          message: "Created",
+          createShippingDetails,
+          createPayment,
+        });
+      }
+    } else {
+      return res.json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    loggers.error(error+"from checkOut function");
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 async function updateShippingDetails(req, res) {
   const {
     orderId,
@@ -502,6 +617,105 @@ async function proceedPayment(req, res) {
   }
 }
 
+async function getNonUserOrderById(req, res) {
+ 
+  const { orderId } = req.body;
+  try {
+    const order = await model.Order.findAll({
+      where: {
+        id: orderId,
+        cancelledOrder: false,
+      },
+      include: [
+        {
+          model: model.Cart,
+          where: {
+            productStatus: true,
+          },
+        },
+        {
+          model: model.Shipping,
+        },
+        {
+          model: model.Payment,
+        },
+      ],
+    });
+
+    // func for getting the images for corresponding orders
+    let deviceImages = [];
+    let deviceInventory = "";
+
+    deviceImages = await Promise.all(
+      order[0].Carts.map(async (cartVal) => {
+        if (cartVal.productType.includes("NC-")) {
+          const getImageId = await model.NameDeviceImageInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+              deviceColor: cartVal.productColor,
+            },
+          });
+          if (getImageId) {
+            const deviceInventory = await model.NameCustomImages.findOne({
+              where: {
+                NameCustomDeviceId: getImageId.id,
+                cardView: false,
+              },
+            });
+
+            const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
+
+            return itemImg;
+          }
+        } else {
+          deviceInventory = await model.DeviceInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+              deviceColor: cartVal.productColor,
+            },
+          });
+
+          const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
+          return itemImg;
+        }
+      })
+    );
+
+    const displayNames = await Promise.all(
+      order[0].Carts.map(async (cartVal) => {
+        if (cartVal.productType.includes("NC-")) {
+          const deviceName = await model.NameDeviceImageInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+              deviceColor: cartVal.productColor,
+            },
+          });
+          if (deviceName) {
+              return deviceName.displayName;
+            };
+          }
+         else {
+          return cartVal.productType;
+        }
+      })
+    );
+
+    return res.json({
+      success: true,
+      message: "Order Details",
+      order,
+      deviceImages,
+      displayNames,
+    });
+  } catch (error) {
+    console.error(error+"from getOrderById function");
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 export {
   getOrderDetails,
   getOrderById,
@@ -509,4 +723,6 @@ export {
   checkOut,
   proceedPayment,
   cancelOrder,
+  checkOutNonUser,
+  getNonUserOrderById,
 };

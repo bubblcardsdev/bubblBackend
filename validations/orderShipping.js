@@ -16,4 +16,5 @@ const shippingDetails = Joi.object({
   isShipped: Joi.boolean(),
 });
 
+
 export { shippingDetails };

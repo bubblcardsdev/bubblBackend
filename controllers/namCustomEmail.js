@@ -21,10 +21,10 @@ async function NameCustomEmail(getCustomName, OrderId) {
       deviceUid: uuid,
       deviceType: "Card",
     });
-    await model.Device.create({
-      deviceUid: uuid,
-      deviceType: "Card",
-    });
+    // await model.Device.create({
+    //   deviceUid: uuid,
+    //   deviceType: "Card",
+    // });
 
     const options = {
       errorCorrectionLevel: "H",
