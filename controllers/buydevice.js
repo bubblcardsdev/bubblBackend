@@ -409,59 +409,59 @@ async function clearCart(req, res) {
   }
 }
 
-async function clearCartNonUser(req, res) {
+// async function clearCartNonUser(req, res) {
 
-  try {
-    const {email} = req.body;
-    const clearCartRequest = await model.Order.findOne({
-      where: {
-        email,
-        orderStatus: "cart",
-      },
-    });
+//   try {
+//     const {email} = req.body;
+//     const clearCartRequest = await model.Order.findOne({
+//       where: {
+//         email,
+//         orderStatus: "cart",
+//       },
+//     });
 
-    if (clearCartRequest) {
-      await model.Order.update(
-        {
-          orderStatus: "cancelled",
-          cancelledOrder: true,
-        },
-        {
-          where: {
-            id: clearCartRequest.id,
-          },
-        }
-      );
+//     if (clearCartRequest) {
+//       await model.Order.update(
+//         {
+//           orderStatus: "cancelled",
+//           cancelledOrder: true,
+//         },
+//         {
+//           where: {
+//             id: clearCartRequest.id,
+//           },
+//         }
+//       );
 
-      await model.Cart.update(
-        {
-          productStatus: false,
-        },
-        {
-          where: {
-            orderId: clearCartRequest.id,
-            email,
-          },
-        }
-      );
+//       await model.Cart.update(
+//         {
+//           productStatus: false,
+//         },
+//         {
+//           where: {
+//             orderId: clearCartRequest.id,
+//             email,
+//           },
+//         }
+//       );
 
-      return res.json({
-        success: true,
-        message: "cart cleared",
-      });
-    } else {
-      return res.json({
-        success: false,
-        message: "Order was already cleared",
-      });
-    }
-  } catch (error) {
-    return res.json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
+//       return res.json({
+//         success: true,
+//         message: "cart cleared",
+//       });
+//     } else {
+//       return res.json({
+//         success: false,
+//         message: "Order was already cleared",
+//       });
+//     }
+//   } catch (error) {
+//     return res.json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// }
 
 
 // async function addToNonUserCart(req, res) {
