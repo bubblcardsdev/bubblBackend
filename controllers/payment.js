@@ -17,7 +17,7 @@ async function initialePay(req, res) {
   try {
     const paymentObj = req.body;
     const orderId = paymentObj.orderId;
-    console.log(orderId, "orderId");
+    console.log("orderId-------------------------------------",orderId);
     let getDataForPayment;
 
     if (Number(paymentObj.orderType) === 0 || Number(paymentObj.orderType) === 2) {
@@ -72,7 +72,7 @@ async function initialePay(req, res) {
     const POST = qs.parse(bodyData);
 
     formbody =
-      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
       POST.merchant_id +
       "&encRequest=" +
       encRequest +
@@ -80,6 +80,7 @@ async function initialePay(req, res) {
       accessCode +
       '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
 
+    console.log("encRequest-----------------",encRequest,"-----------------")
     console.log(formbody);
 
     // Configure Nodemailer
@@ -154,6 +155,11 @@ async function verifyPayment(req, res) {
 
     const cost = obj.merchant_param2;
     const shippingCost = Number(cost);
+    const getOrderDetails = await model.Order.findOne({
+      where: {
+        id: Number(obj.order_id),
+      },
+    });
     if (successEnum[obj.order_status] === true) {
       // const cost = obj.merchant_param2;
       // const shippingCost = Number(cost);
@@ -168,6 +174,10 @@ async function verifyPayment(req, res) {
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
+              totalPrice: getOrderDetails.totalPrice,
+              discountAmount: getOrderDetails.discountAmount,
+              discountPercentage: getOrderDetails.discountPercentage,
+              paidAmount: getOrderDetails.soldPrice,
             },
             {
               where: {
@@ -347,6 +357,10 @@ async function verifyPayment(req, res) {
             paymentStatus: successEnum[obj.order_status],
             failureMessage: obj.failure_message,
             shippingCharge: shippingCost,
+            totalPrice: getOrderDetails.totalPrice,
+            discountAmount: getOrderDetails.discountAmount,
+            discountPercentage: getOrderDetails.discountPercentage,
+            paidAmount: getOrderDetails.soldPrice,
           });
           // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
           return res.json({
@@ -451,14 +465,35 @@ async function getDataForPaymentService(orderId) {
     }, 0);
 
     let totalPrice = getOrderDetails.totalPrice;
+    let discountPercentage = 0;
+    let discountAmount = 0;
 
     if (totalQuantity === 1) {
       totalPrice = totalPrice * 0.6; // 40% Discount
+      discountPercentage = 40;
+      discountAmount = totalPrice * 0.4;
     } else if (totalQuantity === 2) {
       totalPrice = totalPrice * 0.5; // 50% Discount
+      discountPercentage = 50;
+      discountAmount = totalPrice * 0.5;
     } else {
       totalPrice = totalPrice * 0.4; // 60% Discount
+      discountPercentage = 60;
+      discountAmount = totalPrice * 0.6;
     }
+
+    await model.Order.update(
+      {
+        discountPercentage: discountPercentage,
+        discountAmount: discountAmount,
+        soldPrice: totalPrice,
+      },
+      {
+        where: {
+          id: orderId,
+        },
+      }
+    );
 
     const shipping = await model.Shipping.findOne({
       where: {

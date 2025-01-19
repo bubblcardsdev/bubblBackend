@@ -26,6 +26,21 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      discountPercentage: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      discountAmount: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      soldPrice: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       orderStatus: {
         type: Sequelize.STRING,
         allowNull: false,

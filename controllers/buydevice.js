@@ -857,50 +857,24 @@ async function addToNonUserCart(req, res) {
 
     const totalPrice = sumBy(updateTotalByProduct, "totalPrice", 0);
 
-    const checkOrder = await model.Order.findOne({
+    await model.Order.update({
+      orderStatus: "cancelled",
+    },{
       where: {
         email: email,
         orderStatus: "cart",
       },
     });
 
-    if (checkOrder === null) {
-      await model.Order.create({
-        email: email,
-        totalPrice: totalPrice,
-        orderStatus: "cart",
-      });
-    } else {
-      await model.Order.update(
-        {
-          totalPrice: totalPrice,
-        },
-        {
-          where: { id: checkOrder?.id },
-        }
-      );
-    }
-
-    const getOrder = await model.Order.findOne({
-      where: {
-        email: email,
-        orderStatus: "cart",
-      },
+    const getOrder = await model.Order.create({
+      email: email,
+      totalPrice: totalPrice,
+      orderStatus: "cart",
     });
+
     console.log(getOrder?.id || getOrder?.dataValues?.id,"getOrder");
     const order_id = getOrder?.id || getOrder?.dataValues?.id;
-    // clearing previous items in cart
-    await model.Cart.update(
-      {
-        productStatus: 0,
-      },
-      {
-        where: {
-          orderId: order_id,
-          productStatus: 1,
-        },
-      }
-    );
+
     // insert all items into cart
     console.log("Addding to cart");
     const cartItems = cartData.map((item) => {

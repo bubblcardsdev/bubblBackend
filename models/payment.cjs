@@ -30,6 +30,10 @@ module.exports = (sequelize, Sequelize) => {
           key: "id",
         },
       },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       orderId: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -37,6 +41,26 @@ module.exports = (sequelize, Sequelize) => {
           model: "Orders",
           key: "id",
         },
+      },
+      totalPrice: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      discountPercentage: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      discountAmount: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      soldPrice: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
       shippingCharge: {
         type: Sequelize.INTEGER,
