@@ -15,7 +15,7 @@ async function getTotalOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt","email"],
+          exclude: ["createdAt", "updatedAt","email","totalPrice"],
         },
       },
       {
