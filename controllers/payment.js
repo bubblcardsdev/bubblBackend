@@ -80,7 +80,7 @@ async function initialePay(req, res) {
       accessCode +
       '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
 
-    console.log("encRequest-----------------",encRequest,"-----------------")
+    console.log("encRequest-----------------",encRequest,"-----------------");
     console.log(formbody);
 
     // Configure Nodemailer
@@ -471,15 +471,15 @@ async function getDataForPaymentService(orderId) {
     if (totalQuantity === 1) {
       totalPrice = totalPrice * 0.6; // 40% Discount
       discountPercentage = 40;
-      discountAmount = totalPrice * 0.4;
+      discountAmount = getOrderDetails.totalPrice * 0.4;
     } else if (totalQuantity === 2) {
       totalPrice = totalPrice * 0.5; // 50% Discount
       discountPercentage = 50;
-      discountAmount = totalPrice * 0.5;
+      discountAmount = getOrderDetails.totalPrice * 0.5;
     } else {
       totalPrice = totalPrice * 0.4; // 60% Discount
       discountPercentage = 60;
-      discountAmount = totalPrice * 0.6;
+      discountAmount = getOrderDetails.totalPrice * 0.6;
     }
 
     await model.Order.update(
