@@ -463,7 +463,6 @@ async function clearCart(req, res) {
 //   }
 // }
 
-
 // async function addToNonUserCart(req, res) {
 //   try {
 //     const { cartItem, email } = req.body;
@@ -480,7 +479,6 @@ async function clearCart(req, res) {
 //         },
 //       });
 //     }
-
 
 //     let getOrder = await model.Order.create({
 //       email: email,
@@ -857,14 +855,17 @@ async function addToNonUserCart(req, res) {
 
     const totalPrice = sumBy(updateTotalByProduct, "totalPrice", 0);
 
-    await model.Order.update({
-      orderStatus: "cancelled",
-    },{
-      where: {
-        email: email,
-        orderStatus: "cart",
+    await model.Order.update(
+      {
+        orderStatus: "cancelled",
       },
-    });
+      {
+        where: {
+          email: email,
+          orderStatus: "cart",
+        },
+      }
+    );
 
     const getOrder = await model.Order.create({
       email: email,
@@ -872,7 +873,7 @@ async function addToNonUserCart(req, res) {
       orderStatus: "cart",
     });
 
-    console.log(getOrder?.id || getOrder?.dataValues?.id,"getOrder");
+    console.log(getOrder?.id || getOrder?.dataValues?.id, "getOrder");
     const order_id = getOrder?.id || getOrder?.dataValues?.id;
 
     // insert all items into cart
@@ -894,12 +895,12 @@ async function addToNonUserCart(req, res) {
     const nameCustom = cartData.filter((item) =>
       item?.productType.includes("NC-")
     );
-    console.log(nameCustom,"name CustomData");
+    console.log(nameCustom, "name CustomData");
     if (!isEmpty(nameCustom)) {
       console.log("Addding to namecustom data");
       const namCustomItems = nameCustom.map((item) => {
         const filePath = "./services/pdf/review.pdf";
-        uploadFileToS3(res, null, filePath,email);
+        uploadFileToS3(res, null, filePath, email);
         return {
           customName: item?.name,
           quantity: item?.quantity,
@@ -939,7 +940,7 @@ async function addToNonUserCart(req, res) {
       message: "Cart Updated Successfully",
     });
   } catch (error) {
-    console.log("Add to cart======",error);
+    console.log("Add to cart======", error);
     return res.json({
       success: false,
       message: error.message,

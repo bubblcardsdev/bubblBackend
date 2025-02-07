@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable quotes */
 /* eslint-disable no-useless-catch */
 /* eslint-disable no-case-declarations */
@@ -17,34 +18,37 @@ async function initialePay(req, res) {
   try {
     const paymentObj = req.body;
     const orderId = paymentObj.orderId;
-    console.log("orderId-------------------------------------",orderId);
+    console.log("orderId-------------------------------------", orderId);
     let getDataForPayment;
 
-    if (Number(paymentObj.orderType) === 0 || Number(paymentObj.orderType) === 2) {
+    if (
+      Number(paymentObj.orderType) === 0 ||
+      Number(paymentObj.orderType) === 2
+    ) {
       getDataForPayment = await getDataForPaymentService(orderId);
-    }
-    else {
+    } else {
       getDataForPayment = await getDataForPlanPaymentService(
         paymentObj.planType
       );
     }
 
-    console.log(getDataForPayment,"getDataForPayment");
+    console.log(getDataForPayment, "getDataForPayment");
     const orderType = paymentObj.orderType;
     const cost =
       getDataForPayment.shippingCost !== undefined
         ? Number(getDataForPayment.shippingCost)
         : 0;
-        console.log(cost,"cost");
+    console.log(cost, "cost");
     const val = getDataForPayment.totalPrice;
     const value = val + cost;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
-    let token = orderType == 2 ? btoa(getDataForPayment?.email) : paymentObj.token;
+    let token =
+      orderType == 2 ? btoa(getDataForPayment?.email) : paymentObj.token;
     const shippingCost = cost.toString();
 
-    console.log(value,"value");
-    console.log(token,"token",orderType);
+    console.log(value, "value");
+    console.log(token, "token", orderType);
 
     //  const cost =
     //       paymentObj.shippingCost !== undefined
@@ -80,7 +84,7 @@ async function initialePay(req, res) {
       accessCode +
       '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
 
-    console.log("encRequest-----------------",encRequest,"-----------------");
+    console.log("encRequest-----------------", encRequest, "-----------------");
     console.log(formbody);
 
     // Configure Nodemailer
@@ -142,8 +146,8 @@ async function verifyPayment(req, res) {
 
     const token = atob(obj.merchant_param1);
     let userId = 0;
-    
-    if(obj?.billing_address != "2"){
+
+    if (obj?.billing_address != "2") {
       try {
         const tokenData = jwt.verify(token, config.accessSecret);
         userId = tokenData.id;
@@ -170,7 +174,7 @@ async function verifyPayment(req, res) {
             {
               transactionId: obj.tracking_id,
               bankRefNo: obj.bank_ref_no,
-              customerId: userId,
+              // customerId: userId,
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
@@ -271,80 +275,85 @@ async function verifyPayment(req, res) {
               jwtToken: token,
             },
           });
-        case "2" : await model.Payment.update(
-          {
-            transactionId: obj.tracking_id,
-            bankRefNo: obj.bank_ref_no,
-            email: token,
-            paymentStatus: successEnum[obj.order_status],
-            failureMessage: obj.failure_message,
-            shippingCharge: shippingCost,
-          },
-          {
-            where: {
-              orderId: Number(obj.order_id),
+        case "2":
+          await model.Payment.update(
+            {
+              transactionId: obj.tracking_id,
+              bankRefNo: obj.bank_ref_no,
+              email: token,
+              paymentStatus: successEnum[obj.order_status],
+              failureMessage: obj.failure_message,
+              shippingCharge: shippingCost,
             },
-          }
-        );
-        await model.Order.update(
-          {
-            orderStatus: "Paid",
-          },
-          {
-            where: {
-              id: Number(obj.order_id),
+            {
+              where: {
+                orderId: Number(obj.order_id),
+              },
+            }
+          );
+          await model.Order.update(
+            {
+              orderStatus: "Paid",
             },
-          }
-        );
-        // if the payment is successful, email send to user
-        const checkStatus = await model.Payment.findOne({
-          where: {
-            orderId: obj.order_id,
-            paymentStatus: true,
-          },
-        });
-
-        if (checkStatus) {
-          const checkDeviceType = await model.Cart.findAll({
+            {
+              where: {
+                id: Number(obj.order_id),
+              },
+            }
+          );
+          // if the payment is successful, email send to user
+          const checkStatus = await model.Payment.findOne({
             where: {
               orderId: obj.order_id,
+              paymentStatus: true,
             },
           });
 
-          // const filterObj = checkDeviceType.find((obj) =>
-          //   obj.productType.includes("NC-")
-          // );
+          if (checkStatus) {
+            const checkDeviceType = await model.Cart.findAll({
+              where: {
+                orderId: obj.order_id,
+              },
+            });
 
-          // const filePath = "../services/pdf/"
+            // const filterObj = checkDeviceType.find((obj) =>
+            //   obj.productType.includes("NC-")
+            // );
 
-          const checkCustomImage = await model.CustomCards.findAll({
-            where: {
+            // const filePath = "../services/pdf/"
+
+            const checkCustomImage = await model.CustomCards.findAll({
+              where: {
+                orderId: obj.order_id,
+              },
+            });
+            // const filePath = "../services/pdf/review.pdf";
+
+            // uploadFileToS3(res, userId, filePath);
+
+            if (checkDeviceType.includes("NC-")) {
+              NameCustomEmail(checkCustomImage, obj.order_id);
+            } else {
+              OrderConfirmationMail(
+                checkCustomImage,
+                obj.order_id,
+                userId,
+                token
+              );
+            }
+          }
+
+          return res.json({
+            success: true,
+            data: {
+              status: obj.order_status,
               orderId: obj.order_id,
+              paymentMode: obj.payment_mode,
+              orderType: obj.billing_address,
+              email: token,
+              shippingCharge: shippingCost,
             },
           });
-          // const filePath = "../services/pdf/review.pdf";
-
-          // uploadFileToS3(res, userId, filePath);
-
-          if (checkDeviceType.includes("NC-")) {
-            NameCustomEmail(checkCustomImage, obj.order_id);
-          } else {
-            OrderConfirmationMail(checkCustomImage, obj.order_id, userId,token);
-          }
-        }
-
-        return res.json({
-          success: true,
-          data: {
-            status: obj.order_status,
-            orderId: obj.order_id,
-            paymentMode: obj.payment_mode,
-            orderType: obj.billing_address,
-            email:token,
-            shippingCharge: shippingCost,
-          },
-        });
-
       }
     } else {
       switch (obj.billing_address) {
@@ -387,21 +396,22 @@ async function verifyPayment(req, res) {
               paymentMode: obj.payment_mode,
             },
           });
-        case "2" :   await model.Payment.update({
-          transactionId: obj.tracking_id,
-          bankRefNo: obj.bank_ref_no,
-          email:token,
-          orderId: obj.order_id,
-          paymentStatus: successEnum[obj.order_status],
-          failureMessage: obj.failure_message,
-          shippingCharge: shippingCost,
-        });
-        // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
-        return res.json({
-          success: false,
-          orderType: obj.billing_address,
-          message: obj.failure_message,
-        });
+        case "2":
+          await model.Payment.update({
+            transactionId: obj.tracking_id,
+            bankRefNo: obj.bank_ref_no,
+            email: token,
+            orderId: obj.order_id,
+            paymentStatus: successEnum[obj.order_status],
+            failureMessage: obj.failure_message,
+            shippingCharge: shippingCost,
+          });
+          // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
+          return res.json({
+            success: false,
+            orderType: obj.billing_address,
+            message: obj.failure_message,
+          });
       }
     }
   } catch (error) {
@@ -441,104 +451,103 @@ async function getShippingCharge(req, res) {
 
 async function getDataForPaymentService(orderId) {
   try {
-    console.log(orderId,"orderId");
+    console.log(orderId, "orderId");
+
     const getOrderDetails = await model.Order.findOne({
-      where: {
-        id: orderId,
-      },
+      where: { id: orderId },
     });
-    console.log(getOrderDetails,"getOrderDetails");
-    if (!getOrderDetails) {
-      throw new Error("Order not found");
-    }
+    if (!getOrderDetails) throw new Error("Order not found");
 
-    const cartItems = await model.Cart.findAll({
-      where: {
-        orderId: orderId,
-      },
-    });
-    if (!cartItems) {
+    const cartItems = await model.Cart.findAll({ where: { orderId } });
+    if (!cartItems || cartItems.length === 0)
       throw new Error("CartItems not found");
-    }
-    const totalQuantity = cartItems.reduce((accumulator, item) => {
-      return accumulator + item.quantity;
-    }, 0);
 
-    let totalPrice = getOrderDetails.totalPrice;
-    let discountPercentage = 0;
+    // Discount Logic
+    const discountedTypes = ["Card", "Socket", "Tile", "Bundle Devices"];
+    const cartData = cartItems.map((item) => item.dataValues);
+
+    const discountEligibleItems = cartData.filter(
+      (item) =>
+        item.productType !== "Full Custom" &&
+        item.productType !== "NC-Pattern" &&
+        discountedTypes.includes(item.productType)
+    );
+
+    const nondiscountEligibleItems = cartData.filter(
+      (item) => !discountEligibleItems.some((d) => d.id === item.id)
+    );
+
+    // Calculate total quantity of discount-eligible items
+    const totalQuantity = discountEligibleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    // console.log(totalQuantity, "totalQuantity");
+
+    let totalDiscountPrice = discountEligibleItems.reduce(
+      (sum, item) => sum + item.productPrice,
+      0
+    );
+
+    let totalNonDiscountPrice = nondiscountEligibleItems.reduce(
+      (sum, item) => sum + item.productPrice,
+      0
+    );
+
+    console.log(totalDiscountPrice, totalNonDiscountPrice, "totalPrice");
     let discountAmount = 0;
+    let discountedTotal = 0;
+    let appliedDiscountRate = 0;
 
-    if (totalQuantity === 1) {
-      totalPrice = totalPrice * 0.6; // 40% Discount
-      discountPercentage = 40;
-      discountAmount = getOrderDetails.totalPrice * 0.4;
-    } else if (totalQuantity === 2) {
-      totalPrice = totalPrice * 0.5; // 50% Discount
-      discountPercentage = 50;
-      discountAmount = getOrderDetails.totalPrice * 0.5;
-    } else {
-      totalPrice = totalPrice * 0.4; // 60% Discount
-      discountPercentage = 60;
-      discountAmount = getOrderDetails.totalPrice * 0.6;
-    }
+    // Determine correct discount rate
+    let discountRate = 0.4;
+    if (totalQuantity === 1) discountRate = 0.6; // 40%
+    else if (totalQuantity === 2) discountRate = 0.5; //50%
+    else if (totalQuantity >= 3) discountRate = 0.4; //60%
+
+    // console.log(discountRate * totalDiscountPrice);
+    // console.log(discountRate * totalDiscountPrice + totalNonDiscountPrice);
+
+    const afterDiscountPrice = Math.round(discountRate * totalDiscountPrice);
+
+    // Standardize final prices
+    let totalPrice = afterDiscountPrice + totalNonDiscountPrice;
+    // eslint-disable-next-line no-unused-vars
+    discountedTotal = Math.round(discountedTotal);
+    discountAmount = Math.round((1 - discountRate) * totalDiscountPrice);
 
     await model.Order.update(
       {
-        discountPercentage: discountPercentage,
-        discountAmount: discountAmount,
-        soldPrice: totalPrice,
+        discountPercentage: (1 - discountRate) * 100,
+        discountAmount: Math.round(discountAmount),
+        soldPrice: Math.round(totalPrice),
       },
-      {
-        where: {
-          id: orderId,
-        },
-      }
+      { where: { id: orderId } }
     );
 
-    const shipping = await model.Shipping.findOne({
-      where: {
-        orderId: orderId,
-      },
-    });
-    console.log(shipping,"shipping");
-  let cost;
-    if (!shipping) {
-      cost = "0";
-    }
+    const shipping = await model.Shipping.findOne({ where: { orderId } });
+    if (!shipping)
+      console.warn("No shipping record found for orderId:", orderId);
 
-    const shippingCountry = shipping.country;
-  
+    const shippingCountry = shipping?.country || "default";
     const shipCost = await model.ShippingCharge.findOne({
-      where: {
-        country: shippingCountry.toLowerCase(),
-      },
+      where: { country: shippingCountry.toLowerCase() },
     });
-console.log(shipCost,"shipCost");
-    if (!shipCost) {
-      cost = "500";
-    } else {
-      cost = shipCost.amount;
-    }
 
- let orderObj = {};
-if(getOrderDetails?.customerId){
-   orderObj = {
-    totalPrice: Math.round(totalPrice),
-    customerId: getOrderDetails.customerId,
-    quantity: totalQuantity,
-    shippingCost: cost,
-  };
-}
-else {
-   orderObj = {
-    totalPrice: Math.round(totalPrice),
-    email: getOrderDetails.email,
-    quantity: totalQuantity,
-    shippingCost: cost,
-  };
-}
+    let cost = shipCost ? shipCost.amount : "500"; // Default shipping cost if not found
+
+    let orderObj = {
+      totalPrice: Math.round(totalPrice),
+      email: getOrderDetails.customerId || getOrderDetails.email,
+      quantity: totalQuantity,
+      shippingCost: cost,
+    };
+
+    console.log(orderObj, "Final Order Object Sent to Payment");
     return orderObj;
   } catch (error) {
+    console.error("Error in getDataForPaymentService:", error);
     throw error;
   }
 }
@@ -573,7 +582,5 @@ async function getDataForPlanPaymentService(obj) {
     throw error;
   }
 }
-
-
 
 export { initialePay, verifyPayment, getShippingCharge };

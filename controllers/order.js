@@ -128,7 +128,7 @@ async function getOrderById(req, res) {
     const order = await model.Order.findAll({
       where: {
         id: orderId,
-        customerId: userId,
+        // customerId: userId,
         cancelledOrder: false,
       },
       include: [
@@ -213,7 +213,7 @@ async function getOrderById(req, res) {
       displayNames,
     });
   } catch (error) {
-    console.error(error+"from getOrderById function");
+    console.error(error + "from getOrderById function");
     return res.json({
       success: false,
       message: error.message,
@@ -249,7 +249,7 @@ async function cancelOrder(req, res) {
       });
     }
   } catch (error) {
-    loggers.error(error+"from cancelOrder function");
+    loggers.error(error + "from cancelOrder function");
     return res.json({
       success: false,
       message: error.message,
@@ -366,7 +366,7 @@ async function checkOut(req, res) {
     }
   } catch (error) {
     console.log(error);
-    loggers.error(error+"from checkOut function");
+    loggers.error(error + "from checkOut function");
     return res.json({
       success: false,
       message: error.message,
@@ -407,7 +407,7 @@ async function checkOutNonUser(req, res) {
     const order = await model.Order.findOne({
       where: {
         id: orderId,
-        email:emailId
+        email: emailId,
       },
     });
     if (order) {
@@ -482,7 +482,7 @@ async function checkOutNonUser(req, res) {
     }
   } catch (error) {
     console.log(error);
-    loggers.error(error+"from checkOut function");
+    loggers.error(error + "from checkOut function");
     return res.json({
       success: false,
       message: error.message,
@@ -540,7 +540,7 @@ async function updateShippingDetails(req, res) {
       });
     }
   } catch (error) {
-    loggers.error(error+"from updateShippingDetails function");
+    loggers.error(error + "from updateShippingDetails function");
     return res.json({
       success: false,
       message: error.message,
@@ -609,7 +609,7 @@ async function proceedPayment(req, res) {
       }
     }
   } catch (error) {
-    loggers.error(error+"from proceedPayment function");
+    loggers.error(error + "from proceedPayment function");
     return res.json({
       success: false,
       message: error.message,
@@ -708,7 +708,7 @@ async function getNonUserOrderById(req, res) {
       displayNames,
     });
   } catch (error) {
-    console.error(error+"from getOrderById function");
+    console.error(error + "from getOrderById function");
     return res.json({
       success: false,
       message: error.message,
