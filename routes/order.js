@@ -8,11 +8,14 @@ import {
   cancelOrder,
   checkOutNonUser,
   getNonUserOrderById,
+  freeCardDesign,
 } from "../controllers/order.js";
 import { authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
 
+
+router.post("/freeCardDesign",freeCardDesign);
 router.get("/all", authenticateToken, getOrderDetails);
 router.post("/one", authenticateToken, getOrderById);
 router.put("/ship", authenticateToken, updateShippingDetails);

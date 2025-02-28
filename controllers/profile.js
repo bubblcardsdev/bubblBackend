@@ -81,6 +81,11 @@ async function createProfile(req, res) {
       });
 
       if (create) {
+        await model.ProfileInfo.create({
+          userId:userId,
+          profileId: create.id,
+          templateId:1
+        });
         return res.json({
           success: true,
           message: "profile created",
