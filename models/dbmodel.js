@@ -138,6 +138,12 @@ export default function dbModel(sequelize, Sequelize) {
   // User.hasMany(Order);
   AccountDeviceLink.belongsTo(User);
 
+  DeviceInventory.hasMany(NameCustomImages, {
+    foreignKey: "NameCustomDeviceId",
+  });
+  DeviceInventory.hasMany(Cart,{
+    foreignKey: "deviceId",
+  });
   NameDeviceImageInventory.hasMany(NameCustomImages, {
     foreignKey: "NameCustomDeviceId",
   });
@@ -186,6 +192,7 @@ export default function dbModel(sequelize, Sequelize) {
     NameCustomImages,
     ActionLookUp,
     UniqueNameDeviceLink,
-    UserRd
+    UserRd,
+    ProfileInfo
   };
 }

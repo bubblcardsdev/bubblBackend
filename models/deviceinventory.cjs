@@ -34,9 +34,21 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
+      shortDescription: {
+        type: Sequelize.STRING,
+      },
+      productDetails: {
+        type: Sequelize.STRING,
+      },
       availability: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
+      },
+      discountPercentage: {
+        type: Sequelize.INTEGER,
+      },
+      deviceName: {
+        type: Sequelize.STRING,
       },
     },
     {

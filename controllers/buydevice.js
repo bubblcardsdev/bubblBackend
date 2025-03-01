@@ -1,6 +1,7 @@
 import model from "../models/index.js";
 import {
   addToCartSchema,
+  productListSchema,
   addToNonUserCartSchema,
 } from "../validations/cart.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
@@ -9,26 +10,79 @@ import loggers from "../config/logger.js";
 import pkg from "lodash";
 import { uploadFileToS3 } from "../middleware/fileUpload.js";
 const { isEmpty, sumBy } = pkg;
+// import device from "../models/device.cjs";
 
 async function getAllDevices(req, res) {
   try {
-    let devices = await model.DeviceInventory.findAll({});
+    let devices = await model.DeviceInventory.findAll({
+      where: {
+        availability: true,
+      },
+      attributes: {
+        exclude: ["createdAt", "updatedAt"],
+      },
+      include: [
+        {
+          model: model.NameCustomImages,
+          attributes: ["imageUrl"],
+        },
+      ],
+      order: [["id", "ASC"]],
+    });
+    // get all devices types from the table
+    const deviceName = devices.reduce((deviceType, device) => {
+      const deviceNames = device.deviceType;
+      if (!deviceType.includes(deviceNames)) {
+        deviceType.push(deviceNames);
+      }
+      return deviceType;
+    }, []);
 
     devices = await Promise.all(
-      devices.map(async (device) => {
-        let deviceImage = await generateSignedUrl(device.deviceImage);
+      deviceName.map(async (data) => {
+        // Filter the values by device name
+        let dbDataValues = devices.filter(
+          (device) => device.deviceType === data
+        );
+        const colorArray = [];
+        let ProductId = dbDataValues[0].id;
+        let ProductPrice = dbDataValues[0].price;
+        let ProductName = dbDataValues[0].deviceName;
+        let discountPercentage = dbDataValues[0].discountPercentage;
+        let discount = ProductPrice;
+        let deviceImage = null;
+        let secondaryImage = null;
+
+        if (dbDataValues[0].NameCustomImages.length > 0) {
+          deviceImage = dbDataValues[0].NameCustomImages[0].imageUrl;
+          secondaryImage = dbDataValues[0].NameCustomImages[1].imageUrl;
+        }
+        dbDataValues.map(async (data) => {
+          colorArray.push(data.deviceColor);
+        });
+
+        deviceImage = await generateSignedUrl(deviceImage);
+        if (secondaryImage) {
+          secondaryImage = await generateSignedUrl(secondaryImage);
+        }
+
+        if (discountPercentage > 0) {
+          discount = ProductPrice - ProductPrice * (discountPercentage / 100);
+        };
+
         return {
-          id: device.id,
-          deviceType: device.deviceType,
-          deviceColor: device.deviceColor,
-          deviceImage: deviceImage,
-          deviceDescription: device.deviceDescription,
-          price: device.price,
-          availability: device.availability,
+          productId: ProductId,
+          productType: data,
+          productName: ProductName,
+          price: ProductPrice,
+          discount: discountPercentage,
+          sellingPrice: discount,
+          primaryImage: deviceImage,
+          secondaryImage: secondaryImage,
+          colors: colorArray,
         };
       })
     );
-
     return res.json({
       success: true,
       data: {
@@ -45,6 +99,124 @@ async function getAllDevices(req, res) {
       },
     });
   }
+}
+
+async function productList(req, res) {
+  const { id } = req.body;
+  const { error } = productListSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+  const data = await model.DeviceInventory.findOne({
+    where: {
+      id,
+    },
+    include: [
+      {
+        model: model.NameCustomImages,
+        attributes: ["imageUrl"],
+      },
+    ],
+    attributes: {
+      exclude: ["createdAt", "updatedAt"],
+    },
+  });
+  const { deviceType } = data;
+  let devices = await model.DeviceInventory.findAll({
+    where: {
+      deviceType,
+    },
+    include: [
+      {
+        model: model.NameCustomImages,
+        attributes: ["imageUrl"],
+      },
+    ],
+    attributes: {
+      exclude: ["createdAt", "updatedAt"],
+    },
+    order: [["id", "ASC"]],
+  });
+  let colorArray = [];
+  let patternArray = [];
+  let discount = data.price;
+
+  devices.map(async (data) => {
+    if(deviceType.toLowerCase().includes("name")){
+      patternArray.push({
+        pattern: data.deviceColor,
+        id: data.id,
+        image: await generateSignedUrl(data.NameCustomImages[0].imageUrl)
+      });
+    }else{
+      colorArray.push({
+        color: data.deviceColor,
+        id: data.id,
+      });
+    }
+  });
+
+  const dataArray = [];
+  if (data.deviceType.toLowerCase().includes("name")) {
+    const deviceType = [];
+    await Promise.all(
+      devices.map(async (device) => {
+        const deviceNames = device.deviceName;
+        if (!deviceType.includes(deviceNames)) {
+          deviceType.push(deviceNames);
+          const image = await generateSignedUrl(
+            device.NameCustomImages[0].imageUrl
+          );
+          dataArray.push({
+            deviceId: device.id,
+            deviceName: device.deviceName,
+            image: image,
+          });
+        }
+      })
+    );
+  }
+
+  if (data.discountPercentage) {
+    discount =
+      Number(data.price) -
+      Number(data.price) * (Number(data.discountPercentage) / 100);
+  }
+  let primaryImage = null;
+  let secondaryImage = null;
+  if (data.NameCustomImages.length === 2) {
+    primaryImage = await generateSignedUrl(data.NameCustomImages[0].imageUrl);
+    secondaryImage = await generateSignedUrl(data.NameCustomImages[1].imageUrl);
+  } else {
+    throw new Error("Images are missing for products.");
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      product_id: data.id,
+      productType: data.deviceType,
+      productName: data.productName,
+      price: data.price,
+      discount: data.discountPercentage,
+      sellingPrice: discount,
+      shortDesc: data.shortDescription,
+      description: data.deviceDescription,
+      productDetails: data.productDetails,
+      primaryImage: primaryImage,
+      secondaryImage: secondaryImage,
+      colors: colorArray,
+      patterns: patternArray,
+      deviceName: dataArray,
+    },
+  });
 }
 
 async function addToCart(req, res) {
@@ -918,12 +1090,14 @@ async function addToNonUserCart(req, res) {
       console.log("Name custom Data added");
     }
 
-    const fullCustom = cartData.filter((item)=>item?.productType.includes("Full Custom"));
-    console.log(fullCustom,"fullcustom data");
-    if(!isEmpty(fullCustom)){
+    const fullCustom = cartData.filter((item) =>
+      item?.productType.includes("Full Custom")
+    );
+    console.log(fullCustom, "fullcustom data");
+    if (!isEmpty(fullCustom)) {
       console.log("Addding to full custom data");
-      const fullCustomItems = fullCustom.map((item)=>{
-       return {
+      const fullCustomItems = fullCustom.map((item) => {
+        return {
           quantity: item?.quantity,
           productPrice: item?.productPrice,
           email,
@@ -957,4 +1131,5 @@ export {
   getNonUserCart,
   cancelNonUserCart,
   clearCartNonuser,
+  productList,
 };

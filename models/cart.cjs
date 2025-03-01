@@ -56,6 +56,13 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      deviceId: {
+        type: Sequelize.INTEGER,
+        references:{
+          model:"DeviceInventories",
+          key:"id"
+        }
+      }
     },
     {
       sequelize,

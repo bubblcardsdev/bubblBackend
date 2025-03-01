@@ -301,7 +301,7 @@ async function OrderConfirmationMail(
 
           let frontImg = "";
           let backImg = "";
-          const fontColor = getCardTypeDevice[0].fontColor;
+          const fontColor = getCardTypeDevice[0];
 
           await Promise.all(
             getCardTypeDevice[0].NameCustomImages.map(async (device) => {

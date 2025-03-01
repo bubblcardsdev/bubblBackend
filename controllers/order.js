@@ -1,6 +1,8 @@
 import loggers from "../config/logger.js";
+import { bannerEmailClient, bannerEmailSales } from "../helper/mailer.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import model from "../models/index.js";
+import { freeCardDesignSchema } from "../validations/auth.js";
 import { shippingDetails } from "../validations/orderShipping.js";
 
 async function getOrderDetails(req, res) {
@@ -716,6 +718,41 @@ async function getNonUserOrderById(req, res) {
   }
 }
 
+async function freeCardDesign(req, res){
+  const {name, email, phoneNumber} = req.body;
+  const { error } = freeCardDesignSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+  const client = await bannerEmailClient(email, name);
+  const salesMail = "sales@bubbl.cards";
+  // const salesMail = "bubblcards@gmail.com";
+  const sales = await bannerEmailSales(salesMail, phoneNumber, name);
+  if (client && sales){
+    res.json({
+      success: true,
+      data: {
+        message: "Email sent successfully",
+      },
+    });
+  }else{
+    res.json({
+      success: false,
+      data: {
+        message: "Failed to send email",
+      },
+    });
+  }
+
+}
+
 export {
   getOrderDetails,
   getOrderById,
@@ -725,4 +762,5 @@ export {
   cancelOrder,
   checkOutNonUser,
   getNonUserOrderById,
+  freeCardDesign
 };
