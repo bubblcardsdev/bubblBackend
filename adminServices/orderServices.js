@@ -15,7 +15,7 @@ async function getTotalOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt","email","totalPrice"],
+          exclude: ["createdAt", "updatedAt", "email", "totalPrice"],
         },
       },
       {
@@ -68,7 +68,7 @@ async function getShippedOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt","email"],
+          exclude: ["createdAt", "updatedAt", "email"],
         },
       },
       {
@@ -159,7 +159,7 @@ async function getOrderByIdServices(res, orderId, userId) {
     const order = await model.Order.findAll({
       where: {
         id: orderId,
-        customerId: userId,
+        // customerId: userId,
         // cancelledOrder: false,
       },
       include: [
@@ -176,6 +176,7 @@ async function getOrderByIdServices(res, orderId, userId) {
           model: model.Payment,
         },
       ],
+      order: [["id", "DESC"]],
     });
     // func for getting the images for corresponding orders
     let deviceImages = [];

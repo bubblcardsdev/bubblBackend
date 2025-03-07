@@ -840,6 +840,7 @@ async function addToNonUserCart(req, res) {
             },
           });
           item["totalPrice"] = checkNc.price * item?.quantity;
+          item["productPrice"] = checkNc.price;
         } else {
           const checkOthers = await model.DeviceInventory.findOne({
             where: {
@@ -848,6 +849,7 @@ async function addToNonUserCart(req, res) {
             },
           });
           item["totalPrice"] = checkOthers.price * item?.quantity;
+          item["productPrice"] = checkOthers.price;
         }
         return item;
       })
@@ -877,8 +879,9 @@ async function addToNonUserCart(req, res) {
     const order_id = getOrder?.id || getOrder?.dataValues?.id;
 
     // insert all items into cart
-    console.log("Addding to cart");
+
     const cartItems = cartData.map((item) => {
+      console.log("Addding to cart", item);
       return {
         orderId: getOrder?.id,
         productColor: item?.productColor,
@@ -918,12 +921,14 @@ async function addToNonUserCart(req, res) {
       console.log("Name custom Data added");
     }
 
-    const fullCustom = cartData.filter((item)=>item?.productType.includes("Full Custom"));
-    console.log(fullCustom,"fullcustom data");
-    if(!isEmpty(fullCustom)){
+    const fullCustom = cartData.filter((item) =>
+      item?.productType.includes("Full Custom")
+    );
+    console.log(fullCustom, "fullcustom data");
+    if (!isEmpty(fullCustom)) {
       console.log("Addding to full custom data");
-      const fullCustomItems = fullCustom.map((item)=>{
-       return {
+      const fullCustomItems = fullCustom.map((item) => {
+        return {
           quantity: item?.quantity,
           productPrice: item?.productPrice,
           email,
