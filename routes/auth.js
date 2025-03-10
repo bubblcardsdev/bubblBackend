@@ -18,7 +18,7 @@ import {
   verifyEmailOtp,
   resendMailOtp,
   createUserBulkController,
-  createUserMobile,
+  createUserMobile, 
   fetchCardDetails,
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
