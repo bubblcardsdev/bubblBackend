@@ -9,7 +9,7 @@ import _profileSocialMediaLink from "./profileSocialMediaLink.cjs";
 import _profileDigitalPayment from "./profileDigitalPayment.cjs";
 import _profileDigitalPaymentLink from "./profileDigitalPaymentLink.cjs";
 import _profileImages from "./profileimages.cjs";
-import _profileInfo from "./profileInfo.cjs";
+// import _profileInfo from "./profileInfo.cjs";
 import _device from "./device.cjs";
 import _accountDeviceLink from "./accountdevicelink.cjs";
 import _deviceLink from "./deviceLink.cjs";
@@ -118,11 +118,11 @@ export default function dbModel(sequelize, Sequelize) {
   DeviceLink.belongsTo(Template);
   DeviceLink.belongsTo(Mode);
   DeviceLink.hasMany(DeviceBranding);
-  ProfileInfo.belongsTo(Profile);
-  ProfileInfo.belongsTo(Template);
-  User.hasMany(ProfileInfo);
-  Template.hasMany(ProfileInfo);
-  Profile.hasOne(ProfileInfo);
+  // ProfileInfo.belongsTo(Profile);
+  // ProfileInfo.belongsTo(Template);
+  // User.hasMany(ProfileInfo);
+  // Template.hasMany(ProfileInfo);
+  // Profile.hasOne(ProfileInfo);
   DeviceBranding.belongsTo(DeviceLink);
   Order.hasMany(Cart);
   Order.hasMany(Shipping);
@@ -188,6 +188,6 @@ export default function dbModel(sequelize, Sequelize) {
     ActionLookUp,
     UniqueNameDeviceLink,
     UserRd,
-    ProfileInfo
+    // ProfileInfo
   };
 }
