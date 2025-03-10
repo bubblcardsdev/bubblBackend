@@ -164,6 +164,8 @@ async function verifyPayment(req, res) {
         id: Number(obj.order_id),
       },
     });
+    console.log(getOrderDetails, "getOrderDetails");
+    console.log(obj, "obj");
     if (successEnum[obj.order_status] === true) {
       // const cost = obj.merchant_param2;
       // const shippingCost = Number(cost);
