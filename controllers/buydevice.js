@@ -840,7 +840,6 @@ async function addToNonUserCart(req, res) {
             },
           });
           item["totalPrice"] = checkNc.price * item?.quantity;
-          item["productPrice"] = checkNc.price;
         } else {
           const checkOthers = await model.DeviceInventory.findOne({
             where: {
@@ -849,7 +848,6 @@ async function addToNonUserCart(req, res) {
             },
           });
           item["totalPrice"] = checkOthers.price * item?.quantity;
-          item["productPrice"] = checkOthers.price;
         }
         return item;
       })
@@ -881,7 +879,6 @@ async function addToNonUserCart(req, res) {
     // insert all items into cart
 
     const cartItems = cartData.map((item) => {
-      console.log("Addding to cart", item);
       return {
         orderId: getOrder?.id,
         productColor: item?.productColor,
@@ -927,8 +924,8 @@ async function addToNonUserCart(req, res) {
     console.log(fullCustom, "fullcustom data");
     if (!isEmpty(fullCustom)) {
       console.log("Addding to full custom data");
-      const fullCustomItems = fullCustom.map((item) => {
-        return {
+      const fullCustomItems = fullCustom.map((item)=>{
+       return {
           quantity: item?.quantity,
           productPrice: item?.productPrice,
           email,

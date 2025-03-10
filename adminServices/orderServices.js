@@ -15,7 +15,7 @@ async function getTotalOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt", "email", "totalPrice"],
+          exclude: ["createdAt", "updatedAt","email","totalPrice"],
         },
       },
       {
@@ -68,7 +68,7 @@ async function getShippedOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt", "email"],
+          exclude: ["createdAt", "updatedAt","email"],
         },
       },
       {
@@ -106,11 +106,13 @@ async function getShippedOrderServices() {
   return orderId;
 }
 
+
 // function for getting Cont for the Orders
 async function getCountServices() {
   const orderCount = model.Order.count();
   return orderCount;
 }
+
 
 // function for getting count for the pendingOrders
 
@@ -176,7 +178,6 @@ async function getOrderByIdServices(res, orderId, userId) {
           model: model.Payment,
         },
       ],
-      order: [["id", "DESC"]],
     });
     // func for getting the images for corresponding orders
     let deviceImages = [];
