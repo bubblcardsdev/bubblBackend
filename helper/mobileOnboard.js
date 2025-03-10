@@ -34,11 +34,11 @@ export default async function MobileOnboardingProfileCreate(
   
 
   if (create) {
-    await model.ProfileInfo.create({
-      userId: userId,
-      profileId: create.id,
-      templateId: templateId,
-    });
+    // await model.ProfileInfo.create({
+    //   userId: userId,
+    //   profileId: create.id,
+    //   templateId: templateId,
+    // });
     await model.ProfilePhoneNumber.create({
       profileId: create.id,
       phoneNumber: phoneNumber,
