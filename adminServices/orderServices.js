@@ -1,6 +1,6 @@
 import model from "../models/index.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
-
+ 
 // function for getting all false shipping Orders
 async function getTotalOrderServices() {
   const orderId = await model.Order.findAll({
@@ -15,7 +15,7 @@ async function getTotalOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt","email","totalPrice"],
+          exclude: ["createdAt", "updatedAt", "email", "totalPrice"],
         },
       },
       {
@@ -53,7 +53,7 @@ async function getTotalOrderServices() {
   });
   return orderId;
 }
-
+ 
 // function for getting all true shipping Orders
 async function getShippedOrderServices() {
   const orderId = await model.Order.findAll({
@@ -68,7 +68,7 @@ async function getShippedOrderServices() {
       {
         model: model.Payment,
         attributes: {
-          exclude: ["createdAt", "updatedAt","email"],
+          exclude: ["createdAt", "updatedAt", "email"],
         },
       },
       {
@@ -115,7 +115,7 @@ async function getCountServices() {
 
 
 // function for getting count for the pendingOrders
-
+ 
 async function PendingOrderCountServices() {
   const pendingOrders = await model.Shipping.findAll({
     where: {
@@ -125,7 +125,7 @@ async function PendingOrderCountServices() {
   const pendingOrderCount = pendingOrders.length;
   return pendingOrderCount;
 }
-
+ 
 // get orders by orderId
 // async function getOrderByIdServices(res, orderId) {
 //   const checkOrderId = await model.Cart.findOne({
@@ -155,7 +155,7 @@ async function PendingOrderCountServices() {
 //   const cartDetails = await model.Cart.findAll();
 //   return cartDetails;
 // }
-
+ 
 async function getOrderByIdServices(res, orderId, userId) {
   try {
     const order = await model.Order.findAll({
@@ -178,6 +178,7 @@ async function getOrderByIdServices(res, orderId, userId) {
           model: model.Payment,
         },
       ],
+      order: [["id", "DESC"]],
     });
     // func for getting the images for corresponding orders
     let deviceImages = [];
@@ -199,9 +200,9 @@ async function getOrderByIdServices(res, orderId, userId) {
                 cardView: false,
               },
             });
-
+ 
             const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
-
+ 
             return itemImg;
           }
         } else {
@@ -211,7 +212,7 @@ async function getOrderByIdServices(res, orderId, userId) {
               deviceColor: cartVal.productColor,
             },
           });
-
+ 
           const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
           return itemImg;
         }
@@ -247,13 +248,13 @@ async function getOrderByIdServices(res, orderId, userId) {
     //       },
     //     ],
     //   });
-
+ 
     //   // func for getting the images for corresponding orders
     //   let deviceImages = [];
     //   let deviceInventory = "";
-
+ 
     //   console.log(order, deviceImages, "deviceImages deviceImages deviceImages");
-
+ 
     //   // deviceImages = await Promise.all(
     //   //   order[0]?.Carts.map(async (cartVal) => {
     //   //     console.log(cartVal, "cartVal cartVal cartVal cartVal");
@@ -271,9 +272,9 @@ async function getOrderByIdServices(res, orderId, userId) {
     //   //             cardView: true,
     //   //           },
     //   //         });
-
+ 
     //   //         const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
-
+ 
     //   //         return itemImg;
     //   //       }
     //   //     } else {
@@ -283,7 +284,7 @@ async function getOrderByIdServices(res, orderId, userId) {
     //   //           deviceColor: cartVal.productColor,
     //   //         },
     //   //       });
-
+ 
     //   //       const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
     //   //       return itemImg;
     //   //     }
@@ -298,11 +299,11 @@ async function getOrderByIdServices(res, orderId, userId) {
     //   //       },
     //   //     });
     //   //     const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
-
+ 
     //   //     return itemImg;
     //   //   })
     //   // );
-
+ 
     //   return res.json({
     //     success: true,
     //     message: "Order Details",
@@ -344,7 +345,7 @@ async function updateOrderStatusServices(res, userId, orderId, orderStatus) {
     });
   }
 }
-
+ 
 export {
   getTotalOrderServices,
   getCountServices,
