@@ -66,17 +66,26 @@ async function initialePay(req, res) {
  
     let encRequest = "";
     let formbody = "";
- 
-    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
- 
-    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
- 
+
+    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+
+    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+
     // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
     encRequest = encrypt(bodyData, workingKey);
     const POST = qs.parse(bodyData);
- 
-    formbody =
-      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+// live
+    // formbody =
+    //   '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+    //   POST.merchant_id +
+    //   "&encRequest=" +
+    //   encRequest +
+    //   "&access_code=" +
+    //   accessCode +
+    //   '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
+// test
+      formbody =
+      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
       POST.merchant_id +
       "&encRequest=" +
       encRequest +
@@ -461,64 +470,64 @@ async function getDataForPaymentService(orderId) {
     const cartItems = await model.Cart.findAll({ where: { orderId } });
     if (!cartItems || cartItems.length === 0)
       throw new Error("CartItems not found");
- 
+
     //#region - Discount logic
- 
+
     // Discount Logic
     // const discountedTypes = ["Card", "Socket", "Tile", "Bundle Devices"];
     // const cartData = cartItems.map((item) => item.dataValues);
- 
+
     // const discountEligibleItems = cartData.filter(
     //   (item) =>
     //     item.productType !== "Full Custom" &&
     //     item.productType !== "NC-Pattern" &&
     //     discountedTypes.includes(item.productType)
     // );
- 
+
     // const nondiscountEligibleItems = cartData.filter(
     //   (item) => !discountEligibleItems.some((d) => d.id === item.id)
     // );
- 
+
     // // Calculate total quantity of discount-eligible items
     // const totalQuantity = discountEligibleItems.reduce(
     //   (sum, item) => sum + item.quantity,
     //   0
     // );
- 
+
     // // console.log(totalQuantity, "totalQuantity");
- 
+
     // let totalDiscountPrice = discountEligibleItems.reduce(
     //   (sum, item) => sum + item.productPrice,
     //   0
     // );
- 
+
     // let totalNonDiscountPrice = nondiscountEligibleItems.reduce(
     //   (sum, item) => sum + item.productPrice,
     //   0
     // );
- 
+
     // console.log(totalDiscountPrice, totalNonDiscountPrice, "totalPrice");
     // let discountAmount = 0;
     // let discountedTotal = 0;
     // let appliedDiscountRate = 0;
- 
+
     // // Determine correct discount rate
     // let discountRate = 0.4;
     // if (totalQuantity === 1) discountRate = 0.6; // 40%
     // else if (totalQuantity === 2) discountRate = 0.5; //50%
     // else if (totalQuantity >= 3) discountRate = 0.4; //60%
- 
+
     // // console.log(discountRate * totalDiscountPrice);
     // // console.log(discountRate * totalDiscountPrice + totalNonDiscountPrice);
- 
+
     // const afterDiscountPrice = Math.round(discountRate * totalDiscountPrice);
- 
+
     // // Standardize final prices
     // let totalPrice = afterDiscountPrice + totalNonDiscountPrice;
     // // eslint-disable-next-line no-unused-vars
     // discountedTotal = Math.round(discountedTotal);
     // discountAmount = Math.round((1 - discountRate) * totalDiscountPrice);
- 
+
     // await model.Order.update(
     //   {
     //     discountPercentage: (1 - discountRate) * 100,
@@ -527,17 +536,17 @@ async function getDataForPaymentService(orderId) {
     //   },
     //   { where: { id: orderId } }
     // );
- 
+
     //#endregion
- 
+
     const totalQuantity = cartItems.reduce(
       (accumulator, item) => accumulator + item.quantity,
       0
     );
- 
+
     let totalPrice = getOrderDetails.totalPrice;
     console.log(totalPrice, totalQuantity, "tamil");
- 
+
     const updateOrder = await model.Order.update(
       {
         totalPrice: totalPrice,

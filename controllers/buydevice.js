@@ -879,7 +879,7 @@ async function addToNonUserCart(req, res) {
     const order_id = getOrder?.id || getOrder?.dataValues?.id;
  
     // insert all items into cart
- 
+
     const cartItems = cartData.map((item) => {
       console.log("Addding to cart", item);
       return {
@@ -920,7 +920,7 @@ async function addToNonUserCart(req, res) {
       await model.CustomCards.bulkCreate(namCustomItems);
       console.log("Name custom Data added");
     }
- 
+
     const fullCustom = cartData.filter((item) =>
       item?.productType.includes("Full Custom")
     );

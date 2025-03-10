@@ -105,13 +105,15 @@ async function getShippedOrderServices() {
   });
   return orderId;
 }
- 
+
+
 // function for getting Cont for the Orders
 async function getCountServices() {
   const orderCount = model.Order.count();
   return orderCount;
 }
- 
+
+
 // function for getting count for the pendingOrders
  
 async function PendingOrderCountServices() {
@@ -160,14 +162,14 @@ async function getOrderByIdServices(res, orderId, userId) {
       where: {
         id: orderId,
         // customerId: userId,
-        cancelledOrder: false,
+        // cancelledOrder: false,
       },
       include: [
         {
           model: model.Cart,
-          where: {
-            productStatus: true,
-          },
+          // where: {
+          //   productStatus: true,
+          // },
         },
         {
           model: model.Shipping,
@@ -181,8 +183,8 @@ async function getOrderByIdServices(res, orderId, userId) {
     // func for getting the images for corresponding orders
     let deviceImages = [];
     let deviceInventory = "";
- 
-    deviceImages = await Promise.all(
+    
+    if(order.length > 0){deviceImages = await Promise.all(
       order[0]?.Carts?.map(async (cartVal) => {
         if (cartVal.productType.includes("NC-")) {
           const getImageId = await model.NameDeviceImageInventory.findOne({
@@ -215,8 +217,8 @@ async function getOrderByIdServices(res, orderId, userId) {
           return itemImg;
         }
       })
-    );
- 
+    );}
+
     return res.json({
       success: true,
       message: "Order Details",

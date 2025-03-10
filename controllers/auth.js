@@ -22,17 +22,21 @@ import {
   updateUserSchema,
   verifyEmailOtpSchema,
   resendMailOtpSchema,
+  createMobileUserSchema,
+  verifyLinkedinUserSchemaMobile,
 } from "../validations/auth.js";
+// import { createProfile } from "../controllers/profile.js";
 import config from "../config/config.js";
 import { sendMessage } from "../middleware/sms.js";
-import NameCustomEmail from "./namCustomEmail.js";
-import OrderConfirmationMail from "./orderEmail.js";
+// import NameCustomEmail from "./namCustomEmail.js";
+// import OrderConfirmationMail from "./orderEmail.js";
 
 import { hashPassword, comparePassword } from "../middleware/secure.js";
 import { verifyGoogleAccount } from "../middleware/google.js";
 import { verifyFacebookAccount } from "../middleware/facebook.js";
 import { verifyLinkedinAccount } from "../middleware/linkedin.js";
 import loggers from "../config/logger.js";
+import MobileOnboardingProfileCreate from "../helper/mobileOnboard.js";
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000);
@@ -68,7 +72,7 @@ async function issueNewToken(req, res) {
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { email, password, isMobile } = req.body;
   const { error } = loginSchema.validate(req.body, {
     abortEarly: false,
   });
@@ -85,11 +89,22 @@ async function login(req, res) {
 
   try {
     const checkUser = await model.User.findOne({ where: { email } });
+    if (!checkUser) {
+      return res.json({
+        success: false,
+        data: {
+          message: "Email or password is incorrect",
+        },
+      });
+    }
+    // For Mobile
+    const Profile = await model.Profile.findOne({
+      where: { userId: checkUser.id },
+    });
     const comparedPassword = await comparePassword(
       password,
       checkUser.password
     );
-    console.log(checkUser,comparedPassword)
     if (checkUser && comparedPassword) {
       const {
         id,
@@ -120,12 +135,9 @@ async function login(req, res) {
         } else {
           const otp = generateOtp();
 
-          await model.User.update(
-            { otp },
-            { where: { email } }
-          ); 
+          await model.User.update({ otp }, { where: { email } });
           const emailParse = email.toLowerCase();
-          const subject = `Welcome to Bubbl.cards – Let’s Get Started!`
+          const subject = "Welcome to Bubbl.cards – Let’s Get Started!";
           const emailMessage = `
       
           <h2>Hello <strong>${firstName}</strong>,</h2>
@@ -143,7 +155,7 @@ async function login(req, res) {
           <p>Best wishes,</p>
       
           <p>The Bubbl.cards Team</p>`;
-      
+
           await sendMail(emailParse, subject, emailMessage);
           return res.json({
             success: true,
@@ -160,6 +172,50 @@ async function login(req, res) {
       const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
       const refreshToken = await generateRefreshToken(user);
       const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+      if (isMobile) {
+        if (Profile) {
+          return res.json({
+            success: true,
+            data: {
+              message: "Logged in successfully",
+              firstName,
+              lastName,
+              email,
+              phoneNumber,
+              phoneVerified,
+              emailVerified,
+              token: {
+                accessToken,
+                accessTokenExpiryInSeconds,
+                refreshToken,
+                refreshTokenExpiryInSeconds,
+              },
+              profileId: Profile.id,
+              isProfileAvailable: true,
+            },
+          });
+        } else {
+          return res.json({
+            success: true,
+            data: {
+              message: "Logged in successfully",
+              firstName,
+              lastName,
+              email,
+              phoneNumber,
+              phoneVerified,
+              emailVerified,
+              token: {
+                accessToken,
+                accessTokenExpiryInSeconds,
+                refreshToken,
+                refreshTokenExpiryInSeconds,
+              },
+              isProfileAvailable: false,
+            },
+          });
+        }
+      }
       return res.json({
         success: true,
         data: {
@@ -419,8 +475,150 @@ async function createUserBulkController(req, res) {
 }
 
 
+
+async function createUserMobile(req, res) {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    profileName,
+    phoneNumber,
+    companyName,
+    templateId,
+    designation
+  } = req.body;
+  const { error } = createMobileUserSchema.validate(req.body, { abortEarly: false });
+
+  if (error) {
+    console.log(error); 
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+  const emailParse = email.toLowerCase();
+
+  try {
+    const checkUser = await model.User.findOne({
+      where: {
+        email: emailParse,
+      },
+    });
+    
+    if (checkUser && (checkUser.signupType === "local" || checkUser.password.trim().length !== 0)) {
+      console.log("ttaammiill",checkUser.password.trim().length !== 0);
+      return res.json({
+        success: false,
+        data: {
+          message: "Email already exists",
+          phoneVerified: checkUser.phoneVerified,
+          emailVerified: checkUser.emailVerified,
+        },
+      });
+    }
+    const hashedPassword = await hashPassword(password);
+    if(!checkUser){
+    const user = await model.User.create({
+      firstName: firstName,
+      lastName: lastName,
+      email: emailParse,
+      password: hashedPassword,
+      local: true,
+      phoneVerified: true,
+    });
+    let createProfileMobile;
+    if (user) {
+      await model.BubblPlanManagement.create({
+        userId: user.id,
+        planId: 1,
+        subscriptionType: "free",
+        isValid: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await model.ClaimLink.create({
+        userId: user.id,
+      });
+      await model.UniqueNameDeviceLink.create({
+        userId: user.id,
+      });
+      const userId = user.id;
+      createProfileMobile = createProfileMobile = await MobileOnboardingProfileCreate( firstName,
+        lastName,
+        email,
+        profileName,
+        phoneNumber,
+        companyName,
+        templateId,
+        designation,
+        userId);
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        message: "User and Profile created successfully",
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneVerified: user.phoneVerified,
+        emailVerified: user.emailVerified,
+        local: user.local,
+        signupType: user.signupType,
+        profileId: createProfileMobile && createProfileMobile.id,
+        verifying: true,
+      },
+    });
+  } 
+  else {
+    const userId = checkUser.id;
+    await model.User.update({
+      password: hashedPassword,
+    },{where:{id:checkUser.id}});
+    const createProfileMobile = await MobileOnboardingProfileCreate( firstName,
+      lastName,
+      email,
+      profileName,
+      phoneNumber,
+      companyName,
+      templateId,
+      designation,
+      userId);
+      return res.json({
+        success: true,
+        data: {
+          message: "Profile created successfully and User password updated successfully",
+          userProfile:createProfileMobile.id,
+          verifying: false,
+        },
+      });
+  }
+  } catch (error) {
+    console.log(error.message, "ee");
+    loggers.error(error + "from createUser function");
+    if (error instanceof UniqueConstraintError) {
+      await model.User.findOne({ where: { email } });
+      return res.json({
+        success: false,
+        data: {
+          message: `${error.errors[0].path} already exists`,
+        },
+      });
+    }
+    return res.json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+}
+
 async function verifyGoogleUser(req, res) {
-  const { credential } = req.body;
+  const { credential, isMobile } = req.body;
 
   const { error } = verifyGoogleUserSchema.validate(req.body, {
     abortEarly: false,
@@ -475,6 +673,10 @@ async function verifyGoogleUser(req, res) {
     const checkUser = await model.User.findOne({
       where: { email: payloadEmail },
     });
+    // For Mobile
+    const Profile = await model.Profile.findOne({
+      where: { userId: checkUser.id },
+    });
 
     const { id, firstName, lastName, email, emailVerified } = checkUser;
     const user = { id, firstName, lastName, email };
@@ -483,6 +685,47 @@ async function verifyGoogleUser(req, res) {
     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
     const refreshToken = await generateRefreshToken(user);
     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    if (isMobile) {
+      if (Profile) {
+        return res.json({
+          success: true,
+          data: {
+            message: "Google Account verified successfully",
+            firstName,
+            lastName,
+            email,
+            emailVerified,
+            token: {
+              accessToken,
+              accessTokenExpiryInSeconds,
+              refreshToken,
+              refreshTokenExpiryInSeconds,
+            },
+            profileId: Profile.id,
+            isProfileAvailable: true,
+          },
+        });
+      } else {
+        return res.json({
+          success: true,
+          data: {
+            message: "Google Account verified successfully",
+            firstName,
+            lastName,
+            email,
+            emailVerified,
+            token: {
+              accessToken,
+              accessTokenExpiryInSeconds,
+              refreshToken,
+              refreshTokenExpiryInSeconds,
+            },
+            isProfileAvailable: false,
+          },
+        });
+      }
+    }
     return res.json({
       success: true,
       data: {
@@ -511,7 +754,7 @@ async function verifyGoogleUser(req, res) {
 }
 
 async function verifyFacebookUser(req, res) {
-  const { accesstoken } = req.body;
+  const { accesstoken, isMobile } = req.body;
 
   const { error } = verifyFacebookUserSchema.validate(req.body, {
     abortEarly: false,
@@ -567,6 +810,11 @@ async function verifyFacebookUser(req, res) {
       where: { email: payloadEmail },
     });
 
+    // For Mobile
+    const Profile = await model.Profile.findOne({
+      where: { userId: checkUser.id },
+    });
+
     const { id, firstName, lastName, email, emailVerified } = checkUser;
     const user = { id, firstName, lastName, email };
 
@@ -574,6 +822,47 @@ async function verifyFacebookUser(req, res) {
     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
     const refreshToken = await generateRefreshToken(user);
     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    if (isMobile) {
+      if (Profile) {
+        return res.json({
+          success: true,
+          data: {
+            message: "Facebook Account verified successfully",
+            firstName,
+            lastName,
+            email,
+            emailVerified,
+            token: {
+              accessToken,
+              accessTokenExpiryInSeconds,
+              refreshToken,
+              refreshTokenExpiryInSeconds,
+            },
+            isProfileAvailable: true,
+          },
+        });
+      } else {
+        return res.json({
+          success: true,
+          data: {
+            message: "Facebook Account verified successfully",
+            firstName,
+            lastName,
+            email,
+            emailVerified,
+            token: {
+              accessToken,
+              accessTokenExpiryInSeconds,
+              refreshToken,
+              refreshTokenExpiryInSeconds,
+            },
+            isProfileAvailable: false,
+          },
+        });
+      }
+    }
+
     return res.json({
       success: true,
       data: {
@@ -602,11 +891,15 @@ async function verifyFacebookUser(req, res) {
 }
 
 async function verifyLinkedinUser(req, res) {
-  const { authorizationCode } = req.body;
+  const { authorizationCode, given_name, family_name, Email, isMobile } = req.body;
 
-  const { error } = verifyLinkedinUserSchema.validate(req.body, {
-    abortEarly: false,
-  });
+  const { error } = !isMobile
+    ? verifyLinkedinUserSchema.validate(req.body, {
+        abortEarly: false,
+      })
+    : verifyLinkedinUserSchemaMobile.validate(req.body, {
+        abortEarly: false,
+      });
 
   if (error) {
     return res.json({
@@ -618,7 +911,7 @@ async function verifyLinkedinUser(req, res) {
   }
 
   try {
-    const payload = await verifyLinkedinAccount(authorizationCode);
+    const payload = !isMobile? await verifyLinkedinAccount(authorizationCode) : {email:Email,given_name:given_name,family_name:family_name};
 
     const payloadEmail = payload.email;
     const payloadFirstName = payload.given_name;
@@ -628,7 +921,7 @@ async function verifyLinkedinUser(req, res) {
       where: { email: payloadEmail },
     });
 
-    if (checkEmail === null) {
+    if (!checkEmail) {
       const user = await model.User.create({
         firstName: payloadFirstName,
         lastName: payloadLastName,
@@ -657,6 +950,10 @@ async function verifyLinkedinUser(req, res) {
     const checkUser = await model.User.findOne({
       where: { email: payloadEmail },
     });
+    // For Mobile
+    const Profile = await model.Profile.findOne({
+      where: { userId: checkUser.id },
+    });
 
     const { id, firstName, lastName, email, emailVerified } = checkUser;
     const user = { id, firstName, lastName, email };
@@ -665,6 +962,47 @@ async function verifyLinkedinUser(req, res) {
     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
     const refreshToken = await generateRefreshToken(user);
     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    if (isMobile) {
+      if (Profile) {
+        return res.json({
+          success: true,
+          data: {
+            message: "Linkedin Account verified successfully",
+            firstName,
+            lastName,
+            email,
+            emailVerified,
+            token: {
+              accessToken,
+              accessTokenExpiryInSeconds,
+              refreshToken,
+              refreshTokenExpiryInSeconds,
+            },
+            profileId: Profile.id,
+            isProfileAvailable: true,
+          },
+        });
+      } else {
+        return res.json({
+          success: true,
+          data: {
+            message: "Linkedin Account verified successfully",
+            firstName,
+            lastName,
+            email,
+            emailVerified,
+            token: {
+              accessToken,
+              accessTokenExpiryInSeconds,
+              refreshToken,
+              refreshTokenExpiryInSeconds,
+            },
+            isProfileAvailable: false,
+          },
+        });
+      }
+    }
     return res.json({
       success: true,
       data: {
@@ -938,6 +1276,7 @@ async function resendMailOtp(req, res) {
   }
 }
 
+
 async function verifyOtp(req, res) {
   const { countryCode, phoneNumber, otp } = req.body;
   const { error } = verifyOtpSchema.validate(req.body, {
@@ -1038,6 +1377,7 @@ async function verifyEmailOtp(req, res) {
 
 async function verifyEmail(req, res) {
   const { emailVerificationId } = req.body;
+
   const { error } = verifyEmailSchema.validate(req.body, {
     abortEarly: false,
   });
@@ -1285,6 +1625,43 @@ async function resetPassword(req, res) {
   }
 }
 
+async function fetchCardDetails(req, res) {
+  var { deviceUId } = req.body;
+  try {
+    const device = await model.Device.findOne({
+      where: { deviceUId: deviceUId },
+    });
+    console.log("device", device);
+ 
+    if (!device) {
+      return res.status(500).json({
+        success: false,
+        data: {
+          message: "Unable to find device",
+        },
+      });
+    }
+    // const { deviceType } = user;
+    // const cards = await model.Device.findAll({ where: { userId } });
+    return res.json({
+      success: true,
+      data: {
+        deviceType: device.deviceType,
+      },
+    });
+  } catch (error) {
+    loggers.error(error + " from fetchCardDetails function");
+    return res.status(500).json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+}
+ 
+
+
 
 
 export {
@@ -1305,4 +1682,6 @@ export {
   resetPassword,
   resendMailOtp,
   createUserBulkController,
+  createUserMobile,
+  fetchCardDetails
 };

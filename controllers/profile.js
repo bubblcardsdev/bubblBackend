@@ -8,6 +8,7 @@ import { updateSocialMedia } from "../functions/updateSocialMedia.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import loggers from "../config/logger.js";
 import axios from "axios";
+import { decryptProfileId } from "../helper/ccavutil.js";
 
 async function getProfileName(req, res) {
   try {
@@ -81,6 +82,11 @@ async function createProfile(req, res) {
       });
 
       if (create) {
+        await model.ProfileInfo.create({
+          userId:userId,
+          profileId: create.id,
+          templateId:1
+        });
         return res.json({
           success: true,
           message: "profile created",
@@ -700,7 +706,99 @@ async function getProfileByDevice(req, res) {
               "Something went wrong while attaching to the account . Contact Administrator",
           });
         }
-      } else {
+      } 
+      if(!device){
+        const checkWithoutDevice = decryptProfileId(deviceUid);
+        if(checkWithoutDevice){
+          const profile = await model.Profile.findOne({
+          where: {
+            id: checkWithoutDevice,
+          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+          include: [
+            {
+              model: model.ProfilePhoneNumber,
+              as: "profilePhoneNumbers",
+              // where: {
+              //   activeStatus: true,
+              //   checkBoxStatus: true,
+              // },
+            },
+            {
+              model: model.ProfileEmail,
+              as: "profileEmails",
+              // where: {
+              //   activeStatus: true,
+              //   checkBoxStatus: true,
+              // },
+            },
+            {
+              model: model.ProfileWebsite,
+              as: "profileWebsites",
+              // where: {
+              //   activeStatus: true,
+              //   checkBoxStatus: true,
+              // },
+            },
+            {
+              model: model.ProfileSocialMediaLink,
+              as: "profileSocialMediaLinks",
+              // where: {
+              //   activeStatus: true,
+              //   // deleteStatus: true,
+              // },
+            },
+            {
+              model: model.ProfileDigitalPaymentLink,
+              as: "profileDigitalPaymentLinks",
+              // where: {
+              //   activeStatus: true,
+              //   deleteStatus: true,
+              // },
+            },
+            // {
+            //   model: model.DeviceLink,
+            //   where: {
+            //     id: deviceLinkId,
+            //     activeStatus: true,
+            //   },
+            //   include: [
+            //     {
+            //       model: model.Template,
+            //     },
+            //     {
+            //       model: model.Mode,
+            //       where: {
+            //         id: checkProfileDeviceLink.modeId,
+            //       },
+            //     },
+            //     {
+            //       model: model.AccountDeviceLink,
+            //       where: {
+            //         isDeleted: false,
+            //       },
+            //     },
+            //   ],
+            // },
+          ],
+        });
+        const profileImages = await model.ProfileImages.findAll({
+          where: {
+            profileId: checkWithoutDevice,
+          },
+        });
+        return res.json({
+          success: true,
+          message: "Your Profile",
+          profile,
+          // user,
+          profileImages,
+        });
+      
+      }
+
+        
+      }else {
         return res.json({
           success: false,
           message: "Unable to find the Device",
@@ -946,38 +1044,76 @@ async function findAllProfiles(req, res) {
       where: {
         userId: userId,
       },
-      attributes: ["id", "profileName"],
-      include: {
-        model: model.DeviceLink,
-        include: [
-          {
-            model: model.Template,
-          },
-          {
-            model: model.Mode,
-          },
-          {
-            model: model.DeviceBranding,
-          },
-          {
-            model: model.UniqueNameDeviceLink,
-          },
-          {
-            model: model.AccountDeviceLink,
-            where: {
-              isDeleted: false,
+      attributes: ["id", "profileName","firstName","lastName","designation","companyName","address"],
+      include: [
+        {
+          model: model.DeviceLink,
+          include: [
+            {
+              model: model.Template,
             },
-            include: [
-              {
-                model: model.Device,
+            {
+              model: model.Mode,
+            },
+            {
+              model: model.DeviceBranding,
+            },
+            {
+              model: model.UniqueNameDeviceLink,
+            },
+            {
+              model: model.AccountDeviceLink,
+              where: {
+                isDeleted: false,
               },
-            ],
+              include: [
+                {
+                  model: model.Device,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: model.ProfilePhoneNumber,
+          as: "profilePhoneNumbers",
+          attributes: {
+            exclude: ["createdAt", "updatedAt"],
           },
-        ],
-      },
+        },
+        {
+          model: model.ProfileEmail,
+          as: "profileEmails",
+          attributes: {
+            exclude: ["createdAt", "updatedAt"],
+          },
+        },
+        {
+          model: model.ProfileWebsite,
+          as: "profileWebsites",
+          attributes: {
+            exclude: ["createdAt", "updatedAt"],
+          },
+        },
+        {
+          model: model.ProfileSocialMediaLink,
+          as: "profileSocialMediaLinks",
+          attributes: {
+            exclude: ["createdAt", "updatedAt"],
+          },
+        },
+        {
+          model: model.ProfileDigitalPaymentLink,
+          as: "profileDigitalPaymentLinks",
+          attributes: {
+            exclude: ["createdAt", "updatedAt"],
+          },
+        },
+      ],
+ 
       hooks: false,
     });
-
+ 
     const devices = await model.AccountDeviceLink.findAll({
       include: [
         {
@@ -1020,19 +1156,19 @@ async function findAllProfiles(req, res) {
     });
     // if (devices) {
     //   const imgPath = devices[0].DeviceLink.Profile.dataValues.profileImage;
-
+ 
     //   if (imgPath !== "") {
     //     const SignedImage = await generateSignedUrl(imgPath);
     //     devices[0].DeviceLink.Profile.dataValues.profileImage = SignedImage;
     //   }
     // }
-
+ 
     const profileImages = model.ProfileImages.findOne({
       where: {
         profileId: 4,
       },
     });
-
+ 
     return res.json({
       success: true,
       data: {
