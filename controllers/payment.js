@@ -40,7 +40,7 @@ async function initialePay(req, res) {
         : 0;
     console.log(cost, "cost");
     const val = getDataForPayment.totalPrice;
-    const value = getDataForPayment.email === "kishorekk54321@gmail.com" ? 1 :  val + cost;
+    const value = val + cost;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
     let token =
