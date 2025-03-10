@@ -56,7 +56,7 @@ export default function dbModel(sequelize, Sequelize) {
     Sequelize
   );
   const ProfileImages = _profileImages(sequelize, Sequelize);
-  const ProfileInfo = _profileInfo(sequelize, Sequelize);
+  // const ProfileInfo = _profileInfo(sequelize, Sequelize);
   const Device = _device(sequelize, Sequelize);
   const AccountDeviceLink = _accountDeviceLink(sequelize, Sequelize);
   const DeviceLink = _deviceLink(sequelize, Sequelize);
