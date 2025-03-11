@@ -1,7 +1,7 @@
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
-  class DeviceImageInventories extends Model {
+  class DeviceColorMaster extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,23 +11,16 @@ module.exports = (sequelize, Sequelize) => {
       // define association here
     }
   }
-  DeviceImageInventories.init(
+  DeviceColorMaster.init(
     {
-      imageKey: {
+      name: {
         type: Sequelize.STRING,
-      },
-      deviceId: {
-        type: Sequelize.INTEGER,
-        reference: {
-          model: "DeviceInventories",
-          key: "id",
-        },
       },
     },
     {
       sequelize,
-      modelName: "DeviceImageInventories",
+      modelName: "DeviceColorMaster",
     }
   );
-  return DeviceImageInventories;
+  return DeviceColorMaster;
 };
