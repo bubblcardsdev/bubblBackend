@@ -1,9 +1,13 @@
 import model from "../models/index.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
+import { Op } from "sequelize";
 
 // function for getting all false shipping Orders
 async function getTotalOrderServices() {
   const orderId = await model.Order.findAll({
+    where: {
+      orderStatus: { [Op.ne]: "cart" },
+    },
     include: [
       { model: model.Cart },
       {
@@ -50,6 +54,7 @@ async function getTotalOrderServices() {
         required: false,
       },
     ],
+    order: [["id", "DESC"]],
   });
   return orderId;
 }
@@ -108,21 +113,34 @@ async function getShippedOrderServices() {
 
 // function for getting Cont for the Orders
 async function getCountServices() {
-  const orderCount = model.Order.count();
+  const orderCount = model.Order.count({ 
+      where: {
+        orderStatus: "Paid",
+      },
+  });
   return orderCount;
 }
-
 // function for getting count for the pendingOrders
 
 async function PendingOrderCountServices() {
+  const orders = await model.Order.findAll({
+    where: {
+      orderStatus: "Paid",
+      cancelledOrder: false,
+    },
+  });
+ 
+  const ids = orders.map((f) => f.dataValues.id);
   const pendingOrders = await model.Shipping.findAll({
     where: {
+      orderId: ids,
       isShipped: false,
     },
   });
   const pendingOrderCount = pendingOrders.length;
   return pendingOrderCount;
 }
+ 
 
 // get orders by orderId
 // async function getOrderByIdServices(res, orderId) {
@@ -154,7 +172,7 @@ async function PendingOrderCountServices() {
 //   return cartDetails;
 // }
 
-async function getOrderByIdServices(res, orderId, userId) {
+async function getOrderByIdServices(res, orderId) {
   try {
     const order = await model.Order.findAll({
       where: {
@@ -181,42 +199,46 @@ async function getOrderByIdServices(res, orderId, userId) {
     // func for getting the images for corresponding orders
     let deviceImages = [];
     let deviceInventory = "";
-    
-    if(order.length > 0){deviceImages = await Promise.all(
-      order[0]?.Carts?.map(async (cartVal) => {
-        if (cartVal.productType.includes("NC-")) {
-          const getImageId = await model.NameDeviceImageInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
-          if (getImageId) {
-            const deviceInventory = await model.NameCustomImages.findOne({
+ 
+    if (order.length > 0) {
+      deviceImages = await Promise.all(
+        order[0]?.Carts?.map(async (cartVal) => {
+          if (cartVal.productType.includes("NC-")) {
+            const getImageId = await model.NameDeviceImageInventory.findOne({
               where: {
-                NameCustomDeviceId: getImageId.id,
-                cardView: false,
+                deviceType: cartVal.productType,
+                deviceColor: cartVal.productColor,
               },
             });
-
-            const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
-
+            if (getImageId) {
+              const deviceInventory = await model.NameCustomImages.findOne({
+                where: {
+                  NameCustomDeviceId: getImageId.id,
+                  cardView: false,
+                },
+              });
+ 
+              const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
+ 
+              return itemImg;
+            }
+          } else {
+            deviceInventory = await model.DeviceInventory.findOne({
+              where: {
+                deviceType: cartVal.productType,
+                deviceColor: cartVal.productColor,
+              },
+            });
+ 
+            const itemImg = await generateSignedUrl(
+              deviceInventory.deviceImage
+            );
             return itemImg;
           }
-        } else {
-          deviceInventory = await model.DeviceInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
-
-          const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
-          return itemImg;
-        }
-      })
-    );}
-
+        })
+      );
+    }
+ 
     return res.json({
       success: true,
       message: "Order Details",
@@ -246,13 +268,13 @@ async function getOrderByIdServices(res, orderId, userId) {
     //       },
     //     ],
     //   });
-
+ 
     //   // func for getting the images for corresponding orders
     //   let deviceImages = [];
     //   let deviceInventory = "";
-
+ 
     //   console.log(order, deviceImages, "deviceImages deviceImages deviceImages");
-
+ 
     //   // deviceImages = await Promise.all(
     //   //   order[0]?.Carts.map(async (cartVal) => {
     //   //     console.log(cartVal, "cartVal cartVal cartVal cartVal");
@@ -270,9 +292,9 @@ async function getOrderByIdServices(res, orderId, userId) {
     //   //             cardView: true,
     //   //           },
     //   //         });
-
+ 
     //   //         const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
-
+ 
     //   //         return itemImg;
     //   //       }
     //   //     } else {
@@ -282,7 +304,7 @@ async function getOrderByIdServices(res, orderId, userId) {
     //   //           deviceColor: cartVal.productColor,
     //   //         },
     //   //       });
-
+ 
     //   //       const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
     //   //       return itemImg;
     //   //     }
@@ -297,11 +319,11 @@ async function getOrderByIdServices(res, orderId, userId) {
     //   //       },
     //   //     });
     //   //     const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
-
+ 
     //   //     return itemImg;
     //   //   })
     //   // );
-
+ 
     //   return res.json({
     //     success: true,
     //     message: "Order Details",
