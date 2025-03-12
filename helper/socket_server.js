@@ -145,7 +145,10 @@ async function sendEmail(req, res) {
     abortEarly: false,
   });
   const checkEmail = await model.User.findOne({
-    where: { email: email },
+    where: { 
+      email: email,
+      emailVerified: true
+     },
   });
   if (checkEmail) {
     return res.json({
