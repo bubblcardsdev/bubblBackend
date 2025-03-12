@@ -38,7 +38,13 @@ import _nameCustomImageInventory from "./namecustomdeviceinventory.cjs";
 import _nameCustomImages from "./namecustomimages.cjs";
 import _actionLookup from "./actionlookup.cjs";
 import _uniqueNameDeviceLink from "./uniqueusernamedevicelink.cjs";
-import _userRd from "./userrd.cjs"
+import _userRd from "./userrd.cjs";
+import _deviceImageInventories from "./deviceimageinventories.cjs";
+import _deviceInventories from "./deviceinventories.cjs";
+import _deviceColorMasters from "./devicecolormaster.cjs";
+import _deviceMaterialTypeMasters from "./materialtypemaster.cjs";
+import _devicePatternMasters from "./devicepatternmaster.cjs";
+import _deviceTypeMasters from "./devicetypemaster.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -88,6 +94,12 @@ export default function dbModel(sequelize, Sequelize) {
   const ActionLookUp = _actionLookup(sequelize, Sequelize);
   const UniqueNameDeviceLink = _uniqueNameDeviceLink(sequelize, Sequelize);
   const UserRd = _userRd(sequelize, Sequelize);
+  const DeviceImageInventories = _deviceImageInventories(sequelize, Sequelize);
+  const DeviceInventories = _deviceInventories(sequelize, Sequelize);
+  const DeviceColorMasters = _deviceColorMasters(sequelize, Sequelize);
+  const MaterialTypeMasters = _deviceMaterialTypeMasters(sequelize, Sequelize);
+  const DevicePatternMasters = _devicePatternMasters(sequelize, Sequelize);
+  const DeviceTypeMasters = _deviceTypeMasters(sequelize, Sequelize);
 
   User.hasMany(Profile, { as: "userProfiles" });
   User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
@@ -138,6 +150,25 @@ export default function dbModel(sequelize, Sequelize) {
   //   foreignKey: "NameCustomDeviceId",
   // });
 
+  //#region - New association after table change
+
+  DeviceInventories.hasMany(DeviceImageInventories, { foreignKey: "deviceId" });
+  DeviceInventories.belongsTo(DeviceColorMasters, {
+    foreignKey: "colorId",
+  });
+
+  DeviceInventories.belongsTo(MaterialTypeMasters, {
+    foreignKey: "materialTypeId",
+  });
+  DeviceInventories.belongsTo(DevicePatternMasters, {
+    foreignKey: "patternId",
+  });
+
+  DeviceInventories.belongsTo(DeviceTypeMasters, {
+    foreignKey: "deviceTypeId",
+  });
+  //#endregion
+
   return {
     User,
     Profile,
@@ -179,6 +210,13 @@ export default function dbModel(sequelize, Sequelize) {
     NameCustomImages,
     ActionLookUp,
     UniqueNameDeviceLink,
-    UserRd
+    UserRd,
+    //new
+    DeviceImageInventories,
+    DeviceInventories,
+    DeviceColorMasters,
+    MaterialTypeMasters,
+    DevicePatternMasters,
+    DeviceTypeMasters,
   };
 }

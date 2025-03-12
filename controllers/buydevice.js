@@ -2,6 +2,7 @@ import model from "../models/index.js";
 import {
   addToCartSchema,
   addToNonUserCartSchema,
+  getProductId,
 } from "../validations/cart.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import logger from "../config/logger.js";
@@ -12,37 +13,100 @@ const { isEmpty, sumBy } = pkg;
 
 async function getAllDevices(req, res) {
   try {
-    let devices = await model.DeviceInventory.findAll({});
+    let devices = await model.DeviceInventories.findAll({
+      include: [
+        { model: model.DeviceImageInventories },
+        { model: model.DeviceColorMasters },
+      ],
+    });
 
-    devices = await Promise.all(
+    // Transform devices into desired format
+    const transformedDevices = await Promise.all(
       devices.map(async (device) => {
-        let deviceImage = await generateSignedUrl(device.deviceImage);
+        const imageUrls = await Promise.all(
+          (device.DeviceImageInventories || []).map((img) =>
+            generateSignedUrl(img.imageKey)
+          )
+        );
+
         return {
-          id: device.id,
-          deviceType: device.deviceType,
-          deviceColor: device.deviceColor,
-          deviceImage: deviceImage,
-          deviceDescription: device.deviceDescription,
+          productId: device.productId,
+          productName: device.name,
           price: device.price,
-          availability: device.availability,
+          discount: device.discountPercentage,
+          sellingPrice:
+            device.price - (device.price * device.discountPercentage) / 100,
+          primaryImage: imageUrls[0] || null,
+          secondaryImage: imageUrls[1] || null,
+          colors: Array.from(
+            new Set(device.DeviceColorMasters?.map((color) => color.name) || [])
+          ),
         };
       })
     );
 
     return res.json({
       success: true,
-      data: {
-        devices,
-      },
+      data: transformedDevices,
     });
   } catch (error) {
-    console.log("Error", error);
-    loggers.error(error + "from getAllDevices function");
+    console.error("Error", error);
+    loggers.error(`${error} from getAllDevices function`);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+}
+
+async function getProductDetails(req, res) {
+  const { productId } = req.body;
+
+  const { error } = getProductId.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
     return res.json({
       success: false,
       data: {
-        message: error,
+        error: error.details,
       },
+    });
+  }
+
+  try {
+    const allProducts = await model.DeviceInventories.findOne({
+      where: {
+        productId: productId,
+        availability: true,
+      },
+      include: [
+        {
+          model: model.DeviceImageInventories,
+        },
+        {
+          model: model.DeviceColorMasters,
+        },
+        {
+          model: model.MaterialTypeMasters,
+        },
+        {
+          model: model.DevicePatternMasters,
+        },
+      ],
+    });
+
+    return res.json({
+      success: true,
+      allProducts,
+    });
+  } catch (error) {
+    logger.error(error, "from the getProductDetails method");
+    return res.json({
+      success: false,
+      message: error.message,
     });
   }
 }
@@ -50,7 +114,7 @@ async function getAllDevices(req, res) {
 async function addToCart(req, res) {
   try {
     const userId = req.user.id;
-    const { cartItem } = req.body;
+    const { productId, fontId, customName, quantity } = req.body;
 
     const { error } = addToCartSchema.validate(req.body, {
       abortEarly: false,
@@ -108,8 +172,6 @@ async function addToCart(req, res) {
     });
 
     let productCost = getProduct.price * cartItem.quantity;
-
-    console.log(productCost, "cost");
     if (checkCart === null) {
       await model.Cart.create({
         productType: cartItem.productType,
@@ -962,4 +1024,5 @@ export {
   getNonUserCart,
   cancelNonUserCart,
   clearCartNonuser,
+  getProductDetails,
 };

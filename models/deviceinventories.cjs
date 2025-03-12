@@ -54,7 +54,7 @@ module.exports = (sequelize, Sequelize) => {
         },
       },
       fontId: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         references: {
           model: "CustomFontMasters",
           key: "id",
