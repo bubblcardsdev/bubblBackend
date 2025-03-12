@@ -2,7 +2,7 @@ import config from "../config/config.js";
 import { sendMail } from "../middleware/email.js";
 
 
-const baseUrl = config.backendUrl || "http://localhost:8000";
+const baseUrl = config.backendUrl || "http://devapii.bubbl.cards";
 async function EmailVerificationMail(email,emailVerificationId){
     const emailMessage = `
 
