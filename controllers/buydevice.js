@@ -17,6 +17,8 @@ async function getAllDevices(req, res) {
       include: [
         { model: model.DeviceImageInventories },
         { model: model.DeviceColorMasters },
+        { model: model.DevicePatternMasters },
+        { model: model.MaterialTypeMasters },
       ],
     });
 
@@ -28,6 +30,13 @@ async function getAllDevices(req, res) {
             generateSignedUrl(img.imageKey)
           )
         );
+        const color = [];
+        devices.filter((deviceType) => {
+          if (deviceType.name === device.name) {
+            deviceType.DeviceColorMaster &&
+              color.push(deviceType.DeviceColorMaster.name);
+          }
+        });
 
         return {
           productId: device.productId,
@@ -38,9 +47,10 @@ async function getAllDevices(req, res) {
             device.price - (device.price * device.discountPercentage) / 100,
           primaryImage: imageUrls[0] || null,
           secondaryImage: imageUrls[1] || null,
-          colors: Array.from(
-            new Set(device.DeviceColorMasters?.map((color) => color.name) || [])
-          ),
+          colors: color,
+          // colors: Array.from(
+          //   new Set(device.DeviceColorMasters?.map((color) => color.name) || [])
+          // ),
         };
       })
     );
@@ -77,7 +87,15 @@ async function getProductDetails(req, res) {
   }
 
   try {
-    const allProducts = await model.DeviceInventories.findOne({
+    let devices = await model.DeviceInventories.findAll({
+      include: [
+        { model: model.DeviceImageInventories },
+        { model: model.DeviceColorMasters },
+        { model: model.DevicePatternMasters },
+        { model: model.MaterialTypeMasters },
+      ],
+    });
+    const productDetail = await model.DeviceInventories.findOne({
       where: {
         productId: productId,
         availability: true,
@@ -97,10 +115,67 @@ async function getProductDetails(req, res) {
         },
       ],
     });
+    const color = [];
+    const pattern = [];
+    const material = [];
+    const imageUrls = await Promise.all(
+      (productDetail.DeviceImageInventories || []).map((img) =>
+        generateSignedUrl(img.imageKey)
+      )
+    );
 
+    await Promise.all(
+      devices.map(async (device) => {
+        if (device.deviceTypeId === productDetail.deviceTypeId) {
+          const imageUrls = await Promise.all(
+            (device.DeviceImageInventories || []).map((img) =>
+              generateSignedUrl(img.imageKey)
+            )
+          );
+          device.DeviceColorMaster &&
+            color.push(device.DeviceColorMaster.name);
+            const check = material.some(materialName=> materialName.material === device.MaterialTypeMaster.name);
+          if (!check) {
+            console.log(device.MaterialTypeMaster.name);
+            
+            device.MaterialTypeMaster &&
+              material.push({
+                material:device.MaterialTypeMaster.name,
+                primaryImage: imageUrls[0] || null,
+                productId: device.productId,
+              });
+          }
+          if (device.materialTypeId === productDetail.materialTypeId) {
+            device.DevicePatternMaster &&
+              pattern.push({
+                Pattern: device.DevicePatternMaster.name,
+                primaryImage: imageUrls[0] || null,
+                productId: device.productId,
+              });
+          }
+        }
+      })
+    );
+    
     return res.json({
       success: true,
-      allProducts,
+      data: {
+        productId: productDetail.productId,
+        productName: productDetail.name,
+        price: productDetail.price,
+        discount: productDetail.discountPercentage,
+        sellingPrice:
+          productDetail.price -
+          (productDetail.price * productDetail.discountPercentage) / 100,
+        shortDesc: productDetail.shortDescription,
+        description: productDetail.deviceDescription,
+        productDetails: productDetail.productDetails,
+        primaryImage:imageUrls[0]||null,
+        secondaryImage:imageUrls[1]||null,
+        colors: color,
+        patterns: pattern,
+        material: material,
+      },
     });
   } catch (error) {
     logger.error(error, "from the getProductDetails method");
