@@ -24,6 +24,9 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: "",
       },
+      deviceNickName: {
+        type:Sequelize.STRING,
+      }
     },
     {
       sequelize,

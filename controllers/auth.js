@@ -486,12 +486,14 @@ async function createUserMobile(req, res) {
     phoneNumber,
     companyName,
     templateId,
-    designation
+    designation,
   } = req.body;
-  const { error } = createMobileUserSchema.validate(req.body, { abortEarly: false });
-
+  const { error } = createMobileUserSchema.validate(req.body, {
+    abortEarly: false,
+  });
+ 
   if (error) {
-    console.log(error); 
+    console.log(error);
     return res.json({
       success: false,
       data: {
@@ -500,16 +502,20 @@ async function createUserMobile(req, res) {
     });
   }
   const emailParse = email.toLowerCase();
-
+ 
   try {
     const checkUser = await model.User.findOne({
       where: {
         email: emailParse,
       },
     });
+    console.log(checkUser);
     
-    if (checkUser && (checkUser.signupType === "local" || checkUser.password.trim().length !== 0)) {
-      console.log("ttaammiill",checkUser.password.trim().length !== 0);
+    if (
+      checkUser &&
+      (checkUser.signupType === "local" ||
+        checkUser.password.trim().length !== 0)
+    ) {
       return res.json({
         success: false,
         data: {
@@ -520,33 +526,89 @@ async function createUserMobile(req, res) {
       });
     }
     const hashedPassword = await hashPassword(password);
-    if(!checkUser){
-    const user = await model.User.create({
-      firstName: firstName,
-      lastName: lastName,
-      email: emailParse,
-      password: hashedPassword,
-      local: true,
-      phoneVerified: true,
-    });
-    let createProfileMobile;
-    if (user) {
-      await model.BubblPlanManagement.create({
-        userId: user.id,
-        planId: 1,
-        subscriptionType: "free",
-        isValid: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    if (!checkUser) {
+      const user = await model.User.create({
+        firstName: firstName,
+        lastName: lastName,
+        email: emailParse,
+        password: hashedPassword,
+        local: true,
+        phoneVerified: true,
+        emailVerified: true,
       });
-      await model.ClaimLink.create({
-        userId: user.id,
+      let createProfileMobile;
+      if (user) {
+        await model.BubblPlanManagement.create({
+          userId: user.id,
+          planId: 1,
+          subscriptionType: "free",
+          isValid: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        await model.ClaimLink.create({
+          userId: user.id,
+        });
+        await model.UniqueNameDeviceLink.create({
+          userId: user.id,
+        });
+        const userId = user.id;
+        createProfileMobile =
+          await MobileOnboardingProfileCreate(
+            firstName,
+            lastName,
+            email,
+            profileName,
+            phoneNumber,
+            companyName,
+            templateId,
+            designation,
+            userId
+          );
+      }
+ 
+      const userInfo = {
+        id: user.id,
+        firstName,
+        lastName,
+        email,
+      };
+      console.log(userInfo);
+      
+      const accessToken = await generateAccessToken(userInfo);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(userInfo);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+ 
+      return res.json({
+        success: true,
+        data: {
+          message: "User and Profile created successfully",
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phoneVerified: user.phoneVerified,
+          emailVerified: user.emailVerified,
+          local: user.local,
+          signupType: user.signupType,
+          profileId: createProfileMobile && createProfileMobile.id,
+          verifying: true,
+          accessToken: accessToken,
+          accessTokenExpiryInSeconds: accessTokenExpiryInSeconds,
+          refreshToken: refreshToken,
+          refreshTokenExpiryInSeconds: refreshTokenExpiryInSeconds,
+        },
       });
-      await model.UniqueNameDeviceLink.create({
-        userId: user.id,
-      });
-      const userId = user.id;
-      createProfileMobile = createProfileMobile = await MobileOnboardingProfileCreate( firstName,
+    } else {
+      const userId = checkUser.id;
+      await model.User.update(
+        {
+          password: hashedPassword,
+        },
+        { where: { id: checkUser.id } }
+      );
+      const createProfileMobile = await MobileOnboardingProfileCreate(
+        firstName,
         lastName,
         email,
         profileName,
@@ -554,48 +616,42 @@ async function createUserMobile(req, res) {
         companyName,
         templateId,
         designation,
-        userId);
-    }
-
-    return res.json({
-      success: true,
-      data: {
-        message: "User and Profile created successfully",
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phoneVerified: user.phoneVerified,
-        emailVerified: user.emailVerified,
-        local: user.local,
-        signupType: user.signupType,
-        profileId: createProfileMobile && createProfileMobile.id,
-        verifying: true,
-      },
-    });
-  } 
-  else {
-    const userId = checkUser.id;
-    await model.User.update({
-      password: hashedPassword,
-    },{where:{id:checkUser.id}});
-    const createProfileMobile = await MobileOnboardingProfileCreate( firstName,
-      lastName,
-      email,
-      profileName,
-      phoneNumber,
-      companyName,
-      templateId,
-      designation,
-      userId);
+        userId
+      );
+ 
+      const userInfo = {
+        id: checkUser.id,
+        firstName,
+        lastName,
+        email,
+      };
+ 
+      const accessToken = await generateAccessToken(userInfo);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(userInfo);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+ 
       return res.json({
         success: true,
         data: {
-          message: "Profile created successfully and User password updated successfully",
-          userProfile:createProfileMobile.id,
+          message:
+            "Profile created successfully and User password updated successfully",
+          firstName: createProfileMobile.firstName,
+          lastName: createProfileMobile.lastName,
+          email: checkUser.email,
+          phoneVerified: checkUser.phoneVerified,
+          emailVerified: checkUser.emailVerified,
+          local: checkUser.local,
+          signupType: checkUser.signupType,
+          profileId: createProfileMobile.id,
           verifying: false,
+          accessToken: accessToken,
+          accessTokenExpiryInSeconds: accessTokenExpiryInSeconds,
+          refreshToken: refreshToken,
+          refreshTokenExpiryInSeconds: refreshTokenExpiryInSeconds,
         },
       });
-  }
+    }
   } catch (error) {
     console.log(error.message, "ee");
     loggers.error(error + "from createUser function");

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js",
+    "start": "npx sequelize db:migrate && node index.js",
     "test": "jest",
     "lint:check": "eslint .",
     "lint:fix": "eslint --fix .",

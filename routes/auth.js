@@ -17,7 +17,6 @@ import {
   resetPassword,
   verifyEmailOtp,
   resendMailOtp,
-  createUserBulkController,
   createUserMobile, 
   fetchCardDetails,
 } from "../controllers/auth.js";
