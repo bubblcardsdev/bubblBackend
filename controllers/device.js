@@ -115,8 +115,10 @@ async function deviceLink(req, res) {
 }
 
 async function updateLinkDevice(req, res) {
-  const { deviceUid, profileId } = req.body;
+  const { deviceUid, profileId, isMobile, deviceNickName } = req.body;
   const userId = req.user.id;
+  console.log(userId,"tamils");
+  
   try {
     const device = await model.Device.findOne({
       where: {
@@ -155,7 +157,7 @@ async function updateLinkDevice(req, res) {
           userId: userId,
         },
       });
-
+      
       const accountInProfileDeviceLink = await model.DeviceLink.findOne({
         where: {
           accountDeviceLinkId: checkUserId.id,
@@ -205,6 +207,14 @@ async function updateLinkDevice(req, res) {
             },
           }
         );
+      }
+      if(isMobile){
+        await model.Device.update(
+          {deviceNickName:deviceNickName},
+          {where: {
+            deviceUid: deviceUid,
+          }
+        });
       }
       return res.json({
         success: true,

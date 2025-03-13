@@ -18,8 +18,6 @@ async function SSE(req, res) {
   res.setHeader("Connection", "keep-alive");
 
   try {
-    console.log(email, "tt");
-
     clients[email] = res;
     if (!email) {
       return res.status(400).send("Client email is required");
@@ -33,7 +31,6 @@ async function SSE(req, res) {
 
 async function verifyMail(req, res) {
   const { email, emailVerificationId } = req.query;
-
   // Decode the email and verification ID
   const decodedEmail = decodeURIComponent(email);
   const decodedEmailVerificationId = decodeURIComponent(emailVerificationId);
@@ -57,9 +54,8 @@ async function verifyMail(req, res) {
     }
     if (verificationStatus[decodedEmail] === "Pending") {
       verificationStatus[decodedEmail] = "Verified";
-
       if (clients[decodedEmail]) {
-        if(verificationId[decodedEmail] === decodedEmailVerificationId){
+        if(verificationId[decodedEmail] !== decodedEmailVerificationId){
           return res.json({
             success: false,
             message: "Verification Failed, please try again"
