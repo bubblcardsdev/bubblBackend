@@ -14,7 +14,7 @@ import { authenticateToken } from "../middleware/token.js";
 const router = express.Router();
 
 router.get("/all", authenticateToken, getOrderDetails);
-router.post("/one", authenticateToken, getOrderById);
+router.post("/one", getOrderById);
 router.put("/ship", authenticateToken, updateShippingDetails);
 router.post("/checkout", authenticateToken, checkOut);
 router.put("/pay", authenticateToken, proceedPayment);

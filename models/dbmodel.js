@@ -45,6 +45,9 @@ import _deviceColorMasters from "./devicecolormaster.cjs";
 import _deviceMaterialTypeMasters from "./materialtypemaster.cjs";
 import _devicePatternMasters from "./devicepatternmaster.cjs";
 import _deviceTypeMasters from "./devicetypemaster.cjs";
+import _orderStatusMasters from "./orderstatusmaster.cjs";
+import _orderBreakDown from "./orderbreakdown.cjs";
+import _fontMaster from "./customfontmaster.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -100,6 +103,9 @@ export default function dbModel(sequelize, Sequelize) {
   const MaterialTypeMasters = _deviceMaterialTypeMasters(sequelize, Sequelize);
   const DevicePatternMasters = _devicePatternMasters(sequelize, Sequelize);
   const DeviceTypeMasters = _deviceTypeMasters(sequelize, Sequelize);
+  const OrderStatusMaster = _orderStatusMasters(sequelize, Sequelize);
+  const OrderBreakDown = _orderBreakDown(sequelize, Sequelize);
+  const CustomFontMaster = _fontMaster(sequelize, Sequelize);
 
   User.hasMany(Profile, { as: "userProfiles" });
   User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
@@ -167,6 +173,8 @@ export default function dbModel(sequelize, Sequelize) {
   DeviceInventories.belongsTo(DeviceTypeMasters, {
     foreignKey: "deviceTypeId",
   });
+
+  Order.hasMany(OrderBreakDown, { foreignKey: "orderId" });
   //#endregion
 
   return {
@@ -218,5 +226,8 @@ export default function dbModel(sequelize, Sequelize) {
     MaterialTypeMasters,
     DevicePatternMasters,
     DeviceTypeMasters,
+    OrderStatusMaster,
+    OrderBreakDown,
+    CustomFontMaster,
   };
 }

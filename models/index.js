@@ -35,6 +35,10 @@ Object.keys(db).forEach((modelName) => {
     db[modelName].associate(db);
   }
 });
+  
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
 
 const model = dbModel(sequelize, Sequelize);
+export { sequelize, Sequelize };
 export default model;

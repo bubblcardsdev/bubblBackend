@@ -3,11 +3,15 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("Carts", "productId", {
-      type: Sequelize.INTEGER,
+    await queryInterface.changeColumn("DeviceInventories", "productId", {
+      type: Sequelize.UUID,
+      unique: true,
+    });
+    await queryInterface.addColumn("Carts", "productUUId", {
+      type: Sequelize.UUID,
       references: {
         model: "DeviceInventories",
-        key: "id",
+        key: "productId",
       },
     });
     await queryInterface.addColumn("Carts", "nameCustomNameOnCard", {
@@ -23,9 +27,9 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn("Carts", "productId");
+    await queryInterface.removeColumn("Carts", "productUUId");
     await queryInterface.removeColumn("Carts", "nameCustomFontStyle");
     await queryInterface.removeColumn("Carts", "nameCustomNameOnCard");
-     await queryInterface.removeColumn("Carts", "fontId");
+    await queryInterface.removeColumn("Carts", "fontId");
   },
 };

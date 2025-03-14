@@ -1,7 +1,6 @@
 import Joi from "joi";
 
 const shippingDetails = Joi.object({
-  orderId: Joi.number().required(),
   firstName: Joi.string().required(),
   lastName: Joi.string().required(),
   phoneNumber: Joi.string().required(),
@@ -15,6 +14,5 @@ const shippingDetails = Joi.object({
   landmark: Joi.string().allow(""),
   isShipped: Joi.boolean(),
 });
-
 
 export { shippingDetails };

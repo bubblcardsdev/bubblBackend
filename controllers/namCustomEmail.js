@@ -7,8 +7,9 @@ import qr from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 import loggers from "../config/logger.js";
 
-async function NameCustomEmail(getCustomName, OrderId) {
+async function NameCustomEmail(products, OrderId) {
   try {
+    console.log(products, "camein");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -58,32 +59,16 @@ async function NameCustomEmail(getCustomName, OrderId) {
   <body>
   `;
     await qr.toDataURL(data, options);
-    await Promise.all(
-      getCustomName.map(async (card, index) => {
-        let getCardTypeDevice = await model.NameDeviceImageInventory.findAll({
-          where: {
-            id: card.deviceInventorId,
-          },
-          include: [
-            {
-              model: model.NameCustomImages,
-            },
-          ],
-        });
 
-        let frontImg = "";
-        let backImg = "";
-        const fontColor = getCardTypeDevice[0].fontColor;
-        await Promise.all(
-          getCardTypeDevice[0].NameCustomImages.map(async (device) => {
-            if (device.cardView) {
-              frontImg = await generateSignedUrl(device.printImgUrl);
-              // frontImg = encodeURI(frontImg);
-            } else {
-              backImg = await generateSignedUrl(device.printImgUrl);
-            }
-          })
-        );
+    let frontImg = "";
+    let backImg = "";
+
+    await Promise.all(
+      products.map(async (card, index) => {
+        let frontImg = card.productPrimaryImage;
+        let backImg = card.productSecondaryImage;
+
+        const fontColor = card?.fontColor || "";
 
         combinedHTMLContent += `
       <section> 
@@ -102,7 +87,7 @@ async function NameCustomEmail(getCustomName, OrderId) {
       <p
         style="
           font-size: 22px;
-          font-family: ${card.fontStyle};
+          font-family: ${card.font};
           padding-left: 20px;
           color:${fontColor};
           position: relative;
@@ -158,6 +143,8 @@ async function NameCustomEmail(getCustomName, OrderId) {
       },
     });
 
+    console.log(OrderId);
+
     const getUserMailId = await model.Shipping.findOne({
       where: {
         orderId: OrderId,
@@ -165,8 +152,8 @@ async function NameCustomEmail(getCustomName, OrderId) {
     });
     const mailOptions = {
       from: config.smtpFromEmail,
-      to: getUserMailId.emailId,
-      // to: "shunmugapriya@rvmatrix.in",
+      // to: getUserMailId.emailId,
+      to: "benial@rvmatrix.in",
       subject: "NameCustom Preview PDF",
       text: "Please find the attached PDF file.",
       attachments: [
@@ -177,6 +164,7 @@ async function NameCustomEmail(getCustomName, OrderId) {
       ],
     };
 
+    console.log("mail", mailOptions);
     await transporter.sendMail(mailOptions);
   } catch (err) {
     loggers.error(err + "from nameCustomEmail.js");

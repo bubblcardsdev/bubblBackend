@@ -1,14 +1,18 @@
 "use strict";
-/** @type {import('sequelize-cli').Migration} */
-module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("OrderBreakDowns", {
-      id: {
-        allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
-        type: Sequelize.INTEGER,
-      },
+const { Model } = require("sequelize");
+module.exports = (sequelize, Sequelize) => {
+  class OrderBreakDown extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      // define association here
+    }
+  }
+  OrderBreakDown.init(
+    {
       orderId: {
         type: Sequelize.INTEGER,
         references: {
@@ -45,17 +49,14 @@ module.exports = {
       sellingPrice: {
         type: Sequelize.INTEGER,
       },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
+      quantity: {
+        type: Sequelize.INTEGER,
       },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-    });
-  },
-  async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("OrderBreakDowns");
-  },
+    },
+    {
+      sequelize,
+      modelName: "OrderBreakDown",
+    }
+  );
+  return OrderBreakDown;
 };

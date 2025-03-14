@@ -23,7 +23,6 @@ module.exports = (sequelize, Sequelize) => {
       },
       orderId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
         references: {
           model: "Orders",
           key: "id",
@@ -55,6 +54,20 @@ module.exports = (sequelize, Sequelize) => {
       email: {
         type: Sequelize.STRING,
         allowNull: true,
+      },
+      productUUId: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: "DeviceInventories",
+          key: "productId",
+        },
+      },
+      nameCustomNameOnCard: {
+        type: Sequelize.STRING,
+      },
+      fontId: {
+        type: Sequelize.INTEGER,
       },
     },
     {

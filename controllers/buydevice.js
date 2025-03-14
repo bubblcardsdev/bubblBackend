@@ -10,6 +10,8 @@ import loggers from "../config/logger.js";
 import pkg from "lodash";
 import { uploadFileToS3 } from "../middleware/fileUpload.js";
 const { isEmpty, sumBy } = pkg;
+import { Op } from "sequelize";
+import { sequelize } from "../models/index.js";
 
 async function getAllDevices(req, res) {
   try {
@@ -22,7 +24,6 @@ async function getAllDevices(req, res) {
       ],
     });
 
-    // Transform devices into desired format
     const transformedDevices = await Promise.all(
       devices.map(async (device) => {
         const imageUrls = await Promise.all(
@@ -48,9 +49,6 @@ async function getAllDevices(req, res) {
           primaryImage: imageUrls[0] || null,
           secondaryImage: imageUrls[1] || null,
           colors: color,
-          // colors: Array.from(
-          //   new Set(device.DeviceColorMasters?.map((color) => color.name) || [])
-          // ),
         };
       })
     );
@@ -132,15 +130,17 @@ async function getProductDetails(req, res) {
               generateSignedUrl(img.imageKey)
             )
           );
-          device.DeviceColorMaster &&
-            color.push(device.DeviceColorMaster.name);
-            const check = material.some(materialName=> materialName.material === device.MaterialTypeMaster.name);
+          device.DeviceColorMaster && color.push(device.DeviceColorMaster.name);
+          const check = material.some(
+            (materialName) =>
+              materialName.material === device.MaterialTypeMaster.name
+          );
           if (!check) {
             console.log(device.MaterialTypeMaster.name);
-            
+
             device.MaterialTypeMaster &&
               material.push({
-                material:device.MaterialTypeMaster.name,
+                material: device.MaterialTypeMaster.name,
                 primaryImage: imageUrls[0] || null,
                 productId: device.productId,
               });
@@ -156,7 +156,7 @@ async function getProductDetails(req, res) {
         }
       })
     );
-    
+
     return res.json({
       success: true,
       data: {
@@ -170,8 +170,8 @@ async function getProductDetails(req, res) {
         shortDesc: productDetail.shortDescription,
         description: productDetail.deviceDescription,
         productDetails: productDetail.productDetails,
-        primaryImage:imageUrls[0]||null,
-        secondaryImage:imageUrls[1]||null,
+        primaryImage: imageUrls[0] || null,
+        secondaryImage: imageUrls[1] || null,
         colors: color,
         patterns: pattern,
         material: material,
@@ -185,6 +185,99 @@ async function getProductDetails(req, res) {
     });
   }
 }
+
+//#region - adding to cart in one shot
+// async function addToCart(req, res) {
+//   const userId = req.user.id;
+//   const { products } = req.body;
+
+//   const { error } = addToCartSchema.validate(
+//     { products },
+//     { abortEarly: false }
+//   );
+
+//   if (error) {
+//     return res.status(400).json({
+//       success: false,
+//       data: { error: error.details },
+//     });
+//   }
+
+//   const productIds = products.map((item) => item.productId);
+
+//   try {
+//     const productDetails = await model.DeviceInventories.findAll({
+//       where: { productId: { [Op.in]: productIds } },
+//       include: [
+//         { model: model.DeviceColorMasters },
+//         { model: model.DeviceTypeMasters },
+//         { model: model.DevicePatternMasters },
+//       ],
+//     });
+
+//     if (productDetails.length !== products.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "One or more products not found.",
+//       });
+//     }
+
+//     const transaction = await sequelize.transaction();
+
+//     try {
+//       const cartItems = products.map((item) => {
+//         const product = productDetails.find(
+//           (p) => p.productId === item.productId
+//         );
+
+//         if (!product || !product.DeviceTypeMaster?.name) {
+//           throw new Error(
+//             `Product not found or missing type: ${item.productId}`
+//           );
+//         }
+
+//         return {
+//           customerId: userId,
+//           productUUId: item.productId,
+//           quantity: item.quantity,
+//           productPrice: product.price,
+//           productType: product.DeviceTypeMaster.name,
+//           productColor:
+//             product.DeviceColorMaster?.name ||
+//             product.DevicePatternMaster?.name,
+//           productStatus: false,
+//           nameCustomNameOnCard: item.customName,
+//           fontId: item.fontId,
+//         };
+//       });
+
+//       const createdCartItems = await model.Cart.bulkCreate(cartItems, {
+//         transaction,
+//       });
+
+//       await transaction.commit();
+
+//       return res.json({
+//         success: true,
+//         data: {
+//           cartIds: createdCartItems.map((item) => item.id),
+//           message: "Cart updated successfully",
+//         },
+//       });
+//     } catch (error) {
+//       await transaction.rollback();
+//       throw error;
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     logger.error(error, "from addToCart function");
+//     return res.status(500).json({
+//       success: false,
+//       message: "An error occurred while adding items to the cart.",
+//     });
+//   }
+// }
+//#endregion
 
 async function addToCart(req, res) {
   try {
@@ -204,108 +297,109 @@ async function addToCart(req, res) {
       });
     }
 
-    console.log("Success", cartItem);
-
-    const checkOrder = await model.Order.findOne({
-      attributes: { exclude: ["ShippingId", "PaymentId"] },
+    const getProductDetails = await model.DeviceInventories.findOne({
       where: {
-        customerId: userId,
-        orderStatus: "cart",
+        productId: productId,
       },
-      include: {
-        model: model.Cart,
-      },
+      include: [
+        {
+          model: model.DeviceColorMasters,
+        },
+        {
+          model: model.DeviceTypeMasters,
+        },
+        {
+          model: model.DevicePatternMasters,
+        },
+      ],
     });
 
-    if (checkOrder === null) {
-      await model.Order.create({
-        customerId: userId,
-        totalPrice: cartItem.productPrice,
-        orderStatus: "cart",
-      });
+    if (!getProductDetails || !getProductDetails?.DeviceTypeMaster?.name) {
+      throw new Error("Cannot find the product");
     }
 
-    let getOrder = await model.Order.findOne({
-      where: {
-        customerId: userId,
-        orderStatus: "cart",
-      },
+    const createCartItem = await model.Cart.create({
+      customerId: userId,
+      productUUId: productId,
+      quantity: quantity,
+      productPrice: getProductDetails.price,
+      productType: getProductDetails.DeviceTypeMaster.name,
+      productColor: getProductDetails?.DeviceColorMaster?.name
+        ? getProductDetails?.DeviceColorMaster?.name
+        : getProductDetails?.DevicePatternMaster?.name,
+      productStatus: false,
+      nameCustomNameOnCard: customName,
+      fontId: fontId,
     });
 
-    const checkCart = await model.Cart.findOne({
-      where: {
-        orderId: getOrder.id,
-        productType: cartItem.productType,
-        productColor: cartItem.productColor,
-      },
-    });
-    let getProduct = await model.DeviceInventory.findOne({
-      where: {
-        deviceType: cartItem.productType,
-        deviceColor: cartItem.productColor,
-      },
-    });
-
-    let productCost = getProduct.price * cartItem.quantity;
-    if (checkCart === null) {
-      await model.Cart.create({
-        productType: cartItem.productType,
-        customerId: userId,
-        orderId: getOrder.id,
-        quantity: cartItem.quantity,
-        productColor: cartItem.productColor,
-        productPrice: productCost,
-        productStatus: cartItem.productStatus,
-      });
-    } else {
-      let quantity = checkCart.quantity;
-      let productPrice = checkCart.productPrice;
-      if (checkCart.productStatus) {
-        quantity += cartItem.quantity;
-        productPrice += getProduct.productPrice;
-
-        await model.Cart.update(
-          {
-            quantity: cartItem.quantity,
-            productPrice: productCost,
-          },
-          {
-            where: {
-              id: checkCart.id,
-            },
-          }
-        );
-      } else {
-        await model.Cart.update(
-          {
-            quantity: cartItem.quantity,
-            productPrice: productCost,
-            productStatus: true,
-          },
-          {
-            where: {
-              id: checkCart.id,
-            },
-          }
-        );
-      }
+    if (!createCartItem) {
+      throw new Error("cannot create cart item");
     }
 
-    const getCartPrice = await model.Cart.sum("productPrice", {
-      where: { orderId: getOrder.id, productStatus: true },
-    });
-
-    await model.Order.update(
-      { totalPrice: getCartPrice },
-      { where: { customerId: userId, orderStatus: "cart" } }
-    );
-
+    //use if needed
+    // createOrder(
+    //   userId,
+    //   productId,
+    //   totalPrice,
+    //   discountPrice,
+    //   getProductDetails,
+    //   1,
+    //   fontId,
+    //   customName
+    // );
     return res.json({
       success: true,
       data: {
+        cartId: createCartItem.id,
         message: "Cart Updated successfully",
       },
     });
+  } catch (error) {
+    console.log(error);
+    logger.error(error, "from addToCart function");
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+async function createOrder(
+  userId,
+  productId,
+  totalPrice,
+  discountPrice,
+  productDetails,
+  orderStatus,
+  fontId,
+  customName
+) {
+  try {
+    const orderStatusMaster = await model.OrderStatusMaster.findOne({
+      where: {
+        id: orderStatus,
+      },
+    });
+
+    const createOrder = await model.Order.create({
+      productUUId: productId,
+      customerId: userId,
+      orderStatus: orderStatusMaster.name,
+      totalPrice: totalPrice,
+      cancelledOrder: false,
+      discountPercentage: productDetails.discountPercentage,
+      discountAmount: discountPrice,
+      orderStatusId: orderStatus,
+      isLoggedIn: true,
+      fontId: fontId,
+      nameOnCard: customName,
+    });
+
+    if (!createOrder) {
+      throw new Error("Cannot create Order");
+    }
+
+    return createOrder;
   } catch (error) {
     console.log(error);
     logger.error(error, "from addToCart function");
@@ -442,45 +536,39 @@ async function getCart(req, res) {
 
 async function cancelCart(req, res) {
   const userId = req.user.id;
-  const { orderId, cartId } = req.body;
+  const { productId, cartId } = req.body;
 
   try {
-    const checkOrder = await model.Order.findOne({
+    const checkCart = await model.Cart.findOne({
       where: {
-        id: orderId,
+        id: cartId,
+        customerId: userId,
+        productUUId: productId,
+        productStatus: false,
       },
     });
 
-    if (checkOrder) {
-      const orderStatus = checkOrder.orderStatus;
-
-      if (orderStatus === "cart") {
-        const updateCartItem = await model.Cart.update(
-          {
-            productStatus: false,
+    if (checkCart) {
+      const updateCartItem = await model.Cart.update(
+        {
+          productStatus: true,
+        },
+        {
+          where: {
+            customerId: userId,
+            productUUId: productId,
+            id: cartId,
           },
-          {
-            where: {
-              id: cartId,
-              customerId: userId,
-            },
-          }
-        );
-        return res.json({
-          success: true,
-          message: "Order Cancelled",
-          updateCartItem,
-        });
-      } else {
-        return res.json({
-          success: false,
-          message: "Order CheckOut",
-        });
-      }
+        }
+      );
+      return res.json({
+        success: true,
+        message: "Item removed from Cart",
+      });
     } else {
       return res.json({
         success: false,
-        message: "Order not found",
+        message: "Cannot find the product in cart",
       });
     }
   } catch (error) {
@@ -958,137 +1046,146 @@ async function clearCartNonuser(req, res) {
 }
 
 async function addToNonUserCart(req, res) {
-  try {
-    const { cartData, email } = req.body;
+  const { productData, promoCode, shippingFormData } = req.body;
 
-    if (isEmpty(cartData) || !email) {
-      return res.json({
-        success: false,
-        message: "Invalid Data",
-      });
+  const { error } = addToNonUserCartSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.json({ success: false, data: { error: error.details } });
+  }
+
+  const transaction = await sequelize.transaction();
+  try {
+    const productDetailsList = await Promise.all(
+      productData.map((item) =>
+        model.DeviceInventories.findOne({
+          where: { productId: item.productId },
+          include: [
+            { model: model.DeviceColorMasters },
+            { model: model.DeviceTypeMasters },
+            { model: model.DevicePatternMasters },
+          ],
+          transaction,
+        })
+      )
+    );
+
+    if (
+      productDetailsList.some(
+        (product) => !product || !product?.DeviceTypeMaster?.name
+      )
+    ) {
+      throw new Error("One or more products could not be found.");
     }
 
-    const updateTotalByProduct = await Promise.all(
-      cartData.map(async (item) => {
-        if (item?.productType?.includes("NC-")) {
-          const checkNc = await model.NameDeviceImageInventory.findOne({
-            where: {
-              id: item?.deviceInventorId,
-            },
-          });
-          item["totalPrice"] = checkNc.price * item?.quantity;
-          item["productPrice"] = checkNc.price;
-        } else {
-          const checkOthers = await model.DeviceInventory.findOne({
-            where: {
-              deviceType: item?.productType,
-              deviceColor: item?.productColor,
-            },
-          });
-          item["totalPrice"] = checkOthers.price * item?.quantity;
-          item["productPrice"] = checkOthers.price;
-        }
-        return item;
-      })
-    );
+    let totalOrderPrice = 0;
+    let totalDiscountAmount = 0;
+    let appliedDiscountPrice = 0;
+    let totalDiscountPercentage = 0;
+    let totalDiscountedPrice = 0;
 
-    const totalPrice = sumBy(updateTotalByProduct, "totalPrice", 0);
+    const cartEntries = productData.map((item, index) => {
+      const product = productDetailsList[index];
 
-    await model.Order.update(
-      {
-        orderStatus: "cancelled",
-      },
-      {
-        where: {
-          email: email,
-          orderStatus: "cart",
-        },
-      }
-    );
+      const totalPriceBeforeDiscount = product.price * item.quantity;
+      totalDiscountAmount =
+        (totalPriceBeforeDiscount * product.discountPercentage) / 100;
+      appliedDiscountPrice =
+        totalPriceBeforeDiscount -
+        (totalPriceBeforeDiscount * product.discountPercentage) / 100;
 
-    const getOrder = await model.Order.create({
-      email: email,
-      totalPrice: totalPrice,
-      orderStatus: "cart",
-    });
-
-    console.log(getOrder?.id || getOrder?.dataValues?.id, "getOrder");
-    const order_id = getOrder?.id || getOrder?.dataValues?.id;
-
-    // insert all items into cart
-
-    const cartItems = cartData.map((item) => {
-      console.log("Addding to cart", item);
+      totalOrderPrice += appliedDiscountPrice;
+      totalDiscountPercentage += product.discountPercentage;
+      totalDiscountedPrice += totalDiscountAmount;
       return {
-        orderId: getOrder?.id,
-        productColor: item?.productColor,
-        productType: item?.productType,
-        productPrice: item?.productPrice,
-        productStatus: 1,
-        quantity: item?.quantity,
-        email,
+        productId: item.productId,
+        fontId: item.fontId || null,
+        customName: item.customName || null,
+        quantity: item.quantity,
+        price: product.price,
+        discountPercentage: product.discountPercentage,
+        discountAmount: totalDiscountAmount,
+        totalPrice: appliedDiscountPrice,
+        totalOrderPrice: totalOrderPrice,
+        totalDiscountPercentage,
+        totalDiscountedPrice,
       };
     });
-    await model.Cart.bulkCreate(cartItems);
-    console.log("Addded to cart");
-    //insert name custom info
-    const nameCustom = cartData.filter((item) =>
-      item?.productType.includes("NC-")
-    );
-    console.log(nameCustom, "name CustomData");
-    if (!isEmpty(nameCustom)) {
-      console.log("Addding to namecustom data");
-      const namCustomItems = nameCustom.map((item) => {
-        const filePath = "./services/pdf/review.pdf";
-        uploadFileToS3(res, null, filePath, email);
-        return {
-          customName: item?.name,
-          quantity: item?.quantity,
-          fontStyle: item?.fontStyle,
-          productType: item?.productType,
-          productPrice: item?.productPrice,
-          productColor: item?.productColor,
-          email,
-          orderId: order_id,
-          productStatus: item?.productStatus,
-          deviceInventorId: item?.deviceInventorId,
-        };
-      });
-      await model.CustomCards.bulkCreate(namCustomItems);
-      console.log("Name custom Data added");
-    }
 
-    const fullCustom = cartData.filter((item) =>
-      item?.productType.includes("Full Custom")
+    const createOrder = await model.Order.create(
+      {
+        totalPrice: totalOrderPrice,
+        orderStatus: "cart",
+        orderStatusId: 1,
+        cancelledOrder: false,
+        email: shippingFormData.emailId,
+        discountPercentage: totalDiscountPercentage,
+        discountAmount: totalDiscountedPrice,
+        isLoggedIn: false,
+      },
+      { transaction }
     );
-    console.log(fullCustom, "fullcustom data");
-    if (!isEmpty(fullCustom)) {
-      console.log("Addding to full custom data");
-      const fullCustomItems = fullCustom.map((item) => {
-        return {
-          quantity: item?.quantity,
-          productPrice: item?.productPrice,
-          email,
-          orderId: order_id,
-          productStatus: false,
-        };
-      });
-      await model.FullyCustom.bulkCreate(fullCustomItems);
-      console.log("Full custom data added");
-    }
 
+    await Promise.all(
+      cartEntries.map(async (f) => {
+        await model.OrderBreakDown.create(
+          {
+            orderId: createOrder.id,
+            productId: f.productId,
+            fontId: f.fontId || null,
+            nameOnCard: f.customName || null,
+            originalPrice: f.price,
+            discountedPrice: f.totalPrice,
+            discountedAmount: f.discountAmount,
+            quantity: f.quantity,
+          },
+          {
+            transaction,
+          }
+        );
+      })
+    );
+    await model.Shipping.create(
+      {
+        orderId: createOrder.id,
+        firstName: shippingFormData.firstName,
+        lastName: shippingFormData.lastName,
+        phoneNumber: shippingFormData.phoneNumber,
+        emailId: shippingFormData.emailId,
+        flatNumber: shippingFormData.emailId,
+        address: shippingFormData.address,
+        city: shippingFormData.city,
+        state: shippingFormData.state,
+        zipcode: shippingFormData.zipcode,
+        country: shippingFormData.country,
+        landmark: shippingFormData.landmark,
+        isShipped: false,
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    console.log(cartEntries, "Final Cart Data");
     return res.json({
-      success: false,
-      message: "Cart Updated Successfully",
+      success: true,
+      message: "Order Created Successfully",
+      data: {
+        order: createOrder.id,
+      },
     });
   } catch (error) {
-    console.log("Add to cart======", error);
-    return res.json({
+    await transaction.rollback();
+    console.log(error);
+    logger.error(error, "from addToCart function");
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "An error occurred while adding items to the cart.",
     });
   }
 }
+
 export {
   getAllDevices,
   addToCart,

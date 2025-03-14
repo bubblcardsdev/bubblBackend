@@ -13,6 +13,7 @@ import config from "../config/config.js";
 import OrderConfirmationMail from "./orderEmail.js";
 import NameCustomEmail from "./namCustomEmail.js";
 import loggers from "../config/logger.js";
+import { generateSignedUrl } from "../middleware/fileUpload.js";
 
 async function initialePay(req, res) {
   try {
@@ -31,16 +32,17 @@ async function initialePay(req, res) {
         paymentObj.planType
       );
     }
-
     console.log(getDataForPayment, "getDataForPayment");
+    // return;
+
     const orderType = paymentObj.orderType;
     const cost =
       getDataForPayment.shippingCost !== undefined
         ? Number(getDataForPayment.shippingCost)
         : 0;
     console.log(cost, "cost");
-    const val = getDataForPayment.totalPrice;
-    const value = val + cost;
+    const value = getDataForPayment.totalPrice;
+    // const value = val + cost;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
     let token =
@@ -48,8 +50,8 @@ async function initialePay(req, res) {
     const shippingCost = cost.toString();
 
     console.log(value, "value");
-    console.log(token, "token", orderType);
-
+    console.log("token", orderType, value, orderId, planType, shippingCost);
+    // return;
     //  const cost =
     //       paymentObj.shippingCost !== undefined
     //         ? Number(paymentObj.shippingCost)
@@ -67,16 +69,16 @@ async function initialePay(req, res) {
     let encRequest = "";
     let formbody = "";
 
-    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
 
     // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
 
-    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
     encRequest = encrypt(bodyData, workingKey);
     const POST = qs.parse(bodyData);
 
     formbody =
-      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
       POST.merchant_id +
       "&encRequest=" +
       encRequest +
@@ -114,6 +116,8 @@ async function initialePay(req, res) {
 
     return res.json({
       success: true,
+      message: "Payment initiated Successfully",
+
       data: {
         formbody,
       },
@@ -166,12 +170,14 @@ async function verifyPayment(req, res) {
     });
     console.log(getOrderDetails, "getOrderDetails");
     console.log(obj, "obj");
+
     if (successEnum[obj.order_status] === true) {
       // const cost = obj.merchant_param2;
       // const shippingCost = Number(cost);
       // create entry in db with obj.tracking_id and obj.bank_ref_no against orderId
       switch (obj.billing_address) {
         case "0":
+          console.log("came ifS");
           await model.Payment.update(
             {
               transactionId: obj.tracking_id,
@@ -194,6 +200,7 @@ async function verifyPayment(req, res) {
           await model.Order.update(
             {
               orderStatus: "Paid",
+              orderStatusId: 3,
             },
             {
               where: {
@@ -208,33 +215,69 @@ async function verifyPayment(req, res) {
               paymentStatus: true,
             },
           });
-
           if (checkPaymentStatus) {
-            const checkDeviceType = await model.Cart.findAll({
+            console.log("inside");
+            const checkDeviceType = await model.OrderBreakDown.findAll({
               where: {
                 orderId: obj.order_id,
               },
             });
 
-            // const filterObj = checkDeviceType.find((obj) =>
-            //   obj.productType.includes("NC-")
-            // );
+            const products = await Promise.all(
+              await checkDeviceType.map(async (f) => {
+                const getProductDetail = await model.DeviceInventories.findOne({
+                  where: {
+                    productId: f.productId,
+                  },
+                  include: [
+                    {
+                      model: model.DeviceImageInventories,
+                    },
+                    {
+                      model: model.DeviceColorMasters,
+                    },
+                    {
+                      model: model.MaterialTypeMasters,
+                    },
+                    {
+                      model: model.DevicePatternMasters,
+                    },
+                  ],
+                });
+                const imageUrls = await Promise.all(
+                  (getProductDetail.DeviceImageInventories || []).map(
+                    async (img) => await generateSignedUrl(img.imageKey)
+                  )
+                );
+                const getFontName = await model.CustomFontMaster.findOne({
+                  where: { id: f.fontId },
+                });
+                return {
+                  productId: f.productId,
+                  productPrimaryImage: imageUrls[0],
+                  productSecondaryImage: imageUrls[1],
+                  deviceType: getProductDetail.deviceTypeId,
+                  font: getFontName.name || null,
+                  customName: f.nameOnCard,
+                };
+              })
+            );
 
-            // const filePath = "../services/pdf/"
+            console.log(products, "fdf");
 
-            const checkCustomImage = await model.CustomCards.findAll({
-              where: {
-                orderId: obj.order_id,
-              },
-            });
-            // const filePath = "../services/pdf/review.pdf";
+            const nameCustomProducts = products.filter(
+              (product) => product.deviceType === 6
+            );
 
-            // uploadFileToS3(res, userId, filePath);
+            const otherProducts = products.filter(
+              (product) => product.deviceType !== 6
+            );
 
-            if (checkDeviceType.includes("NC-")) {
-              NameCustomEmail(checkCustomImage, obj.order_id);
+            if (nameCustomProducts.length > 0) {
+              NameCustomEmail(nameCustomProducts, obj.order_id);
             } else {
-              OrderConfirmationMail(checkCustomImage, obj.order_id, userId);
+              console.log("came in else");
+              OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
           }
 
@@ -468,9 +511,9 @@ async function getDataForPaymentService(orderId) {
     });
     if (!getOrderDetails) throw new Error("Order not found");
 
-    const cartItems = await model.Cart.findAll({ where: { orderId } });
-    if (!cartItems || cartItems.length === 0)
-      throw new Error("CartItems not found");
+    // const cartItems = await model.Cart.findAll({ where: { orderId } });
+    // if (!cartItems || cartItems.length === 0)
+    //   throw new Error("CartItems not found");
 
     //#region - Discount logic
 
@@ -540,18 +583,24 @@ async function getDataForPaymentService(orderId) {
 
     //#endregion
 
-    const totalQuantity = cartItems.reduce(
-      (accumulator, item) => accumulator + item.quantity,
-      0
-    );
+    const shipping = await model.Shipping.findOne({ where: { orderId } });
+    if (!shipping)
+      throw new Error("No shipping record found for orderId:", orderId);
 
-    let totalPrice = getOrderDetails.totalPrice;
-    console.log(totalPrice, totalQuantity, "tamil");
+    const shippingCountry = shipping?.country || "default";
+    const shipCost = await model.ShippingCharge.findOne({
+      where: { country: shippingCountry.toLowerCase() },
+    });
+
+    // let
+    // console.log(getOrderDetails, "ll");
+    let sellingPrice = getOrderDetails.totalPrice + shipCost.amount;
+    // return;
 
     const updateOrder = await model.Order.update(
       {
-        totalPrice: totalPrice,
-        soldPrice: totalPrice,
+        soldPrice: Number(sellingPrice),
+        shippingCharge: Number(shipCost.amount),
       },
       {
         where: {
@@ -560,21 +609,25 @@ async function getDataForPaymentService(orderId) {
       }
     );
 
-    const shipping = await model.Shipping.findOne({ where: { orderId } });
-    if (!shipping) throw new Error("No shipping record found for orderId:", orderId);
+    if (!updateOrder) {
+      throw new Error("Cannot update order");
+    }
 
-    const shippingCountry = shipping?.country || "default";
-    const shipCost = await model.ShippingCharge.findOne({
-      where: { country: shippingCountry.toLowerCase() },
+    const createPayment = await model.Payment.create({
+      orderId: orderId,
+      customerId: getOrderDetails.customerId || null,
+      paymentStatus: false,
+      failureMessage: "",
     });
 
-    let cost = shipCost ? shipCost.amount : "500"; // Default shipping cost if not found
+    if (!createPayment) {
+      throw new Error("Cannot create payment entry");
+    }
 
     let orderObj = {
-      totalPrice: Math.round(totalPrice),
+      totalPrice: Math.round(sellingPrice),
       email: getOrderDetails.customerId || getOrderDetails.email,
-      quantity: totalQuantity,
-      shippingCost: cost,
+      shippingCost: shipCost.amount,
     };
 
     console.log(orderObj, "Final Order Object Sent to Payment");

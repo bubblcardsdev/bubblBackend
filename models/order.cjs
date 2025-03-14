@@ -58,6 +58,24 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      productUUId: {
+        type: Sequelize.UUID,
+      },
+      orderStatusId: {
+        type: Sequelize.INTEGER,
+      },
+      isLoggedIn: {
+        type: Sequelize.BOOLEAN,
+      },
+      shippingCharge: {
+        type: Sequelize.INTEGER,
+      },
+      fontId: {
+        type: Sequelize.INTEGER,
+      },
+      nameOnCard: {
+        type: Sequelize.STRING,
+      },
     },
     {
       sequelize,

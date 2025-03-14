@@ -26,23 +26,17 @@ async function OrderConfirmationMail(
           customerId: userId,
           cancelledOrder: false,
         };
+
     const order = await model.Order.findAll({
       where: whereClause,
       include: [
         {
-          model: model.Cart,
-          where: {
-            productStatus: true,
-          },
-        },
-        {
-          model: model.Shipping,
-        },
-        {
-          model: model.Payment,
+          model: model.OrderBreakDown,
         },
       ],
     });
+
+    console.log(order, "gdfdf");
 
     const filterOrder = order[0].Carts.filter((val) =>
       val.productType.includes("NC-")

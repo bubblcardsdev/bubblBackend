@@ -25,6 +25,7 @@ module.exports = (sequelize, Sequelize) => {
       },
       productId: {
         type: Sequelize.UUID,
+        unique: true,
       },
       shortDescription: {
         type: Sequelize.TEXT,

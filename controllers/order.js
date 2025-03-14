@@ -2,6 +2,7 @@ import loggers from "../config/logger.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import model from "../models/index.js";
 import { shippingDetails } from "../validations/orderShipping.js";
+import { sequelize } from "../models/index.js";
 
 async function getOrderDetails(req, res) {
   const userId = req.user.id;
@@ -77,24 +78,23 @@ async function getOrderDetails(req, res) {
       })
     );
 
-
     const displayNames = await Promise.all(
       orders.map(async (order) => {
-         const deviceName = await Promise.all(
+        const deviceName = await Promise.all(
           order.Carts.map(async (cartVal) => {
             if (cartVal.productType.includes("NC-")) {
-              const productNames = await model.NameDeviceImageInventory.findOne({
-                where: {
-                  deviceType: cartVal.productType,
-                  deviceColor: cartVal.productColor,
-                },
-              });
-              if(productNames)
-              {
+              const productNames = await model.NameDeviceImageInventory.findOne(
+                {
+                  where: {
+                    deviceType: cartVal.productType,
+                    deviceColor: cartVal.productColor,
+                  },
+                }
+              );
+              if (productNames) {
                 return productNames.displayName;
               }
-            } 
-            else {
+            } else {
               return cartVal.productType;
             }
           })
@@ -113,7 +113,7 @@ async function getOrderDetails(req, res) {
     });
   } catch (error) {
     console.log(error);
-    loggers.error(error+"from getOrderDetails function");
+    loggers.error(error + "from getOrderDetails function");
     return res.json({
       success: false,
       message: error,
@@ -122,102 +122,92 @@ async function getOrderDetails(req, res) {
 }
 
 async function getOrderById(req, res) {
-  const userId = req.user.id;
   const { orderId } = req.body;
+
   try {
-    const order = await model.Order.findAll({
-      where: {
-        id: orderId,
-        // customerId: userId,
-        cancelledOrder: false,
-      },
-      include: [
-        {
-          model: model.Cart,
-          where: {
-            productStatus: true,
-          },
-        },
-        {
-          model: model.Shipping,
-        },
-        {
-          model: model.Payment,
-        },
-      ],
+    // Fetch order with breakdowns
+    const order = await model.Order.findOne({
+      where: { id: orderId, cancelledOrder: false },
+      include: [{ model: model.OrderBreakDown }],
     });
 
-    // func for getting the images for corresponding orders
-    let deviceImages = [];
-    let deviceInventory = "";
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
 
-    deviceImages = await Promise.all(
-      order[0].Carts.map(async (cartVal) => {
-        if (cartVal.productType.includes("NC-")) {
-          const getImageId = await model.NameDeviceImageInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
-          if (getImageId) {
-            const deviceInventory = await model.NameCustomImages.findOne({
-              where: {
-                NameCustomDeviceId: getImageId.id,
-                cardView: false,
-              },
-            });
+    // Fetch all device images and details in one go
+    const deviceImages = await Promise.all(
+      order.OrderBreakDowns.map(async (orderBreakdown) => {
+        const device = await model.DeviceInventories.findOne({
+          where: { productId: orderBreakdown.productId },
+          include: [
+            { model: model.DeviceImageInventories },
+            { model: model.DeviceColorMasters },
+            { model: model.MaterialTypeMasters },
+            { model: model.DevicePatternMasters },
+            { model: model.DeviceTypeMasters },
+          ],
+        });
 
-            const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
+        if (!device) return null;
 
-            return itemImg;
-          }
-        } else {
-          deviceInventory = await model.DeviceInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
+        // Generate signed URLs for images
+        const signedImages = await Promise.all(
+          device.DeviceImageInventories.map(async (img) => ({
+            ...img.toJSON(),
+            signedUrl: await generateSignedUrl(img.imageKey),
+          }))
+        );
 
-          const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
-          return itemImg;
-        }
+        return {
+          productId: device.productId,
+          productName: device.name,
+          productColor: device.DeviceColorMaster?.name || null,
+          productPattern: device.DevicePatternMaster?.name || null,
+          productMaterial: device.MaterialTypeMaster?.name || null,
+          productType: device.DeviceTypeMaster?.name || null,
+          productPrice: orderBreakdown.price,
+          productSellingPrice: orderBreakdown.sellingPrice,
+          productDiscount: device.discountPercentage,
+          quantity: orderBreakdown.quantity,
+          productImages: signedImages,
+        };
       })
     );
 
-    const displayNames = await Promise.all(
-      order[0].Carts.map(async (cartVal) => {
-        if (cartVal.productType.includes("NC-")) {
-          const deviceName = await model.NameDeviceImageInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
-          if (deviceName) {
-              return deviceName.displayName;
-            };
-          }
-         else {
-          return cartVal.productType;
-        }
-      })
-    );
+    const payment = await model.Payment.findOne({
+      where: {
+        orderId: orderId,
+        paymentStatus: true,
+      },
+    });
+
+    const shippingData = await model.Shipping.findOne({
+      where: {
+        orderId: orderId,
+      },
+    });
+    const payObj = {
+      orderNumber: orderId,
+      refNo: payment.bankRefNo,
+      paymentStatus: payment?.status || "Pending",
+      paidAt: payment?.updatedAt || null,
+      payMethod: payment?.paymentMethod || null,
+      totalPaidAmount: payment?.totalPrice || 0,
+      totalDiscountAmount: payment?.discountAmount || 0,
+      shippingCost: payment?.shippingCharge || 0,
+    };
 
     return res.json({
       success: true,
       message: "Order Details",
-      order,
-      deviceImages,
-      displayNames,
+      shippingData: shippingData,
+      orderObj: deviceImages,
+      paymentObj: payObj,
     });
   } catch (error) {
-    console.error(error + "from getOrderById function");
-    return res.json({
-      success: false,
-      message: error.message,
-    });
+    console.error(`Error in getOrderById: ${error}`);
+    return res.status(500).json({ success: false, message: error.message });
   }
 }
 
@@ -260,7 +250,6 @@ async function cancelOrder(req, res) {
 async function checkOut(req, res) {
   const userId = req.user.id;
   const {
-    orderId,
     firstName,
     lastName,
     phoneNumber,
@@ -275,99 +264,117 @@ async function checkOut(req, res) {
     isShipped,
   } = req.body;
 
-  const { error } = shippingDetails.validate(req.body, {
-    abortEarly: false,
-  });
-  if (error) {
-    return res.json({
-      success: false,
-      data: {
-        error: error.details,
-      },
-    });
-  }
+  const transaction = await sequelize.transaction();
 
   try {
-    const order = await model.Order.findOne({
-      where: {
-        id: orderId,
-        customerId: userId,
-      },
+    // Fetch all cart items for the user
+    const getAllCartItems = await model.Cart.findAll({
+      where: { customerId: userId, productStatus: false },
+      transaction,
     });
-    if (order) {
-      const checkExisitingDetail = await model.Shipping.findOne({
-        where: {
-          orderId,
-        },
-      });
-      if (checkExisitingDetail) {
-        const updateShippingDetails = await model.Shipping.update(
-          {
-            firstName,
-            lastName,
-            phoneNumber,
-            emailId,
-            flatNumber,
-            address,
-            city,
-            state,
-            zipcode,
-            country,
-            landmark,
-            isShipped,
-          },
-          {
-            where: {
-              orderId,
-            },
-          }
-        );
-        return res.json({
-          success: true,
-          message: "Shipping details updated",
-          updateShippingDetails,
-        });
-      } else {
-        const createShippingDetails = await model.Shipping.create({
-          orderId: order.id,
-          firstName,
-          lastName,
-          phoneNumber,
-          emailId,
-          flatNumber,
-          address,
-          city,
-          state,
-          zipcode,
-          country,
-          landmark,
-          isShipped,
-        });
 
-        const createPayment = await model.Payment.create({
-          orderId: orderId,
-          customerId: userId,
-          paymentStatus: false,
-          failureMessage: "",
-        });
-
-        return res.json({
-          success: true,
-          message: "Created",
-          createShippingDetails,
-          createPayment,
-        });
-      }
-    } else {
-      return res.json({
-        success: false,
-        message: "Order not found",
-      });
+    if (!getAllCartItems || getAllCartItems.length === 0) {
+      throw new Error("Cannot find items in the cart.");
     }
-  } catch (error) {
-    console.log(error);
-    loggers.error(error + "from checkOut function");
+
+    // Fetch order status
+    const orderStatusMaster = await model.OrderStatusMaster.findOne({
+      where: { id: 1 },
+      transaction,
+    });
+
+    // Prepare order entries
+    let totalOrderPrice = 0;
+    const orderItems = await Promise.all(
+      getAllCartItems.map(async (cartItem) => {
+        const getDiscount = await model.DeviceInventories.findOne({
+          where: { productId: cartItem.productUUId },
+          transaction,
+        });
+
+        const discountAmount =
+          (cartItem.productPrice * getDiscount.discountPercentage) / 100;
+        const sellingPrice = cartItem.productPrice - discountAmount;
+        const totalPrice = sellingPrice * cartItem.quantity;
+
+        totalOrderPrice += totalPrice;
+
+        return {
+          productUUId: cartItem.productUUId,
+          quantity: cartItem.quantity,
+          totalPrice,
+          discountPercentage: getDiscount.discountPercentage,
+          discountAmount,
+          fontId: cartItem.fontId || null,
+          nameOnCard: cartItem.nameCustomNameOnCard || null,
+          productPrice: getDiscount.price,
+          discountedPrice: sellingPrice,
+        };
+      })
+    );
+
+    let createdOrder = await model.Order.create(
+      {
+        customerId: userId,
+        totalPrice: totalOrderPrice,
+        cancelledOrder: false,
+        email: emailId,
+        orderStatusId: 1,
+        orderStatus: orderStatusMaster.name || "cart",
+        discountPercentage: orderItems.discountPercentage,
+        discountAmount: orderItems.discountAmount,
+        isLoggedIn: true,
+        fontId: orderItems.fontId,
+        nameOnCard: orderItems.nameOnCard,
+      },
+      { transaction }
+    );
+    const orderBreakdownEntries = orderItems.map((item) => {
+      return {
+        orderId: createdOrder.id,
+        productId: item.productUUId,
+        quantity: item.quantity,
+        originalPrice: item.productPrice,
+        discountedAmount: item.discountAmount,
+        discountedPrice: item.discountedPrice,
+        sellingPrice: item.totalPrice,
+        fontId: item.fontId,
+        nameOnCard: item.nameOnCard,
+      };
+    });
+    await model.OrderBreakDown.bulkCreate(orderBreakdownEntries, {
+      transaction,
+    });
+    await model.Shipping.create(
+      {
+        orderId: createdOrder.id,
+        firstName,
+        lastName,
+        phoneNumber,
+        emailId,
+        flatNumber,
+        address,
+        city,
+        state,
+        zipcode,
+        country,
+        landmark,
+        isShipped: false,
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
     return res.json({
+      success: true,
+      message: "Order placed successfully!",
+      orderId: createdOrder.id,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    loggers.error(error.message + " from checkOut function");
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -462,7 +469,7 @@ async function checkOutNonUser(req, res) {
 
         const createPayment = await model.Payment.create({
           orderId: orderId,
-          email:emailId,
+          email: emailId,
           paymentStatus: false,
           failureMessage: "",
         });
@@ -618,7 +625,6 @@ async function proceedPayment(req, res) {
 }
 
 async function getNonUserOrderById(req, res) {
- 
   const { orderId } = req.body;
   try {
     const order = await model.Order.findAll({
@@ -691,10 +697,9 @@ async function getNonUserOrderById(req, res) {
             },
           });
           if (deviceName) {
-              return deviceName.displayName;
-            };
+            return deviceName.displayName;
           }
-         else {
+        } else {
           return cartVal.productType;
         }
       })
