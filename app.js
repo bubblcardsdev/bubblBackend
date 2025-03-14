@@ -14,13 +14,6 @@ const swaggerDocument = JSON.parse(
 
 const app = express();
 app.use(cors());
-app.use(
-  cors({
-    origin: ["https://dev.bubbl.cards/"], 
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, 
-  })
-);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compress());
