@@ -509,23 +509,8 @@ async function createUserMobile(req, res) {
         email: emailParse,
       },
     });
-    console.log(checkUser);
-    
-    if (
-      checkUser &&
-      (checkUser.signupType === "local" ||
-        checkUser.password.trim().length !== 0)
-    ) {
-      return res.json({
-        success: false,
-        data: {
-          message: "Email already exists",
-          phoneVerified: checkUser.phoneVerified,
-          emailVerified: checkUser.emailVerified,
-        },
-      });
-    }
     const hashedPassword = await hashPassword(password);
+    // For new user logic 
     if (!checkUser) {
       const user = await model.User.create({
         firstName: firstName,
@@ -573,7 +558,6 @@ async function createUserMobile(req, res) {
         lastName,
         email,
       };
-      console.log(userInfo);
       
       const accessToken = await generateAccessToken(userInfo);
       const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
@@ -599,13 +583,33 @@ async function createUserMobile(req, res) {
           refreshTokenExpiryInSeconds: refreshTokenExpiryInSeconds,
         },
       });
-    } else {
+    } 
+    // For existing user logics
+    else {
+      // check profile available for the existing user
+      const checkProfile = await model.Profile.findOne({
+        where: { userId: checkUser.id },
+      });
+
+      // throw error if user and the profile is already exist
+      if(checkProfile){
+        return res.json({
+              success: false,
+              data: {
+                message: "Email and profile already exists",
+                phoneVerified: checkUser.phoneVerified,
+                emailVerified: checkUser.emailVerified,
+              },
+            });
+      }
+      
+      // update user details and create profile 
       const userId = checkUser.id;
       await model.User.update(
         {
           password: hashedPassword,
         },
-        { where: { id: checkUser.id } }
+        { where: { id: userId } }
       );
       const createProfileMobile = await MobileOnboardingProfileCreate(
         firstName,
@@ -653,7 +657,6 @@ async function createUserMobile(req, res) {
       });
     }
   } catch (error) {
-    console.log(error.message, "ee");
     loggers.error(error + "from createUser function");
     if (error instanceof UniqueConstraintError) {
       await model.User.findOne({ where: { email } });
