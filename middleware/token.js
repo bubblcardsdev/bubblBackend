@@ -74,9 +74,49 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+const authenticateCheckoutToken = (req, res, next) =>{
+  const token = req.headers.authorization;
+  if (!token) {
+    req.email = {};
+    return next();
+  }
+  if (token) {
+    try {
+      const { exp } = jwt.decode(token);
+      if (exp * 1000 < Date.now()) {
+        return res.status(401).json({
+          success: false,
+          data: {
+            message: "Token has expired",
+          },
+        });
+      }
+      const decoded = jwt.verify(token, config.accessSecret);
+      const { id, firstName, lastName, email } = decoded;
+      const user = {
+        id,
+        firstName,
+        lastName,
+        email,
+      };
+
+      req.user = user;
+      next();
+    } catch (error) {
+      return res.json({
+        success: false,
+        data: {
+          error,
+        },
+      });
+    }
+  }
+};
+
 export {
   generateAccessToken,
   generateRefreshToken,
   issueToken,
   authenticateToken,
+  authenticateCheckoutToken
 };

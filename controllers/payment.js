@@ -142,17 +142,21 @@ const successEnum = {
 async function verifyPayment(req, res) {
   try {
     const encData = req.body.data;
+    console.log(encData);
+    
     //check if it has encrypted data or validate
     const ccavResponse = decrypt(encData, workingKey);
+    
 
     const params = new URLSearchParams(ccavResponse);
     const obj = Object.fromEntries(params.entries());
-
     const token = atob(obj.merchant_param1);
     let userId = 0;
+   
+    
 
     if (obj?.billing_address != "2") {
-      try {
+      try { 
         const tokenData = jwt.verify(token, config.accessSecret);
         userId = tokenData.id;
       } catch (e) {
@@ -161,6 +165,8 @@ async function verifyPayment(req, res) {
       }
     }
 
+    obj.order_status= "Success";//comment this before live
+    
     const cost = obj.merchant_param2;
     const shippingCost = Number(cost);
     const getOrderDetails = await model.Order.findOne({
@@ -168,8 +174,6 @@ async function verifyPayment(req, res) {
         id: Number(obj.order_id),
       },
     });
-    console.log(getOrderDetails, "getOrderDetails");
-    console.log(obj, "obj");
 
     if (successEnum[obj.order_status] === true) {
       // const cost = obj.merchant_param2;
@@ -177,19 +181,21 @@ async function verifyPayment(req, res) {
       // create entry in db with obj.tracking_id and obj.bank_ref_no against orderId
       switch (obj.billing_address) {
         case "0":
-          console.log("came ifS");
           await model.Payment.update(
             {
               transactionId: obj.tracking_id,
               bankRefNo: obj.bank_ref_no,
-              // customerId: userId,
+              customerId: userId || null,
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
+              email:getOrderDetails.email,
               totalPrice: getOrderDetails.totalPrice,
               discountAmount: getOrderDetails.discountAmount,
               discountPercentage: getOrderDetails.discountPercentage,
-              paidAmount: getOrderDetails.soldPrice,
+              soldPrice:obj.amount,
+              paidAmount: obj.amount,
+              isLoggedIn:userId? true: false
             },
             {
               where: {
@@ -201,6 +207,7 @@ async function verifyPayment(req, res) {
             {
               orderStatus: "Paid",
               orderStatusId: 3,
+              soldPrice:obj.amount
             },
             {
               where: {
@@ -216,7 +223,6 @@ async function verifyPayment(req, res) {
             },
           });
           if (checkPaymentStatus) {
-            console.log("inside");
             const checkDeviceType = await model.OrderBreakDown.findAll({
               where: {
                 orderId: obj.order_id,
@@ -251,20 +257,40 @@ async function verifyPayment(req, res) {
                 );
                 const getFontName = await model.CustomFontMaster.findOne({
                   where: { id: f.fontId },
+                });   
+               if(userId){
+                const findCartItem= await model.Cart.findOne({
+                  where:{
+                    productUUId: f.productId,
+                    customerId:userId,
+                    productStatus: false
+                  }
                 });
+                await model.Cart.update({
+                  productStatus: false
+                },{
+                  where:{
+                    id:findCartItem.id,
+                    customerId:userId,
+                  }
+                });
+               }
+                
                 return {
                   productId: f.productId,
                   productPrimaryImage: imageUrls[0],
                   productSecondaryImage: imageUrls[1],
                   deviceType: getProductDetail.deviceTypeId,
-                  font: getFontName.name || null,
-                  customName: f.nameOnCard,
+                  font: getFontName?.name || null,
+                  customName: f.nameOnCard || null,
+                  productName: getProductDetail.name,
+                  productPrice:getProductDetail.price,
+                  quantity: f.quantity
                 };
               })
-            );
-
-            console.log(products, "fdf");
-
+            );  
+            console.log(products);
+            
             const nameCustomProducts = products.filter(
               (product) => product.deviceType === 6
             );
@@ -272,10 +298,12 @@ async function verifyPayment(req, res) {
             const otherProducts = products.filter(
               (product) => product.deviceType !== 6
             );
-
+            // console.log(nameCustomProducts,otherProducts);
+            
             if (nameCustomProducts.length > 0) {
               NameCustomEmail(nameCustomProducts, obj.order_id);
-            } else {
+            } 
+            if(otherProducts.length > 0) {
               console.log("came in else");
               OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
@@ -320,19 +348,23 @@ async function verifyPayment(req, res) {
               jwtToken: token,
             },
           });
+          // comment the below logic if not needed.
         case "2":
           await model.Payment.update(
             {
               transactionId: obj.tracking_id,
               bankRefNo: obj.bank_ref_no,
-              email: token,
+              customerId: userId || null,
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
+              email:getOrderDetails.email,
               totalPrice: getOrderDetails.totalPrice,
               discountAmount: getOrderDetails.discountAmount,
               discountPercentage: getOrderDetails.discountPercentage,
-              paidAmount: getOrderDetails.soldPrice,
+              soldPrice:obj.amount,
+              paidAmount: obj.amount,
+              isLoggedIn:userId? true: false
             },
             {
               where: {
@@ -343,6 +375,8 @@ async function verifyPayment(req, res) {
           await model.Order.update(
             {
               orderStatus: "Paid",
+              orderStatusId: 3,
+              soldPrice:obj.amount
             },
             {
               where: {
@@ -351,44 +385,96 @@ async function verifyPayment(req, res) {
             }
           );
           // if the payment is successful, email send to user
-          const checkStatus = await model.Payment.findOne({
+          const checkPaymentStat = await model.Payment.findOne({
             where: {
               orderId: obj.order_id,
               paymentStatus: true,
             },
           });
-
-          if (checkStatus) {
-            const checkDeviceType = await model.Cart.findAll({
+          if (checkPaymentStat) {
+            const checkDeviceType = await model.OrderBreakDown.findAll({
               where: {
                 orderId: obj.order_id,
               },
             });
 
-            // const filterObj = checkDeviceType.find((obj) =>
-            //   obj.productType.includes("NC-")
-            // );
+            const products = await Promise.all(
+              await checkDeviceType.map(async (f) => {
+                const getProductDetail = await model.DeviceInventories.findOne({
+                  where: {
+                    productId: f.productId,
+                  },
+                  include: [
+                    {
+                      model: model.DeviceImageInventories,
+                    },
+                    {
+                      model: model.DeviceColorMasters,
+                    },
+                    {
+                      model: model.MaterialTypeMasters,
+                    },
+                    {
+                      model: model.DevicePatternMasters,
+                    },
+                  ],
+                });
+                const imageUrls = await Promise.all(
+                  (getProductDetail.DeviceImageInventories || []).map(
+                    async (img) => await generateSignedUrl(img.imageKey)
+                  )
+                );
+                const getFontName = await model.CustomFontMaster.findOne({
+                  where: { id: f.fontId },
+                });   
+               if(userId){
+                const findCartItem= await model.Cart.findOne({
+                  where:{
+                    productUUId: f.productId,
+                    customerId:userId,
+                    productStatus: false
+                  }
+                });
+                await model.Cart.update({
+                  productStatus: false
+                },{
+                  where:{
+                    id:findCartItem.id,
+                    customerId:userId,
+                  }
+                });
+               }
+                
+                return {
+                  productId: f.productId,
+                  productPrimaryImage: imageUrls[0],
+                  productSecondaryImage: imageUrls[1],
+                  deviceType: getProductDetail.deviceTypeId,
+                  font: getFontName?.name || null,
+                  customName: f.nameOnCard || null,
+                  productName: getProductDetail.name,
+                  productPrice:getProductDetail.price,
+                  quantity: f.quantity
+                };
+              })
+            );  
+            console.log(products);
+            
+            const nameCustomProducts = products.filter(
+              (product) => product.deviceType === 6
+            );
 
-            // const filePath = "../services/pdf/"
-
-            const checkCustomImage = await model.CustomCards.findAll({
-              where: {
-                orderId: obj.order_id,
-              },
-            });
-            // const filePath = "../services/pdf/review.pdf";
-
-            // uploadFileToS3(res, userId, filePath);
-
-            if (checkDeviceType.includes("NC-")) {
-              NameCustomEmail(checkCustomImage, obj.order_id);
-            } else {
-              OrderConfirmationMail(
-                checkCustomImage,
-                obj.order_id,
-                userId,
-                token
-              );
+            const otherProducts = products.filter(
+              (product) => product.deviceType !== 6
+            );
+            // console.log(nameCustomProducts,otherProducts);
+            
+            if (nameCustomProducts.length > 0) {
+              NameCustomEmail(nameCustomProducts, obj.order_id);
+            } 
+            if(otherProducts.length > 0) {
+              console.log("came in else");
+              OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
           }
 
@@ -399,7 +485,7 @@ async function verifyPayment(req, res) {
               orderId: obj.order_id,
               paymentMode: obj.payment_mode,
               orderType: obj.billing_address,
-              email: token,
+              jwtToken: token,
               shippingCharge: shippingCost,
             },
           });
@@ -410,7 +496,7 @@ async function verifyPayment(req, res) {
           await model.Payment.update({
             transactionId: obj.tracking_id,
             bankRefNo: obj.bank_ref_no,
-            // customerId: userId,
+            customerId: userId || null,
             orderId: obj.order_id,
             paymentStatus: successEnum[obj.order_status],
             failureMessage: obj.failure_message,
@@ -418,7 +504,9 @@ async function verifyPayment(req, res) {
             totalPrice: getOrderDetails.totalPrice,
             discountAmount: getOrderDetails.discountAmount,
             discountPercentage: getOrderDetails.discountPercentage,
-            paidAmount: getOrderDetails.soldPrice,
+            paidAmount: null,
+            isLoggedIn: userId? true : false,
+            email:getOrderDetails.email
           });
           // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
           return res.json({
@@ -445,27 +533,29 @@ async function verifyPayment(req, res) {
               paymentMode: obj.payment_mode,
             },
           });
-        case "2":
-          await model.Payment.update({
-            transactionId: obj.tracking_id,
-            bankRefNo: obj.bank_ref_no,
-            email: token,
-            orderId: obj.order_id,
-            paymentStatus: successEnum[obj.order_status],
-            failureMessage: obj.failure_message,
-            shippingCharge: shippingCost,
-            totalPrice: getOrderDetails.totalPrice,
-            discountAmount: getOrderDetails.discountAmount,
-            discountPercentage: getOrderDetails.discountPercentage,
-            paidAmount: getOrderDetails.soldPrice,
-          });
-          // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
-          return res.json({
-            success: false,
-            orderType: obj.billing_address,
-            message: obj.failure_message,
-          });
-      }
+          case "2":
+            await model.Payment.update({
+              transactionId: obj.tracking_id,
+              bankRefNo: obj.bank_ref_no,
+              customerId: userId || null,
+              orderId: obj.order_id,
+              paymentStatus: successEnum[obj.order_status],
+              failureMessage: obj.failure_message,
+              shippingCharge: shippingCost,
+              totalPrice: getOrderDetails.totalPrice,
+              discountAmount: getOrderDetails.discountAmount,
+              discountPercentage: getOrderDetails.discountPercentage,
+              paidAmount: null,
+              isLoggedIn: userId? true : false,
+              email:getOrderDetails.email
+            });
+            // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
+            return res.json({
+              success: false,
+              orderType: obj.billing_address,
+              message: obj.failure_message,
+            });
+   }
     }
   } catch (error) {
     loggers.error(error + "from verifyPayment function");

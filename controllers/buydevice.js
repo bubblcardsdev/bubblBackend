@@ -317,11 +317,36 @@ async function addToCart(req, res) {
     if (!getProductDetails || !getProductDetails?.DeviceTypeMaster?.name) {
       throw new Error("Cannot find the product");
     }
-
+    console.log(typeof quantity);
+    
+    let totalQuantity = Number(quantity);
+    const findCartItem = await model.Cart.findAll({
+      where:{
+        customerId: userId,
+        productUUId: productId,
+        productStatus: false
+      }
+    });
+    console.log(totalQuantity);
+    
+    if(findCartItem){
+      Promise.all(findCartItem.map(async(data)=>{
+        totalQuantity += data.quantity;
+        await model.Cart.update({
+          productStatus: true
+        },{
+          where:{
+            id:data.id
+          }
+        });
+      })
+    );
+    }
+    
     const createCartItem = await model.Cart.create({
       customerId: userId,
       productUUId: productId,
-      quantity: quantity,
+      quantity: totalQuantity,
       productPrice: getProductDetails.price,
       productType: getProductDetails.DeviceTypeMaster.name,
       productColor: getProductDetails?.DeviceColorMaster?.name

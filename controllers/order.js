@@ -3,6 +3,8 @@ import { generateSignedUrl } from "../middleware/fileUpload.js";
 import model from "../models/index.js";
 import { shippingDetails } from "../validations/orderShipping.js";
 import { sequelize } from "../models/index.js";
+import logger from "../config/logger.js";
+import { Op } from "sequelize";
 
 async function getOrderDetails(req, res) {
   const userId = req.user.id;
@@ -386,39 +388,38 @@ async function cancelOrder(req, res) {
 //#endregion
 
 async function checkOut(req, res) {
-  const userId = req.user?.id || null; // Handles both logged-in and guest users
+  const userId = req.user?.id || null; 
   const {
-    firstName,
-    lastName,
-    phoneNumber,
-    emailId,
-    flatNumber,
-    address,
-    city,
-    state,
-    zipcode,
-    country,
-    landmark,
-    productData, // Only applicable for non-user checkout
-    shippingFormData, // Only applicable for non-user checkout
+    productData, 
+    shippingFormData, 
   } = req.body;
+  const { error } = shippingDetails.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
 
   const transaction = await sequelize.transaction();
 
   try {
     let cartItems = [];
-
     if (userId) {
       cartItems = await model.Cart.findAll({
-        where: { customerId: userId, productStatus: false },
+        where: { customerId: userId, productStatus: false, productUUId:{
+          [Op.ne]: null
+        }},
         transaction,
       });
-
       if (!cartItems.length) {
         throw new Error("Cannot find items in the cart.");
       }
     } else {
-      // For non-logged-in users, use productData from request
       if (!productData || !productData.length) {
         throw new Error("No products provided for guest checkout.");
       }
@@ -428,8 +429,7 @@ async function checkOut(req, res) {
         fontId: item.fontId || null,
         nameOnCard: item.customName || null,
       }));
-    }
-
+    }    
     // Fetch product details in bulk
     const productDetails = await model.DeviceInventories.findAll({
       where: { productId: cartItems.map((item) => item.productUUId) },
@@ -440,8 +440,7 @@ async function checkOut(req, res) {
       ],
       transaction,
     });
-
-    if (productDetails.length !== cartItems.length) {
+    if (productDetails.length !== cartItems.length) {  
       throw new Error("One or more products could not be found.");
     }
 
@@ -479,14 +478,16 @@ async function checkOut(req, res) {
         discountedPrice,
       };
     });
-
+    console.log(orderItems);
+    
+    
     // Create Order
     const createdOrder = await model.Order.create(
       {
         customerId: userId,
         totalPrice: totalOrderPrice,
         cancelledOrder: false,
-        email: emailId || shippingFormData?.emailId,
+        email: shippingFormData?.emailId,
         orderStatusId: 1,
         orderStatus: orderStatusMaster?.name || "cart",
         discountPercentage: totalDiscountPercentage,
@@ -516,17 +517,17 @@ async function checkOut(req, res) {
     await model.Shipping.create(
       {
         orderId: createdOrder.id,
-        firstName: firstName || shippingFormData?.firstName,
-        lastName: lastName || shippingFormData?.lastName,
-        phoneNumber: phoneNumber || shippingFormData?.phoneNumber,
-        emailId: emailId || shippingFormData?.emailId,
-        flatNumber: flatNumber || shippingFormData?.flatNumber,
-        address: address || shippingFormData?.address,
-        city: city || shippingFormData?.city,
-        state: state || shippingFormData?.state,
-        zipcode: zipcode || shippingFormData?.zipcode,
-        country: country || shippingFormData?.country,
-        landmark: landmark || shippingFormData?.landmark,
+        firstName: shippingFormData?.firstName,
+        lastName: shippingFormData?.lastName,
+        phoneNumber: shippingFormData?.phoneNumber,
+        emailId: shippingFormData?.emailId,
+        flatNumber: shippingFormData?.flatNumber,
+        address: shippingFormData?.address,
+        city: shippingFormData?.city,
+        state: shippingFormData?.state,
+        zipcode: shippingFormData?.zipcode,
+        country: shippingFormData?.country,
+        landmark: shippingFormData?.landmark,
         isShipped: false,
       },
       { transaction }
@@ -545,6 +546,7 @@ async function checkOut(req, res) {
     return res.status(500).json({
       success: false,
       message: "An error occurred during checkout.",
+      error: error
     });
   }
 }

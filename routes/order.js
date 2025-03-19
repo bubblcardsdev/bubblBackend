@@ -9,14 +9,14 @@ import {
   checkOutNonUser,
   getNonUserOrderById,
 } from "../controllers/order.js";
-import { authenticateToken } from "../middleware/token.js";
+import { authenticateCheckoutToken, authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
 
 router.get("/all", authenticateToken, getOrderDetails);
 router.post("/one", getOrderById);
 router.put("/ship", authenticateToken, updateShippingDetails);
-router.post("/checkout", authenticateToken, checkOut);
+router.post("/checkout", authenticateCheckoutToken, checkOut);
 router.put("/pay", authenticateToken, proceedPayment);
 router.put("/cancel", authenticateToken, cancelOrder);
 
