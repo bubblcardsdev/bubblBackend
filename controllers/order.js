@@ -473,7 +473,7 @@ async function checkOut(req, res) {
         discountPercentage: product.discountPercentage,
         discountAmount,
         fontId: cartItem.fontId || null,
-        nameOnCard: cartItem.nameOnCard || null,
+        nameOnCard: cartItem.nameOnCard || cartItem.nameCustomNameOnCard || null,
         productPrice: product.price,
         discountedPrice,
       };

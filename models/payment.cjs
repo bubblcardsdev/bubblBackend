@@ -74,6 +74,12 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      amount:{
+        type: Sequelize.INTEGER
+      },
+      isLoggedIn:{
+        type: Sequelize.BOOLEAN
+      }
     },
     {
       sequelize,

@@ -5,13 +5,12 @@ const shippingDetails = Joi.object({
     .items(
       Joi.object({
         productId: Joi.string().uuid().required(),
-        fontId: Joi.string().optional().allow(null),
+        fontId: Joi.number().optional().allow(null),
         customName: Joi.string().optional().allow(null),
         quantity: Joi.number().integer().min(1).required(),
       })
     )
-    .min(1)
-    .required(),
+    .min(1).optional(),
 
   promoCode: Joi.string().optional(),
 

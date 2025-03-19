@@ -57,6 +57,12 @@ async function NameCustomEmail(products, OrderId) {
     </style>
     </head>
   <body>
+  <div>
+  <p>Dear Customer,</p>
+          <p>Thank you for placing an order with Bubbl.cards! Your order #${OrderId} has been confirmed and is now being processed.</p>
+          <p>We will keep you updated on the status of your order and notify you as soon as it's shipped. If you have any questions or concerns, please don't hesitate to contact us at ${7845861552}.</p>
+          <p>Thank you for choosing Bubbl.cards, and we hope you enjoy your purchase!</p>
+  </div>
   `;
     await qr.toDataURL(data, options);
 
@@ -111,9 +117,9 @@ async function NameCustomEmail(products, OrderId) {
     </section>
       `;
 
-        // if (index < getCustomName.length - 1) {
-        //   combinedHTMLContent += "<p style='page-break-before: always'></p>"; // Add page break between contents
-        // }
+        if (index < card.length - 1) {
+          combinedHTMLContent += "<p style='page-break-before: always'></p>"; // Add page break between contents
+        }
       })
     );
 
@@ -150,12 +156,27 @@ async function NameCustomEmail(products, OrderId) {
         orderId: OrderId,
       },
     });
+    const textContent = `
+    <html>
+    <head>
+    <body>
+      <div>
+  <p>Dear Customer,</p>
+          <p>Thank you for placing an order with Bubbl.cards! Your order #${OrderId} has been confirmed and is now being processed.</p>
+          <p>We will keep you updated on the status of your order and notify you as soon as it's shipped. If you have any questions or concerns, please don't hesitate to contact us at ${7845861552}.</p>
+          <p>Thank you for choosing Bubbl.cards, and we hope you enjoy your purchase!</p>
+          <p>Please find the attached PDF file.</p>
+  </div>
+   </html>
+    </head>
+    </body>`;
     const mailOptions = {
       from: config.smtpFromEmail,
       // to: getUserMailId.emailId,
-      to: "benial@rvmatrix.in",
+      // to: "benial@rvmatrix.in",
+      to: "tamilseva003@gmail.com",
       subject: "NameCustom Preview PDF",
-      text: "Please find the attached PDF file.",
+      html: textContent,
       attachments: [
         {
           filename: "Name Custom Preview.pdf",

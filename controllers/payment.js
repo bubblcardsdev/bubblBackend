@@ -152,9 +152,7 @@ async function verifyPayment(req, res) {
     const obj = Object.fromEntries(params.entries());
     const token = atob(obj.merchant_param1);
     let userId = 0;
-   
     
-
     if (obj?.billing_address != "2") {
       try { 
         const tokenData = jwt.verify(token, config.accessSecret);
@@ -164,6 +162,7 @@ async function verifyPayment(req, res) {
         // console.log("failed to verify token");
       }
     }
+    userId = userId === 0? null: userId;
 
     obj.order_status= "Success";//comment this before live
     
@@ -194,8 +193,8 @@ async function verifyPayment(req, res) {
               discountAmount: getOrderDetails.discountAmount,
               discountPercentage: getOrderDetails.discountPercentage,
               soldPrice:obj.amount,
-              paidAmount: obj.amount,
-              isLoggedIn:userId? true: false
+              amount:obj.amount,
+              isLoggedIn:userId ? true : false
             },
             {
               where: {
@@ -267,7 +266,7 @@ async function verifyPayment(req, res) {
                   }
                 });
                 await model.Cart.update({
-                  productStatus: false
+                  productStatus: true
                 },{
                   where:{
                     id:findCartItem.id,
