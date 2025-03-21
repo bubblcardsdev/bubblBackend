@@ -787,11 +787,17 @@ async function getProfileByDevice(req, res) {
               profileId: checkWithoutDevice,
             },
           });
+          const deviceBranding = await model.DeviceBranding.findAll({
+            where: {
+              profileId: checkWithoutDevice,
+            },
+          });
           return res.json({
             success: true,
             message: "Your Profile",
             profile,
             // user,
+            deviceBranding,
             profileImages,
           });
         }
