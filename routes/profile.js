@@ -38,7 +38,7 @@ router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
 
-router.get("/findAll", findAllProfilesForMob);
+router.get("/findAll", authenticateToken, findAllProfilesForMob);
 router.get("/", getProfileByDevice);
 // router.get("/m", getProfileByMode);
 router.put("/update", authenticateToken, updateProfile);
