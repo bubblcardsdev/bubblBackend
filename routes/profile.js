@@ -22,8 +22,10 @@ import {
   getProfileName,
   updateProfileName,
   createCompleteProfileBulk,
-  getProfileOne
+  getProfileOne,
   // getProfileByMode,
+  // findAllProfilesForMobile,
+  findAllProfilesForMob
 } from "../controllers/profile.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -35,6 +37,8 @@ router.post("/create", authenticateToken, createProfile);
 router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
+
+router.get("/findAll", findAllProfilesForMob);
 router.get("/", getProfileByDevice);
 // router.get("/m", getProfileByMode);
 router.put("/update", authenticateToken, updateProfile);
