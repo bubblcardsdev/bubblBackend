@@ -1201,6 +1201,156 @@ async function findAllProfiles(req, res) {
   }
 }
 
+async function findAllProfilesForMob(req, res) {
+  const userId = 223;
+
+  try {
+    const allProfile = await model.Profile.findAll({
+      where: { userId: userId },
+      attributes: [
+        "id",
+        "profileName",
+        "firstName",
+        "lastName",
+        "designation",
+        "companyName",
+        "address",
+      ],
+      raw: false,
+      hooks: false,
+    });
+
+    const plainProfiles = allProfile.map((profile) => profile.toJSON());
+
+    const profileIds = plainProfiles.map((profile) => profile.id);
+    const deviceLinks = await model.DeviceLink.findAll({
+      where: { profileId: profileIds },
+      include: [
+        { model: model.Template },
+        { model: model.Mode },
+        { model: model.DeviceBranding },
+        { model: model.UniqueNameDeviceLink },
+        {
+          model: model.AccountDeviceLink,
+          where: { isDeleted: false },
+          include: [{ model: model.Device }],
+        },
+      ],
+      raw: false,
+    });
+
+    const plainDeviceLinks = deviceLinks.map((device) => device.toJSON());
+
+    // const profiles = plainDeviceLinks.map((device) => {
+    //   const profile = plainProfiles.find((p) => p.id === device.profileId);
+
+    //   if (!profile) return null;
+
+    //   return {
+    //     ...profile,
+    //     DeviceLink: device,
+    //   };
+    // });
+
+    // console.log(profiles);
+
+    const profiles = plainProfiles.flatMap((profile) => {
+      const devices = plainDeviceLinks.filter(
+        (device) => device.profileId === profile.id
+      );
+
+      if (devices.length === 0) {
+        return {
+          ...profile,
+          DeviceLink: null,
+        };
+      }
+
+     
+      return devices.map((device) => ({
+        ...profile,
+        DeviceLink: device, 
+      }));
+    });
+
+    console.log(profiles);
+
+    const devices = await model.AccountDeviceLink.findAll({
+      include: [
+        {
+          model: model.Device,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.DeviceLink,
+          include: [
+            {
+              model: model.Profile,
+            },
+            {
+              model: model.Template,
+            },
+            {
+              model: model.Mode,
+            },
+            {
+              model: model.DeviceBranding,
+            },
+            {
+              model: model.AccountDeviceLink,
+              where: {
+                isDeleted: false,
+              },
+              include: [
+                {
+                  model: model.Device,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      where: {
+        userId: userId,
+        isDeleted: false,
+      },
+    });
+    // if (devices) {
+    //   const imgPath = devices[0].DeviceLink.Profile.dataValues.profileImage;
+
+    //   if (imgPath !== "") {
+    //     const SignedImage = await generateSignedUrl(imgPath);
+    //     devices[0].DeviceLink.Profile.dataValues.profileImage = SignedImage;
+    //   }
+    // }
+
+    const profileImages = model.ProfileImages.findOne({
+      where: {
+        profileId: 4,
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        message: "Profiles found",
+        profiles,
+        profileImages,
+        devices,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    loggers.error(error + "from findAllProfiles function");
+    return res.json({
+      success: false,
+      data: {
+        message: error.message,
+      },
+    });
+  }
+}
+
 async function getProfile(req, res) {
   // const userId = req.user.id;
   const { profileId } = req.body;
@@ -2735,4 +2885,5 @@ export {
   updateProfileName,
   createCompleteProfileBulk,
   getProfileOne,
+  findAllProfilesForMob,
 };
