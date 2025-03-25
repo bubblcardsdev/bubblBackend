@@ -1202,7 +1202,7 @@ async function findAllProfiles(req, res) {
 }
 
 async function findAllProfilesForMob(req, res) {
-  const userId = 223;
+  const userId = req.user.id;
 
   try {
     const allProfile = await model.Profile.findAll({
