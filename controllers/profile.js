@@ -1203,7 +1203,6 @@ async function findAllProfiles(req, res) {
 
 async function findAllProfilesForMob(req, res) {
   const userId = req.user.id;
-
   try {
     const allProfile = await model.Profile.findAll({
       where: { userId: userId },
@@ -1584,6 +1583,8 @@ async function getProfileOne(req, res) {
           attributes: {
             exclude: ["createdAt", "updatedAt"],
           },
+          order: [["id", "DESC"]],
+          limit: 3,
         },
       ],
       required: false,
