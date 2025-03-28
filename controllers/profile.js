@@ -1248,11 +1248,11 @@ async function findAllProfilesForMob(req, res) {
           attributes: {
             exclude: ["createdAt", "updatedAt"],
           },
-          where: {
-            activeStatus: true,
-            enableStatus: true,
-            socialMediaName: { [Op.ne]: "" },
-          },
+          // where: {
+          //   activeStatus: true,
+          //   enableStatus: true,
+          //   socialMediaName: { [Op.ne]: "" },
+          // },
         },
         {
           model: model.ProfileDigitalPaymentLink,
@@ -1265,7 +1265,7 @@ async function findAllProfilesForMob(req, res) {
           // limit: 3,
         },
       ],
-      required: false,
+     
     });
 
     for (const profile of allProfile) {
