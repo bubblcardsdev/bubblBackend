@@ -9,6 +9,7 @@ import { generateSignedUrl } from "../middleware/fileUpload.js";
 import loggers from "../config/logger.js";
 import axios from "axios";
 import { decryptProfileId } from "../helper/ccavutil.js";
+import { Op, Sequelize } from "sequelize";
 
 async function getProfileName(req, res) {
   try {
@@ -1247,8 +1248,11 @@ async function findAllProfilesForMob(req, res) {
           attributes: {
             exclude: ["createdAt", "updatedAt"],
           },
-          // order: [["id", "DESC"]],
-          // limit: 6,
+          where: {
+            activeStatus: true,
+            enableStatus: true,
+            socialMediaName: { [Op.ne]: "" },
+          },
         },
         {
           model: model.ProfileDigitalPaymentLink,
@@ -1256,6 +1260,7 @@ async function findAllProfilesForMob(req, res) {
           attributes: {
             exclude: ["createdAt", "updatedAt"],
           },
+
           // order: [["id", "DESC"]],
           // limit: 3,
         },
@@ -1269,7 +1274,50 @@ async function findAllProfilesForMob(req, res) {
 
         profile.profileImage = signedUrl;
       }
+
+      profile.profileSocialMediaLinks.reverse();
+      profile.profileDigitalPaymentLinks.reverse();
+      let profileSocialMediaLinksArr = [];
+      let profileDigitalPaymentLinksArr = [];
+
+      if (profile.profileSocialMediaLinks.length > 0) {
+        for (let i = 0; i < profile.profileSocialMediaLinks.length; i++) {
+          const element = profile.profileSocialMediaLinks[i];
+          if (
+            !profileSocialMediaLinksArr.some(
+              (a) => a.profileSocialMediaId === element.profileSocialMediaId
+            )
+          ) {
+            profileSocialMediaLinksArr.push(element);
+          }
+        }
+      }
+
+      if (profile.profileDigitalPaymentLinks.length > 0) {
+        for (let i = 0; i < profile.profileDigitalPaymentLinks.length; i++) {
+          const element = profile.profileDigitalPaymentLinks[i];
+          if (
+            !profileDigitalPaymentLinksArr.some(
+              (a) =>
+                a.profileDigitalPaymentsId === element.profileDigitalPaymentsId
+            )
+          ) {
+            profileDigitalPaymentLinksArr.push(element);
+          }
+        }
+      }
+
+      // Set to an empty array
+      profile.setDataValue(
+        "profileSocialMediaLinks",
+        profileSocialMediaLinksArr
+      );
+      profile.setDataValue(
+        "profileDigitalPaymentLinks",
+        profileDigitalPaymentLinksArr
+      );
     }
+
     const plainProfiles = allProfile.map((profile) => profile.toJSON());
 
     const profileIds = plainProfiles.map((profile) => profile.id);
@@ -1625,7 +1673,6 @@ async function getProfileOne(req, res) {
             exclude: ["createdAt", "updatedAt"],
           },
           order: [["id", "DESC"]],
-          limit: 6,
         },
         {
           model: model.ProfileDigitalPaymentLink,
@@ -1634,7 +1681,6 @@ async function getProfileOne(req, res) {
             exclude: ["createdAt", "updatedAt"],
           },
           order: [["id", "DESC"]],
-          limit: 3,
         },
       ],
       required: false,
@@ -1651,6 +1697,45 @@ async function getProfileOne(req, res) {
       const SignedImage = await generateSignedUrl(brandImgPath);
       profile.dataValues.brandingLogo = SignedImage;
     }
+
+    profile.profileSocialMediaLinks.reverse();
+    profile.profileDigitalPaymentLinks.reverse();
+    let profileSocialMediaLinksArr = [];
+    let profileDigitalPaymentLinksArr = [];
+
+    if (profile?.profileSocialMediaLinks?.length) {
+      for (let i = 0; i < profile.profileSocialMediaLinks.length; i++) {
+        const element = profile.profileSocialMediaLinks[i];
+        if (
+          !profileSocialMediaLinksArr.some(
+            (a) => a.profileSocialMediaId === element.profileSocialMediaId
+          )
+        ) {
+          profileSocialMediaLinksArr.push(element);
+        }
+      }
+    }
+
+    if (profile?.profileDigitalPaymentLinks?.length) {
+      for (let i = 0; i < profile.profileDigitalPaymentLinks.length; i++) {
+        const element = profile.profileDigitalPaymentLinks[i];
+        if (
+          !profileDigitalPaymentLinksArr.some(
+            (a) =>
+              a.profileDigitalPaymentsId === element.profileDigitalPaymentsId
+          )
+        ) {
+          profileDigitalPaymentLinksArr.push(element);
+        }
+      }
+    }
+
+    // Set to an empty array
+    profile.setDataValue("profileSocialMediaLinks", profileSocialMediaLinksArr);
+    profile.setDataValue(
+      "profileDigitalPaymentLinks",
+      profileDigitalPaymentLinksArr
+    );
 
     const deviceBranding = await model.DeviceBranding.findAll({
       where: {

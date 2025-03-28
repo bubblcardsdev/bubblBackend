@@ -474,7 +474,7 @@ async function replaceDevice(req, res) {
 
             await model.Device.update(
               {
-                deviceNickName: deviceNickName || "",
+                deviceNickName: deviceNickName || null,
               },
               {
                 where: {
@@ -501,7 +501,7 @@ async function replaceDevice(req, res) {
             );
             await model.Device.update(
               {
-                deviceNickName: deviceNickName || "",
+                deviceNickName: deviceNickName || null,
               },
               {
                 where: {
@@ -515,6 +515,11 @@ async function replaceDevice(req, res) {
               updateDeviceLink,
             });
           }
+        } else {
+          return res.json({
+            success: false,
+            message: "Check Your Device Number, Device is not linked",
+          });
         }
       } else {
         return res.json({
