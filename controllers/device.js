@@ -117,8 +117,8 @@ async function deviceLink(req, res) {
 async function updateLinkDevice(req, res) {
   const { deviceUid, profileId, isMobile, deviceNickName } = req.body;
   const userId = req.user.id;
-  console.log(userId,"tamils");
-  
+  console.log(userId, "tamils");
+
   try {
     const device = await model.Device.findOne({
       where: {
@@ -157,7 +157,7 @@ async function updateLinkDevice(req, res) {
           userId: userId,
         },
       });
-      
+
       const accountInProfileDeviceLink = await model.DeviceLink.findOne({
         where: {
           accountDeviceLinkId: checkUserId.id,
@@ -208,13 +208,15 @@ async function updateLinkDevice(req, res) {
           }
         );
       }
-      if(isMobile){
+      if (isMobile) {
         await model.Device.update(
-          {deviceNickName:deviceNickName},
-          {where: {
-            deviceUid: deviceUid,
+          { deviceNickName: deviceNickName },
+          {
+            where: {
+              deviceUid: deviceUid,
+            },
           }
-        });
+        );
       }
       return res.json({
         success: true,
@@ -425,7 +427,7 @@ async function activateDevice(req, res) {
 }
 
 async function replaceDevice(req, res) {
-  const { deviceUid, deviceId } = req.body;
+  const { deviceUid, deviceId, deviceNickName } = req.body;
   const userId = req.user.id;
   try {
     const device = await model.Device.findOne({
@@ -469,6 +471,17 @@ async function replaceDevice(req, res) {
                   },
                 }
               );
+
+            await model.Device.update(
+              {
+                deviceNickName: deviceNickName || null,
+              },
+              {
+                where: {
+                  id: device.id,
+                },
+              }
+            );
             return res.json({
               success: true,
               message: "success",
@@ -486,12 +499,27 @@ async function replaceDevice(req, res) {
                 },
               }
             );
+            await model.Device.update(
+              {
+                deviceNickName: deviceNickName || null,
+              },
+              {
+                where: {
+                  id: device.id,
+                },
+              }
+            );
             return res.json({
               success: true,
               message: "success",
               updateDeviceLink,
             });
           }
+        } else {
+          return res.json({
+            success: false,
+            message: "Check Your Device Number, Device is not linked",
+          });
         }
       } else {
         return res.json({
