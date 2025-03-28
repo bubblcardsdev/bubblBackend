@@ -1265,14 +1265,21 @@ async function findAllProfilesForMob(req, res) {
           // limit: 3,
         },
       ],
-     
     });
 
     for (const profile of allProfile) {
-      if (profile.profileImage) {
-        const signedUrl = await generateSignedUrl(profile.profileImage);
+      if (profile) {
+        const profImages = await model.ProfileImages.findOne({
+          where: {
+            profileId: profile.id,
+            type: 0,
+          },
+        });
+        // console.log(profImages.image);
+        // throw new Error(":dfd");
+        // const signedUrl = await generateSignedUrl(profImages.image);
 
-        profile.profileImage = signedUrl;
+        profile.profileImage = profImages?.image || "";
       }
 
       profile.profileSocialMediaLinks.reverse();
