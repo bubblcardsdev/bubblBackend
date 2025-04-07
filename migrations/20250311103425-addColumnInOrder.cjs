@@ -28,6 +28,7 @@ module.exports = {
     await queryInterface.addColumn("Orders", "nameOnCard", {
       type: Sequelize.STRING,
     });
+  
   },
 
   async down(queryInterface, Sequelize) {
@@ -36,5 +37,6 @@ module.exports = {
     await queryInterface.removeColumn("Orders", "shippingCharge");
     await queryInterface.removeColumn("Orders", "fontId");
     await queryInterface.removeColumn("Orders", "nameOnCard");
+    
   },
 };

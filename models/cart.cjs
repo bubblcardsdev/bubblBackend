@@ -51,10 +51,6 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
-      email: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
       productUUId: {
         type: Sequelize.UUID,
         allowNull: false,

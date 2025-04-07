@@ -388,11 +388,8 @@ async function cancelOrder(req, res) {
 //#endregion
 
 async function checkOut(req, res) {
-  const userId = req.user?.id || null; 
-  const {
-    productData, 
-    shippingFormData, 
-  } = req.body;
+  const userId = req.user?.id || null;
+  const { productData, shippingFormData } = req.body;
   const { error } = shippingDetails.validate(req.body, {
     abortEarly: false,
   });
@@ -410,16 +407,22 @@ async function checkOut(req, res) {
   try {
     let cartItems = [];
     if (userId) {
+      console.log("UserId present");
       cartItems = await model.Cart.findAll({
-        where: { customerId: userId, productStatus: false, productUUId:{
-          [Op.ne]: null
-        }},
+        where: {
+          customerId: userId,
+          productStatus: false,
+          productUUId: {
+            [Op.ne]: null,
+          },
+        },
         transaction,
       });
       if (!cartItems.length) {
         throw new Error("Cannot find items in the cart.");
       }
     } else {
+      console.log("UserId present Not found");
       if (!productData || !productData.length) {
         throw new Error("No products provided for guest checkout.");
       }
@@ -429,7 +432,7 @@ async function checkOut(req, res) {
         fontId: item.fontId || null,
         nameOnCard: item.customName || null,
       }));
-    }    
+    }
     // Fetch product details in bulk
     const productDetails = await model.DeviceInventories.findAll({
       where: { productId: cartItems.map((item) => item.productUUId) },
@@ -440,7 +443,7 @@ async function checkOut(req, res) {
       ],
       transaction,
     });
-    if (productDetails.length !== cartItems.length) {  
+    if (productDetails.length !== cartItems.length) {
       throw new Error("One or more products could not be found.");
     }
 
@@ -473,14 +476,14 @@ async function checkOut(req, res) {
         discountPercentage: product.discountPercentage,
         discountAmount,
         fontId: cartItem.fontId || null,
-        nameOnCard: cartItem.nameOnCard || cartItem.nameCustomNameOnCard || null,
+        nameOnCard:
+          cartItem.nameOnCard || cartItem.nameCustomNameOnCard || null,
         productPrice: product.price,
         discountedPrice,
       };
     });
     console.log(orderItems);
-    
-    
+
     // Create Order
     const createdOrder = await model.Order.create(
       {
@@ -546,7 +549,7 @@ async function checkOut(req, res) {
     return res.status(500).json({
       success: false,
       message: "An error occurred during checkout.",
-      error: error
+      error: error,
     });
   }
 }

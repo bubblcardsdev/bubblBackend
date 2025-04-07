@@ -143,29 +143,31 @@ async function verifyPayment(req, res) {
   try {
     const encData = req.body.data;
     console.log(encData);
-    
+
     //check if it has encrypted data or validate
     const ccavResponse = decrypt(encData, workingKey);
-    
 
     const params = new URLSearchParams(ccavResponse);
     const obj = Object.fromEntries(params.entries());
     const token = atob(obj.merchant_param1);
+    console.log(token, "fdfd");
     let userId = 0;
-    
+
     if (obj?.billing_address != "2") {
-      try { 
-        const tokenData = jwt.verify(token, config.accessSecret);
+      try {
+        // const tokenData = jwt.verify(token, config.accessSecret);
+        const tokenData = atob(token);
         userId = tokenData.id;
       } catch (e) {
         console.log(e);
         // console.log("failed to verify token");
       }
     }
-    userId = userId === 0? null: userId;
+    console.log(userId, "userId");
+    userId = userId === 0 ? null : userId;
 
-    obj.order_status= "Success";//comment this before live
-    
+    obj.order_status = "Success"; //comment this before live
+
     const cost = obj.merchant_param2;
     const shippingCost = Number(cost);
     const getOrderDetails = await model.Order.findOne({
@@ -178,6 +180,8 @@ async function verifyPayment(req, res) {
       // const cost = obj.merchant_param2;
       // const shippingCost = Number(cost);
       // create entry in db with obj.tracking_id and obj.bank_ref_no against orderId
+
+      console.log("Crossed");
       switch (obj.billing_address) {
         case "0":
           await model.Payment.update(
@@ -188,13 +192,13 @@ async function verifyPayment(req, res) {
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
-              email:getOrderDetails.email,
-              totalPrice: getOrderDetails.totalPrice,
-              discountAmount: getOrderDetails.discountAmount,
-              discountPercentage: getOrderDetails.discountPercentage,
-              soldPrice:obj.amount,
-              amount:obj.amount,
-              isLoggedIn:userId ? true : false
+              // email:getOrderDetails.email,
+              // totalPrice: getOrderDetails.totalPrice,
+              // discountAmount: getOrderDetails.discountAmount,
+              // discountPercentage: getOrderDetails.discountPercentage,
+              // soldPrice:obj.amount,
+              amount: obj.amount,
+              isLoggedIn: userId ? true : false,
             },
             {
               where: {
@@ -206,7 +210,7 @@ async function verifyPayment(req, res) {
             {
               orderStatus: "Paid",
               orderStatusId: 3,
-              soldPrice:obj.amount
+              soldPrice: obj.amount,
             },
             {
               where: {
@@ -256,25 +260,28 @@ async function verifyPayment(req, res) {
                 );
                 const getFontName = await model.CustomFontMaster.findOne({
                   where: { id: f.fontId },
-                });   
-               if(userId){
-                const findCartItem= await model.Cart.findOne({
-                  where:{
-                    productUUId: f.productId,
-                    customerId:userId,
-                    productStatus: false
-                  }
                 });
-                await model.Cart.update({
-                  productStatus: true
-                },{
-                  where:{
-                    id:findCartItem.id,
-                    customerId:userId,
-                  }
-                });
-               }
-                
+                if (userId) {
+                  const findCartItem = await model.Cart.findOne({
+                    where: {
+                      productUUId: f.productId,
+                      customerId: userId,
+                      productStatus: false,
+                    },
+                  });
+                  await model.Cart.update(
+                    {
+                      productStatus: true,
+                    },
+                    {
+                      where: {
+                        id: findCartItem.id,
+                        customerId: userId,
+                      },
+                    }
+                  );
+                }
+
                 return {
                   productId: f.productId,
                   productPrimaryImage: imageUrls[0],
@@ -283,13 +290,13 @@ async function verifyPayment(req, res) {
                   font: getFontName?.name || null,
                   customName: f.nameOnCard || null,
                   productName: getProductDetail.name,
-                  productPrice:getProductDetail.price,
-                  quantity: f.quantity
+                  productPrice: getProductDetail.price,
+                  quantity: f.quantity,
                 };
               })
-            );  
+            );
             console.log(products);
-            
+
             const nameCustomProducts = products.filter(
               (product) => product.deviceType === 6
             );
@@ -298,11 +305,11 @@ async function verifyPayment(req, res) {
               (product) => product.deviceType !== 6
             );
             // console.log(nameCustomProducts,otherProducts);
-            
+
             if (nameCustomProducts.length > 0) {
               NameCustomEmail(nameCustomProducts, obj.order_id);
-            } 
-            if(otherProducts.length > 0) {
+            }
+            if (otherProducts.length > 0) {
               console.log("came in else");
               OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
@@ -315,8 +322,8 @@ async function verifyPayment(req, res) {
               orderId: obj.order_id,
               paymentMode: obj.payment_mode,
               orderType: obj.billing_address,
-              jwtToken: token,
-              shippingCharge: shippingCost,
+              // jwtToken: token,
+              // shippingCharge: shippingCost,
             },
           });
         case "1":
@@ -347,7 +354,7 @@ async function verifyPayment(req, res) {
               jwtToken: token,
             },
           });
-          // comment the below logic if not needed.
+        // comment the below logic if not needed.
         case "2":
           await model.Payment.update(
             {
@@ -357,13 +364,13 @@ async function verifyPayment(req, res) {
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
-              email:getOrderDetails.email,
-              totalPrice: getOrderDetails.totalPrice,
-              discountAmount: getOrderDetails.discountAmount,
-              discountPercentage: getOrderDetails.discountPercentage,
-              soldPrice:obj.amount,
+              // email:getOrderDetails.email,
+              // totalPrice: getOrderDetails.totalPrice,
+              // discountAmount: getOrderDetails.discountAmount,
+              // discountPercentage: getOrderDetails.discountPercentage,
+              soldPrice: obj.amount,
               paidAmount: obj.amount,
-              isLoggedIn:userId? true: false
+              isLoggedIn: userId ? true : false,
             },
             {
               where: {
@@ -375,7 +382,7 @@ async function verifyPayment(req, res) {
             {
               orderStatus: "Paid",
               orderStatusId: 3,
-              soldPrice:obj.amount
+              soldPrice: obj.amount,
             },
             {
               where: {
@@ -425,25 +432,28 @@ async function verifyPayment(req, res) {
                 );
                 const getFontName = await model.CustomFontMaster.findOne({
                   where: { id: f.fontId },
-                });   
-               if(userId){
-                const findCartItem= await model.Cart.findOne({
-                  where:{
-                    productUUId: f.productId,
-                    customerId:userId,
-                    productStatus: false
-                  }
                 });
-                await model.Cart.update({
-                  productStatus: false
-                },{
-                  where:{
-                    id:findCartItem.id,
-                    customerId:userId,
-                  }
-                });
-               }
-                
+                if (userId) {
+                  const findCartItem = await model.Cart.findOne({
+                    where: {
+                      productUUId: f.productId,
+                      customerId: userId,
+                      productStatus: false,
+                    },
+                  });
+                  await model.Cart.update(
+                    {
+                      productStatus: false,
+                    },
+                    {
+                      where: {
+                        id: findCartItem.id,
+                        customerId: userId,
+                      },
+                    }
+                  );
+                }
+
                 return {
                   productId: f.productId,
                   productPrimaryImage: imageUrls[0],
@@ -452,13 +462,13 @@ async function verifyPayment(req, res) {
                   font: getFontName?.name || null,
                   customName: f.nameOnCard || null,
                   productName: getProductDetail.name,
-                  productPrice:getProductDetail.price,
-                  quantity: f.quantity
+                  productPrice: getProductDetail.price,
+                  quantity: f.quantity,
                 };
               })
-            );  
+            );
             console.log(products);
-            
+
             const nameCustomProducts = products.filter(
               (product) => product.deviceType === 6
             );
@@ -467,11 +477,11 @@ async function verifyPayment(req, res) {
               (product) => product.deviceType !== 6
             );
             // console.log(nameCustomProducts,otherProducts);
-            
+
             if (nameCustomProducts.length > 0) {
               NameCustomEmail(nameCustomProducts, obj.order_id);
-            } 
-            if(otherProducts.length > 0) {
+            }
+            if (otherProducts.length > 0) {
               console.log("came in else");
               OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
@@ -504,8 +514,8 @@ async function verifyPayment(req, res) {
             discountAmount: getOrderDetails.discountAmount,
             discountPercentage: getOrderDetails.discountPercentage,
             paidAmount: null,
-            isLoggedIn: userId? true : false,
-            email:getOrderDetails.email
+            isLoggedIn: userId ? true : false,
+            email: getOrderDetails.email,
           });
           // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
           return res.json({
@@ -532,29 +542,29 @@ async function verifyPayment(req, res) {
               paymentMode: obj.payment_mode,
             },
           });
-          case "2":
-            await model.Payment.update({
-              transactionId: obj.tracking_id,
-              bankRefNo: obj.bank_ref_no,
-              customerId: userId || null,
-              orderId: obj.order_id,
-              paymentStatus: successEnum[obj.order_status],
-              failureMessage: obj.failure_message,
-              shippingCharge: shippingCost,
-              totalPrice: getOrderDetails.totalPrice,
-              discountAmount: getOrderDetails.discountAmount,
-              discountPercentage: getOrderDetails.discountPercentage,
-              paidAmount: null,
-              isLoggedIn: userId? true : false,
-              email:getOrderDetails.email
-            });
-            // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
-            return res.json({
-              success: false,
-              orderType: obj.billing_address,
-              message: obj.failure_message,
-            });
-   }
+        case "2":
+          await model.Payment.update({
+            transactionId: obj.tracking_id,
+            bankRefNo: obj.bank_ref_no,
+            customerId: userId || null,
+            orderId: obj.order_id,
+            paymentStatus: successEnum[obj.order_status],
+            failureMessage: obj.failure_message,
+            shippingCharge: shippingCost,
+            totalPrice: getOrderDetails.totalPrice,
+            discountAmount: getOrderDetails.discountAmount,
+            discountPercentage: getOrderDetails.discountPercentage,
+            paidAmount: null,
+            isLoggedIn: userId ? true : false,
+            email: getOrderDetails.email,
+          });
+          // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
+          return res.json({
+            success: false,
+            orderType: obj.billing_address,
+            message: obj.failure_message,
+          });
+      }
     }
   } catch (error) {
     loggers.error(error + "from verifyPayment function");

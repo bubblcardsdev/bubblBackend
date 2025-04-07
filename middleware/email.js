@@ -21,8 +21,8 @@ async function sendMail(toEmail, subject, html) {
   };
 
   try {
-    const mail = await transporter.sendMail(message);
-    return mail;
+    // const mail = await transporter.sendMail(message);
+    return "mail";
   } catch (error) {
     throw error;
   }

@@ -7,11 +7,12 @@ module.exports = {
       type: Sequelize.INTEGER,
     });
     await queryInterface.addColumn("Payments", "paymentMethod", {
-      type: Sequelize.INTEGER,
+      type: Sequelize.STRING,
     });
     await queryInterface.addColumn("Payments", "isLoggedIn", {
       type: Sequelize.BOOLEAN,
     });
+    
   },
 
   async down(queryInterface, Sequelize) {
