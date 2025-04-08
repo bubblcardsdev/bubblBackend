@@ -1698,6 +1698,7 @@ async function getProfileOne(req, res) {
         required: false,
       });
     } else {
+      console.log("inside else");
       profile = await model.Profile.findOne({
         where: {
           id: profileId,
@@ -1856,12 +1857,22 @@ async function getProfileOne(req, res) {
 
     let deviceUid;
     if (profile) {
-      const checkDeviceLinkId = await model.DeviceLink.findOne({
-        where: {
-          profileId: profile.id,
-          id: deviceLinkId,
-        },
-      });
+      let checkDeviceLinkId;
+      if (deviceLinkId) {
+        checkDeviceLinkId = await model.DeviceLink.findOne({
+          where: {
+            profileId: profile.id,
+            id: deviceLinkId,
+          },
+        });
+      } else {
+        checkDeviceLinkId = await model.DeviceLink.findOne({
+          where: {
+            profileId: profile.id,
+          },
+        });
+      }
+
       if (checkDeviceLinkId) {
         const checkAccountId = await model.AccountDeviceLink.findOne({
           where: {
