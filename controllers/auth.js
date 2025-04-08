@@ -314,10 +314,7 @@ async function createUser(req, res) {
     }
     const otp = generateOtp();
 
-    await model.User.update(
-      { otp },
-      { where: { email } }
-    );
+    await model.User.update({ otp }, { where: { email } });
 
     //aws issue removed email content
     //<p>To verify your Bubbl registration email please click this <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}">link</a>.</p>
@@ -336,7 +333,7 @@ async function createUser(req, res) {
     // <p>Best regards,</p>
 
     // <p>The Bubbl.cards team.</p>`;
-    const subject = `Welcome to Bubbl.cards – Let’s Get Started!`
+    const subject = `Welcome to Bubbl.cards – Let’s Get Started!`;
     const emailMessage = `
 
     <h2>Hello <strong>${firstName}</strong>,</h2>
@@ -390,7 +387,6 @@ async function createUser(req, res) {
   }
 }
 
-
 async function createUser2(firstName, lastName, email, password) {
   try {
     const emailParse = email.toLowerCase();
@@ -401,7 +397,7 @@ async function createUser2(firstName, lastName, email, password) {
     });
 
     if (checkUser) {
-      return {email: email,response: "User Already Exists"}
+      return { email: email, response: "User Already Exists" };
     }
     const hashedPassword = await hashPassword(password);
 
@@ -429,7 +425,7 @@ async function createUser2(firstName, lastName, email, password) {
       await model.UniqueNameDeviceLink.create({
         userId: user.id,
       });
-      return {email: email,response: "User Created Successfully"}
+      return { email: email, response: "User Created Successfully" };
     }
   } catch (error) {
     console.log(error.message, "ee");
@@ -440,41 +436,44 @@ async function createUser2(firstName, lastName, email, password) {
 async function createUserBulkController(req, res) {
   const { userData } = req.body;
   let response = [];
-  
+
   try {
     if (userData.length !== 0) {
       // Use Promise.all to wait for all async operations to finish
       response = await Promise.all(
         userData.map(async (record) => {
           const { firstName, lastName, email, password } = record;
-          const creteDeviceFunction = await createUser2(firstName, lastName, email, password);
+          const creteDeviceFunction = await createUser2(
+            firstName,
+            lastName,
+            email,
+            password
+          );
           console.log("creteUserFunction-----------", creteDeviceFunction);
           return creteDeviceFunction;
         })
       );
-      
+
       console.log(response);
       return res.json({
         success: true,
         message: "Success",
-        data: response
+        data: response,
       });
     } else {
       return res.json({
         success: false,
-        message: "Invalid Data"
+        message: "Invalid Data",
       });
     }
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 }
-
-
 
 async function createUserMobile(req, res) {
   const {
@@ -491,7 +490,7 @@ async function createUserMobile(req, res) {
   const { error } = createMobileUserSchema.validate(req.body, {
     abortEarly: false,
   });
- 
+
   if (error) {
     console.log(error);
     return res.json({
@@ -502,7 +501,7 @@ async function createUserMobile(req, res) {
     });
   }
   const emailParse = email.toLowerCase();
- 
+
   try {
     const checkUser = await model.User.findOne({
       where: {
@@ -510,7 +509,7 @@ async function createUserMobile(req, res) {
       },
     });
     const hashedPassword = await hashPassword(password);
-    // For new user logic 
+    // For new user logic
     if (!checkUser) {
       const user = await model.User.create({
         firstName: firstName,
@@ -538,32 +537,31 @@ async function createUserMobile(req, res) {
           userId: user.id,
         });
         const userId = user.id;
-        createProfileMobile =
-          await MobileOnboardingProfileCreate(
-            firstName,
-            lastName,
-            email,
-            profileName,
-            phoneNumber,
-            companyName,
-            templateId,
-            designation,
-            userId
-          );
+        createProfileMobile = await MobileOnboardingProfileCreate(
+          firstName,
+          lastName,
+          email,
+          profileName,
+          phoneNumber,
+          companyName,
+          templateId,
+          designation,
+          userId
+        );
       }
- 
+
       const userInfo = {
         id: user.id,
         firstName,
         lastName,
         email,
       };
-      
+
       const accessToken = await generateAccessToken(userInfo);
       const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
       const refreshToken = await generateRefreshToken(userInfo);
       const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
- 
+
       return res.json({
         success: true,
         data: {
@@ -583,7 +581,7 @@ async function createUserMobile(req, res) {
           refreshTokenExpiryInSeconds: refreshTokenExpiryInSeconds,
         },
       });
-    } 
+    }
     // For existing user logics
     else {
       // check profile available for the existing user
@@ -592,18 +590,18 @@ async function createUserMobile(req, res) {
       });
 
       // throw error if user and the profile is already exist
-      if(checkProfile){
+      if (checkProfile) {
         return res.json({
-              success: false,
-              data: {
-                message: "Email and profile already exists",
-                phoneVerified: checkUser.phoneVerified,
-                emailVerified: checkUser.emailVerified,
-              },
-            });
+          success: false,
+          data: {
+            message: "Email and profile already exists",
+            phoneVerified: checkUser.phoneVerified,
+            emailVerified: checkUser.emailVerified,
+          },
+        });
       }
-      
-      // update user details and create profile 
+
+      // update user details and create profile
       const userId = checkUser.id;
       await model.User.update(
         {
@@ -622,19 +620,19 @@ async function createUserMobile(req, res) {
         designation,
         userId
       );
- 
+
       const userInfo = {
         id: checkUser.id,
         firstName,
         lastName,
         email,
       };
- 
+
       const accessToken = await generateAccessToken(userInfo);
       const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
       const refreshToken = await generateRefreshToken(userInfo);
       const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
- 
+
       return res.json({
         success: true,
         data: {
@@ -950,7 +948,8 @@ async function verifyFacebookUser(req, res) {
 }
 
 async function verifyLinkedinUser(req, res) {
-  const { authorizationCode, given_name, family_name, Email, isMobile } = req.body;
+  const { authorizationCode, given_name, family_name, Email, isMobile } =
+    req.body;
 
   const { error } = !isMobile
     ? verifyLinkedinUserSchema.validate(req.body, {
@@ -970,7 +969,9 @@ async function verifyLinkedinUser(req, res) {
   }
 
   try {
-    const payload = !isMobile? await verifyLinkedinAccount(authorizationCode) : {email:Email,given_name:given_name,family_name:family_name};
+    const payload = !isMobile
+      ? await verifyLinkedinAccount(authorizationCode)
+      : { email: Email, given_name: given_name, family_name: family_name };
 
     const payloadEmail = payload.email;
     const payloadFirstName = payload.given_name;
@@ -1291,7 +1292,7 @@ async function resendMailOtp(req, res) {
 
       await model.User.update({ otp }, { where: { email } });
 
-      const subject = `Welcome to Bubbl.cards – Let’s Get Started!`
+      const subject = `Welcome to Bubbl.cards – Let’s Get Started!`;
       const emailMessage = `
   
       <h2>Hello <strong>${checkUser?.firstName}</strong>,</h2>
@@ -1309,7 +1310,7 @@ async function resendMailOtp(req, res) {
       <p>Best wishes,</p>
   
       <p>The Bubbl.cards Team</p>`;
-  
+
       await sendMail(emailParse, subject, emailMessage);
 
       return res.json({
@@ -1334,7 +1335,6 @@ async function resendMailOtp(req, res) {
     });
   }
 }
-
 
 async function verifyOtp(req, res) {
   const { countryCode, phoneNumber, otp } = req.body;
@@ -1684,45 +1684,6 @@ async function resetPassword(req, res) {
   }
 }
 
-async function fetchCardDetails(req, res) {
-  var { deviceUId } = req.body;
-  try {
-    const device = await model.Device.findOne({
-      where: { deviceUId: deviceUId },
-    });
-    console.log("device", device);
- 
-    if (!device) {
-      return res.status(500).json({
-        success: false,
-        data: {
-          message: "Unable to find device",
-        },
-      });
-    }
-    // const { deviceType } = user;
-    // const cards = await model.Device.findAll({ where: { userId } });
-    return res.json({
-      success: true,
-      data: {
-        deviceType: device.deviceType,
-      },
-    });
-  } catch (error) {
-    loggers.error(error + " from fetchCardDetails function");
-    return res.status(500).json({
-      success: false,
-      data: {
-        error,
-      },
-    });
-  }
-}
- 
-
-
-
-
 export {
   issueNewToken,
   login,
@@ -1742,5 +1703,4 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
-  fetchCardDetails
 };

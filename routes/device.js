@@ -7,6 +7,7 @@ import {
   activateDevice,
   replaceDevice,
   getDeviceLink,
+  fetchCardDetails,
 } from "../controllers/device.js";
 import { authenticateToken } from "./../middleware/token.js";
 
@@ -20,5 +21,6 @@ router.put("/delete", authenticateToken, deleteDevice);
 router.put("/deactivate", authenticateToken, deactivateDevice);
 router.put("/activate", authenticateToken, activateDevice);
 router.put("/replace", authenticateToken, replaceDevice);
+router.post("/fetchCardDetails", fetchCardDetails);
 
 export default router;

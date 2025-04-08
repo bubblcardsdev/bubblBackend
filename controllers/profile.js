@@ -1612,86 +1612,168 @@ async function getProfile(req, res) {
 
 async function getProfileOne(req, res) {
   // const userId = req.user.id;
-  const { profileId } = req.body;
+  const { profileId, deviceLinkId } = req.body;
 
   const userId = req.user.id;
 
   try {
-    const profile = await model.Profile.findOne({
-      where: {
-        id: profileId,
-        userId: userId,
-      },
-      include: [
-        {
-          model: model.DeviceLink,
-          include: [
-            {
-              model: model.Template,
-              attributes: {
-                exclude: ["createdAt", "updatedAt"],
-              },
+    let profile;
+    if (deviceLinkId) {
+      profile = await model.Profile.findOne({
+        where: {
+          id: profileId,
+          userId: userId,
+        },
+        include: [
+          {
+            model: model.DeviceLink,
+            where: {
+              id: deviceLinkId,
             },
-            {
-              model: model.Mode,
-              attributes: {
-                exclude: ["createdAt", "updatedAt"],
+            include: [
+              {
+                model: model.Template,
+                attributes: {
+                  exclude: ["createdAt", "updatedAt"],
+                },
               },
+              {
+                model: model.Mode,
+                attributes: {
+                  exclude: ["createdAt", "updatedAt"],
+                },
+              },
+            ],
+          },
+          {
+            model: model.Template,
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
             },
-          ],
-        },
-        {
-          model: model.Template,
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
           },
-        },
-        {
-          model: model.Mode,
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
+          {
+            model: model.Mode,
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
           },
-        },
-        {
-          model: model.ProfilePhoneNumber,
-          as: "profilePhoneNumbers",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
+          {
+            model: model.ProfilePhoneNumber,
+            as: "profilePhoneNumbers",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
           },
-        },
-        {
-          model: model.ProfileEmail,
-          as: "profileEmails",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
+          {
+            model: model.ProfileEmail,
+            as: "profileEmails",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
           },
-        },
-        {
-          model: model.ProfileWebsite,
-          as: "profileWebsites",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
+          {
+            model: model.ProfileWebsite,
+            as: "profileWebsites",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
           },
-        },
-        {
-          model: model.ProfileSocialMediaLink,
-          as: "profileSocialMediaLinks",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
+          {
+            model: model.ProfileSocialMediaLink,
+            as: "profileSocialMediaLinks",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+            order: [["id", "DESC"]],
           },
-          order: [["id", "DESC"]],
-        },
-        {
-          model: model.ProfileDigitalPaymentLink,
-          as: "profileDigitalPaymentLinks",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
+          {
+            model: model.ProfileDigitalPaymentLink,
+            as: "profileDigitalPaymentLinks",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+            order: [["id", "DESC"]],
           },
-          order: [["id", "DESC"]],
+        ],
+        required: false,
+      });
+    } else {
+      profile = await model.Profile.findOne({
+        where: {
+          id: profileId,
+          userId: userId,
         },
-      ],
-      required: false,
-    });
+        include: [
+          {
+            model: model.DeviceLink,
+            include: [
+              {
+                model: model.Template,
+                attributes: {
+                  exclude: ["createdAt", "updatedAt"],
+                },
+              },
+              {
+                model: model.Mode,
+                attributes: {
+                  exclude: ["createdAt", "updatedAt"],
+                },
+              },
+            ],
+          },
+          {
+            model: model.Template,
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.Mode,
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfilePhoneNumber,
+            as: "profilePhoneNumbers",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileEmail,
+            as: "profileEmails",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileWebsite,
+            as: "profileWebsites",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+          },
+          {
+            model: model.ProfileSocialMediaLink,
+            as: "profileSocialMediaLinks",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+            order: [["id", "DESC"]],
+          },
+          {
+            model: model.ProfileDigitalPaymentLink,
+            as: "profileDigitalPaymentLinks",
+            attributes: {
+              exclude: ["createdAt", "updatedAt"],
+            },
+            order: [["id", "DESC"]],
+          },
+        ],
+        required: false,
+      });
+    }
 
     if (!profile) {
       throw new Error("Unable to find profile");
@@ -1744,11 +1826,27 @@ async function getProfileOne(req, res) {
       profileDigitalPaymentLinksArr
     );
 
-    const deviceBranding = await model.DeviceBranding.findAll({
-      where: {
-        profileId: profileId,
-      },
-    });
+    let deviceBranding;
+    if (deviceLinkId) {
+      deviceBranding = await model.DeviceBranding.findAll({
+        where: {
+          profileId: profileId,
+          deviceLinkId: deviceLinkId,
+          brandingBackGroundColor: {
+            [Op.ne]: "",
+          },
+        },
+      });
+    } else {
+      deviceBranding = await model.DeviceBranding.findAll({
+        where: {
+          profileId: profileId,
+          brandingBackGroundColor: {
+            [Op.ne]: "",
+          },
+        },
+      });
+    }
 
     const profileImgs = await model.ProfileImages.findAll({
       where: {
@@ -1756,16 +1854,12 @@ async function getProfileOne(req, res) {
       },
     });
 
-    const checkProfileId = await model.Profile.findOne({
-      where: {
-        id: profileId,
-      },
-    });
     let deviceUid;
-    if (checkProfileId) {
+    if (profile) {
       const checkDeviceLinkId = await model.DeviceLink.findOne({
         where: {
-          profileId: checkProfileId.id,
+          profileId: profile.id,
+          id: deviceLinkId,
         },
       });
       if (checkDeviceLinkId) {

@@ -592,6 +592,55 @@ async function getDeviceLink(req, res) {
   }
 }
 
+async function fetchCardDetails(req, res) {
+  const { deviceUId } = req.body;
+  try {
+    const device = await model.Device.findOne({
+      where: { deviceUId: deviceUId },
+    });
+
+    if (!device) {
+      return res.status(500).json({
+        success: false,
+        data: {
+          message: "Invalid device Id",
+        },
+      });
+    }
+
+    const accountDeviceLink = await model.AccountDeviceLink.findOne({
+      where: {
+        deviceId: device.id,
+        isDeleted: false,
+      },
+    });
+
+    if (accountDeviceLink) {
+      return res.status(500).json({
+        success: false,
+        data: {
+          message: "Device is already in use",
+        },
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        deviceType: device.deviceType,
+      },
+    });
+  } catch (error) {
+    loggers.error(error + " from fetchCardDetails function");
+    return res.status(500).json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+}
+
 export {
   deviceLink,
   deactivateDevice,
@@ -600,4 +649,5 @@ export {
   activateDevice,
   replaceDevice,
   getDeviceLink,
+  fetchCardDetails,
 };
