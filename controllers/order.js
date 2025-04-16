@@ -134,7 +134,9 @@ async function getOrderById(req, res) {
     });
 
     if (!order) {
-      return res.json({ success: false, message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
     // Fetch all device images and details in one go
@@ -394,7 +396,7 @@ async function checkOut(req, res) {
     abortEarly: false,
   });
   if (error) {
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         error: error.details,
@@ -437,7 +439,7 @@ async function checkOut(req, res) {
           });
 
           if (!getProductId) {
-            return res.status(500).json({
+            return res.status(404).json({
               success: false,
               message: "Product not found",
             });

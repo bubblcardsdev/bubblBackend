@@ -9,7 +9,6 @@ import loggers from "../config/logger.js";
 
 async function NameCustomEmail(products, OrderId) {
   try {
-    console.log(products, "camein");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -22,10 +21,6 @@ async function NameCustomEmail(products, OrderId) {
       deviceUid: uuid,
       deviceType: "Card",
     });
-    // await model.Device.create({
-    //   deviceUid: uuid,
-    //   deviceType: "Card",
-    // });
 
     const options = {
       errorCorrectionLevel: "H",

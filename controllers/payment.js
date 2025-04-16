@@ -156,27 +156,17 @@ async function verifyPayment(req, res) {
       }
     }
 
-    // return;
-    console.log(userId, "userId");
     userId = userId === 0 ? null : userId;
 
     obj.order_status = "Success"; //comment this before live
 
     const cost = obj.merchant_param2;
     const shippingCost = Number(cost);
-    const getOrderDetails = await model.Order.findOne({
-      where: {
-        id: Number(obj.order_id),
-      },
-    });
+
     let sequelize = new Sequelize(process.env.DB_URL);
 
     const transaction = await sequelize.transaction();
-
     if (successEnum[obj.order_status] === true) {
-      // const cost = obj.merchant_param2;
-      // const shippingCost = Number(cost);
-      // create entry in db with obj.tracking_id and obj.bank_ref_no against orderId
       switch (obj.billing_address) {
         case "0":
           await model.Payment.create(
@@ -189,10 +179,11 @@ async function verifyPayment(req, res) {
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
               amount: obj.amount,
-              isLoggedIn: userId ? true : false,
+              isLoggedIn: !!userId,
             },
-            { transaction }
+            { transaction: transaction }
           );
+
           await model.Order.update(
             {
               orderStatusId: 3,
@@ -202,77 +193,68 @@ async function verifyPayment(req, res) {
               where: {
                 id: Number(obj.order_id),
               },
-            },
-            transaction
+              transaction: transaction,
+            }
           );
-          // if the payment is successful, email send to user
+
+          await transaction.commit();
+
           const checkPaymentStatus = await model.Payment.findOne({
             where: {
-              orderId: obj.order_id,
+              orderId: Number(obj.order_id),
               paymentStatus: true,
             },
-            transaction,
           });
+
           if (checkPaymentStatus) {
             const checkDeviceType = await model.OrderBreakDown.findAll({
               where: {
-                orderId: obj.order_id,
+                orderId: Number(obj.order_id),
               },
-              transaction,
             });
 
             const products = await Promise.all(
-              await checkDeviceType.map(async (f) => {
+              checkDeviceType.map(async (f) => {
                 const getProductDetail = await model.DeviceInventories.findOne({
-                  where: {
-                    productId: f.productId,
-                  },
+                  where: { productId: f.productId },
                   include: [
-                    {
-                      model: model.DeviceImageInventories,
-                    },
-                    {
-                      model: model.DeviceColorMasters,
-                    },
-                    {
-                      model: model.MaterialTypeMasters,
-                    },
-                    {
-                      model: model.DevicePatternMasters,
-                    },
+                    { model: model.DeviceImageInventories },
+                    { model: model.DeviceColorMasters },
+                    { model: model.MaterialTypeMasters },
+                    { model: model.DevicePatternMasters },
                   ],
-                  transaction,
                 });
+
                 const imageUrls = await Promise.all(
-                  (getProductDetail.DeviceImageInventories || []).map(
-                    async (img) => await generateSignedUrl(img.imageKey)
+                  (getProductDetail.DeviceImageInventories || []).map((img) =>
+                    generateSignedUrl(img.imageKey)
                   )
                 );
+
                 const getFontName = await model.CustomFontMaster.findOne({
                   where: { id: f.fontId },
-                  transaction,
                 });
+
                 if (userId) {
                   const findCartItem = await model.Cart.findOne({
                     where: {
-                      productUUId: f.productId,
+                      productId: f.productId,
                       customerId: userId,
                       productStatus: false,
                     },
-                    transaction,
                   });
-                  await model.Cart.update(
-                    {
-                      productStatus: true,
-                    },
-                    {
-                      where: {
-                        id: findCartItem.id,
-                        customerId: userId,
-                      },
-                    },
-                    transaction
-                  );
+
+                  if (findCartItem) {
+                    await model.Cart.update(
+                      { productStatus: true },
+                      {
+                        where: {
+                          id: findCartItem.id,
+                          customerId: userId,
+                        },
+                      }
+                    );
+                  }
                 }
 
                 return {
@@ -288,7 +270,6 @@ async function verifyPayment(req, res) {
                 };
               })
             );
-            console.log(products);
 
             const nameCustomProducts = products.filter(
               (product) => product.deviceType === 6
@@ -297,26 +278,22 @@ async function verifyPayment(req, res) {
             const otherProducts = products.filter(
               (product) => product.deviceType !== 6
             );
-            // console.log(nameCustomProducts,otherProducts);
 
             if (nameCustomProducts.length > 0) {
               NameCustomEmail(nameCustomProducts, obj.order_id);
             }
+
             if (otherProducts.length > 0) {
-              console.log("came in else");
               OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
           }
 
           return res.json({
             success: true,
+            message: "Payment verified successfully",
             data: {
               status: obj.order_status,
               orderId: obj.order_id,
-              paymentMode: obj.payment_mode,
-              orderType: obj.billing_address,
-              // jwtToken: token,
-              // shippingCharge: shippingCost,
             },
           });
         case "1":
@@ -347,221 +324,49 @@ async function verifyPayment(req, res) {
               jwtToken: token,
             },
           });
-        // comment the below logic if not needed.
-        case "2":
-          await model.Payment.update(
-            {
-              transactionId: obj.tracking_id,
-              bankRefNo: obj.bank_ref_no,
-              customerId: userId || null,
-              paymentStatus: successEnum[obj.order_status],
-              failureMessage: obj.failure_message,
-              shippingCharge: shippingCost,
-              // email:getOrderDetails.email,
-              // totalPrice: getOrderDetails.totalPrice,
-              // discountAmount: getOrderDetails.discountAmount,
-              // discountPercentage: getOrderDetails.discountPercentage,
-              soldPrice: obj.amount,
-              paidAmount: obj.amount,
-              isLoggedIn: userId ? true : false,
-            },
-            {
-              where: {
-                orderId: Number(obj.order_id),
-              },
-            }
-          );
-          await model.Order.update(
-            {
-              orderStatus: "Paid",
-              orderStatusId: 3,
-              soldPrice: obj.amount,
-            },
-            {
-              where: {
-                id: Number(obj.order_id),
-              },
-            }
-          );
-          // if the payment is successful, email send to user
-          const checkPaymentStat = await model.Payment.findOne({
-            where: {
-              orderId: obj.order_id,
-              paymentStatus: true,
-            },
-          });
-          if (checkPaymentStat) {
-            const checkDeviceType = await model.OrderBreakDown.findAll({
-              where: {
-                orderId: obj.order_id,
-              },
-            });
-
-            const products = await Promise.all(
-              await checkDeviceType.map(async (f) => {
-                const getProductDetail = await model.DeviceInventories.findOne({
-                  where: {
-                    productId: f.productId,
-                  },
-                  include: [
-                    {
-                      model: model.DeviceImageInventories,
-                    },
-                    {
-                      model: model.DeviceColorMasters,
-                    },
-                    {
-                      model: model.MaterialTypeMasters,
-                    },
-                    {
-                      model: model.DevicePatternMasters,
-                    },
-                  ],
-                });
-                const imageUrls = await Promise.all(
-                  (getProductDetail.DeviceImageInventories || []).map(
-                    async (img) => await generateSignedUrl(img.imageKey)
-                  )
-                );
-                const getFontName = await model.CustomFontMaster.findOne({
-                  where: { id: f.fontId },
-                });
-                if (userId) {
-                  const findCartItem = await model.Cart.findOne({
-                    where: {
-                      productUUId: f.productId,
-                      customerId: userId,
-                      productStatus: false,
-                    },
-                  });
-                  await model.Cart.update(
-                    {
-                      productStatus: false,
-                    },
-                    {
-                      where: {
-                        id: findCartItem.id,
-                        customerId: userId,
-                      },
-                    }
-                  );
-                }
-
-                return {
-                  productId: f.productId,
-                  productPrimaryImage: imageUrls[0],
-                  productSecondaryImage: imageUrls[1],
-                  deviceType: getProductDetail.deviceTypeId,
-                  font: getFontName?.name || null,
-                  customName: f.nameOnCard || null,
-                  productName: getProductDetail.name,
-                  productPrice: getProductDetail.price,
-                  quantity: f.quantity,
-                };
-              })
-            );
-            console.log(products);
-
-            const nameCustomProducts = products.filter(
-              (product) => product.deviceType === 6
-            );
-
-            const otherProducts = products.filter(
-              (product) => product.deviceType !== 6
-            );
-            // console.log(nameCustomProducts,otherProducts);
-
-            if (nameCustomProducts.length > 0) {
-              NameCustomEmail(nameCustomProducts, obj.order_id);
-            }
-            if (otherProducts.length > 0) {
-              console.log("came in else");
-              OrderConfirmationMail(otherProducts, obj.order_id, userId);
-            }
-          }
-
-          return res.json({
-            success: true,
-            data: {
-              status: obj.order_status,
-              orderId: obj.order_id,
-              paymentMode: obj.payment_mode,
-              orderType: obj.billing_address,
-              jwtToken: token,
-              shippingCharge: shippingCost,
-            },
-          });
       }
     } else {
       switch (obj.billing_address) {
         case "0":
-          await model.Payment.update({
-            transactionId: obj.tracking_id,
-            bankRefNo: obj.bank_ref_no,
+          await model.Payment.create({
+            transactionId: obj?.tracking_id,
+            bankRefNo: obj?.bank_ref_no,
             customerId: userId || null,
             orderId: obj.order_id,
             paymentStatus: successEnum[obj.order_status],
             failureMessage: obj.failure_message,
             shippingCharge: shippingCost,
-            totalPrice: getOrderDetails.totalPrice,
-            discountAmount: getOrderDetails.discountAmount,
-            discountPercentage: getOrderDetails.discountPercentage,
-            paidAmount: null,
+            amount: obj.amount,
             isLoggedIn: userId ? true : false,
-            email: getOrderDetails.email,
           });
-          // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
-          return res.json({
+
+          return res.status(404).json({
             success: false,
-            orderType: obj.billing_address,
-            message: obj.failure_message,
+            orderId: Number(obj.order_id),
+            message: obj.failure_message || obj.order_status,
           });
 
         case "1":
           await model.PlanPayment.update({
             transactionId: obj.tracking_id,
             bankRefNo: obj.bank_ref_no,
-            // customerId: userId,
+            customerId: userId || null,
             id: obj.order_id,
             paymentStatus: successEnum[obj.order_status],
             failureMessage: obj.failure_message,
           });
-          return res.json({
+          return res.status(404).json({
             success: false,
             data: {
               status: obj.order_status,
               orderId: obj.order_id,
-              orderType: obj.billing_address,
-              paymentMode: obj.payment_mode,
             },
-          });
-        case "2":
-          await model.Payment.update({
-            transactionId: obj.tracking_id,
-            bankRefNo: obj.bank_ref_no,
-            customerId: userId || null,
-            orderId: obj.order_id,
-            paymentStatus: successEnum[obj.order_status],
-            failureMessage: obj.failure_message,
-            shippingCharge: shippingCost,
-            totalPrice: getOrderDetails.totalPrice,
-            discountAmount: getOrderDetails.discountAmount,
-            discountPercentage: getOrderDetails.discountPercentage,
-            paidAmount: null,
-            isLoggedIn: userId ? true : false,
-            email: getOrderDetails.email,
-          });
-          // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
-          return res.json({
-            success: false,
-            orderType: obj.billing_address,
-            message: obj.failure_message,
           });
       }
     }
   } catch (error) {
     loggers.error(error + "from verifyPayment function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         message: error,
