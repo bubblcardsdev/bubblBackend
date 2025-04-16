@@ -7,6 +7,10 @@ const addToCartSchema = Joi.object({
   quantity: Joi.number().min(1).required(),
 });
 
+const cancelCartValidation = Joi.object({
+  cartId: Joi.number().required(),
+});
+
 const getProductId = Joi.object({
   productId: Joi.string().required(),
 });
@@ -42,4 +46,9 @@ const addToNonUserCartSchema = Joi.object({
   }).required(),
 });
 
-export { addToCartSchema, addToNonUserCartSchema, getProductId };
+export {
+  addToCartSchema,
+  addToNonUserCartSchema,
+  getProductId,
+  cancelCartValidation,
+};

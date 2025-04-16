@@ -1314,3 +1314,127 @@ async function getOrderDetails(req, res) {
     });
   }
 }
+
+async function getCart(req, res) {
+  const userId = req.user.id;
+  try {
+    const cart = await model.Order.findOne({
+      attributes: { exclude: ["ShippingId", "PaymentId"] },
+      where: {
+        customerId: userId,
+        orderStatus: "cart",
+      },
+      include: {
+        model: model.Cart,
+        where: {
+          productStatus: true,
+        },
+      },
+    });
+    let deviceImages = [];
+    let deviceInventory = "";
+    let productPrice = [];
+    let displayName = [];
+    let cartLength = "";
+
+    deviceImages = await Promise.all(
+      cart.Carts.map(async (cartVal) => {
+        if (cartVal.productType.includes("NC-")) {
+          const getImageId = await model.NameDeviceImageInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+              deviceColor: cartVal.productColor,
+            },
+          });
+          if (getImageId) {
+            const deviceInventory = await model.NameCustomImages.findOne({
+              where: {
+                NameCustomDeviceId: getImageId.id,
+                cardView: false,
+              },
+            });
+            const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
+            return itemImg;
+          }
+        } else {
+          deviceInventory = await model.DeviceInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+              deviceColor: cartVal.productColor,
+            },
+          });
+
+          const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
+          cartLength = cart?.Carts?.length || 0;
+
+          return itemImg;
+        }
+      })
+    );
+
+    productPrice = await Promise.all(
+      cart.Carts.map(async (cartVal) => {
+        if (cartVal.productType.includes("NC-")) {
+          const deviceInventData = await model.NameDeviceImageInventory.findOne(
+            {
+              where: {
+                deviceType: cartVal.productType,
+              },
+            }
+          );
+          return deviceInventData.price;
+        } else {
+          const deviceInvent = await model.DeviceInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+            },
+          });
+          return deviceInvent.price;
+        }
+      })
+    );
+
+    displayName = await Promise.all(
+      cart.Carts.map(async (cartVal) => {
+        if (cartVal.productType.includes("NC-")) {
+          const deviceInventData = await model.NameDeviceImageInventory.findOne(
+            {
+              where: {
+                deviceType: cartVal.productType,
+              },
+            }
+          );
+          return deviceInventData.displayName;
+        } else {
+          const deviceInvent = await model.DeviceInventory.findOne({
+            where: {
+              deviceType: cartVal.productType,
+            },
+          });
+          return deviceInvent.deviceType;
+        }
+      })
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        message: "Cart Details",
+        cartLength,
+        cart,
+        productPrice,
+        deviceImages,
+        displayName,
+      },
+    });
+  } catch (error) {
+    logger.error(error.message);
+    console.log(error);
+    return res.json({
+      success: false,
+      data: {
+        message: error.message,
+      },
+    });
+  }
+}

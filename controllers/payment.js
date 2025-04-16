@@ -14,6 +14,8 @@ import OrderConfirmationMail from "./orderEmail.js";
 import NameCustomEmail from "./namCustomEmail.js";
 import loggers from "../config/logger.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
+import order from "../models/order.cjs";
+import { Sequelize } from "sequelize";
 
 async function initialePay(req, res) {
   try {
@@ -24,7 +26,7 @@ async function initialePay(req, res) {
 
     if (
       Number(paymentObj.orderType) === 0 ||
-      Number(paymentObj.orderType) === 2
+      Number(paymentObj.orderType) === 1
     ) {
       getDataForPayment = await getDataForPaymentService(orderId);
     } else {
@@ -33,47 +35,37 @@ async function initialePay(req, res) {
       );
     }
     console.log(getDataForPayment, "getDataForPayment");
-    // return;
 
     const orderType = paymentObj.orderType;
     const cost =
       getDataForPayment.shippingCost !== undefined
         ? Number(getDataForPayment.shippingCost)
         : 0;
-    console.log(cost, "cost");
-    const value = getDataForPayment.totalPrice;
-    // const value = val + cost;
+
+    console.log(cost, orderType, "costsss");
+
+    const totalAmount = getDataForPayment.totalPrice;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
+
     let token =
-      orderType == 2 ? btoa(getDataForPayment?.email) : paymentObj.token;
+      orderType == 1 ? btoa(getDataForPayment?.email) : paymentObj.token;
     const shippingCost = cost.toString();
 
-    console.log(value, "value");
-    console.log("token", orderType, value, orderId, planType, shippingCost);
-    // return;
-    //  const cost =
-    //       paymentObj.shippingCost !== undefined
-    //         ? Number(paymentObj.shippingCost)
-    //         : 0;
-    //     const val = paymentObj.value;
-    //     const value = val + cost;
-    //     const orderType = paymentObj.orderType;
-    //     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
-    //     const token = paymentObj.token;
-    //     const shippingCost = cost.toString();
+    console.log(totalAmount, "value");
+    console.log("token", orderType, orderId, planType, shippingCost);
 
     //Put in the 32-Bit key shared by CCAvenues.
-    const accessCode = config.paymentAccessCode; //Put in the access code shared by CCAvenues.
+    const accessCode = config.paymentAccessCode;
 
     let encRequest = "";
     let formbody = "";
 
-    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
 
-    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
 
-    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${value}&redirect_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
     encRequest = encrypt(bodyData, workingKey);
     const POST = qs.parse(bodyData);
 
@@ -125,7 +117,7 @@ async function initialePay(req, res) {
   } catch (error) {
     console.log("Error", error);
     loggers.error(error + "from initialePay function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         message: error,
@@ -142,27 +134,29 @@ const successEnum = {
 async function verifyPayment(req, res) {
   try {
     const encData = req.body.data;
-    console.log(encData);
-
-    //check if it has encrypted data or validate
     const ccavResponse = decrypt(encData, workingKey);
 
     const params = new URLSearchParams(ccavResponse);
     const obj = Object.fromEntries(params.entries());
+
     const token = atob(obj.merchant_param1);
-    console.log(token, "fdfd");
+
     let userId = 0;
 
-    if (obj?.billing_address != "2") {
+    if (obj?.billing_address != "1") {
       try {
-        // const tokenData = jwt.verify(token, config.accessSecret);
-        const tokenData = atob(token);
+        console.log("came in", token);
+        const tokenData = jwt.verify(token, config.accessSecret);
+
+        console.log(tokenData, "tokenDatadfdfd");
         userId = tokenData.id;
       } catch (e) {
         console.log(e);
         // console.log("failed to verify token");
       }
     }
+
+    // return;
     console.log(userId, "userId");
     userId = userId === 0 ? null : userId;
 
@@ -175,40 +169,32 @@ async function verifyPayment(req, res) {
         id: Number(obj.order_id),
       },
     });
+    let sequelize = new Sequelize(process.env.DB_URL);
+
+    const transaction = await sequelize.transaction();
 
     if (successEnum[obj.order_status] === true) {
       // const cost = obj.merchant_param2;
       // const shippingCost = Number(cost);
       // create entry in db with obj.tracking_id and obj.bank_ref_no against orderId
-
-      console.log("Crossed");
       switch (obj.billing_address) {
         case "0":
-          await model.Payment.update(
+          await model.Payment.create(
             {
               transactionId: obj.tracking_id,
               bankRefNo: obj.bank_ref_no,
               customerId: userId || null,
+              orderId: obj.order_id,
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
-              // email:getOrderDetails.email,
-              // totalPrice: getOrderDetails.totalPrice,
-              // discountAmount: getOrderDetails.discountAmount,
-              // discountPercentage: getOrderDetails.discountPercentage,
-              // soldPrice:obj.amount,
               amount: obj.amount,
               isLoggedIn: userId ? true : false,
             },
-            {
-              where: {
-                orderId: Number(obj.order_id),
-              },
-            }
+            { transaction }
           );
           await model.Order.update(
             {
-              orderStatus: "Paid",
               orderStatusId: 3,
               soldPrice: obj.amount,
             },
@@ -216,7 +202,8 @@ async function verifyPayment(req, res) {
               where: {
                 id: Number(obj.order_id),
               },
-            }
+            },
+            transaction
           );
           // if the payment is successful, email send to user
           const checkPaymentStatus = await model.Payment.findOne({
@@ -224,12 +211,14 @@ async function verifyPayment(req, res) {
               orderId: obj.order_id,
               paymentStatus: true,
             },
+            transaction,
           });
           if (checkPaymentStatus) {
             const checkDeviceType = await model.OrderBreakDown.findAll({
               where: {
                 orderId: obj.order_id,
               },
+              transaction,
             });
 
             const products = await Promise.all(
@@ -252,6 +241,7 @@ async function verifyPayment(req, res) {
                       model: model.DevicePatternMasters,
                     },
                   ],
+                  transaction,
                 });
                 const imageUrls = await Promise.all(
                   (getProductDetail.DeviceImageInventories || []).map(
@@ -260,6 +250,7 @@ async function verifyPayment(req, res) {
                 );
                 const getFontName = await model.CustomFontMaster.findOne({
                   where: { id: f.fontId },
+                  transaction,
                 });
                 if (userId) {
                   const findCartItem = await model.Cart.findOne({
@@ -268,6 +259,7 @@ async function verifyPayment(req, res) {
                       customerId: userId,
                       productStatus: false,
                     },
+                    transaction,
                   });
                   await model.Cart.update(
                     {
@@ -278,7 +270,8 @@ async function verifyPayment(req, res) {
                         id: findCartItem.id,
                         customerId: userId,
                       },
-                    }
+                    },
+                    transaction
                   );
                 }
 
@@ -603,130 +596,19 @@ async function getShippingCharge(req, res) {
 
 async function getDataForPaymentService(orderId) {
   try {
-    console.log(orderId, "orderId");
-
     const getOrderDetails = await model.Order.findOne({
       where: { id: orderId },
     });
+
     if (!getOrderDetails) throw new Error("Order not found");
 
-    // const cartItems = await model.Cart.findAll({ where: { orderId } });
-    // if (!cartItems || cartItems.length === 0)
-    //   throw new Error("CartItems not found");
-
-    //#region - Discount logic
-
-    // Discount Logic
-    // const discountedTypes = ["Card", "Socket", "Tile", "Bundle Devices"];
-    // const cartData = cartItems.map((item) => item.dataValues);
-
-    // const discountEligibleItems = cartData.filter(
-    //   (item) =>
-    //     item.productType !== "Full Custom" &&
-    //     item.productType !== "NC-Pattern" &&
-    //     discountedTypes.includes(item.productType)
-    // );
-
-    // const nondiscountEligibleItems = cartData.filter(
-    //   (item) => !discountEligibleItems.some((d) => d.id === item.id)
-    // );
-
-    // // Calculate total quantity of discount-eligible items
-    // const totalQuantity = discountEligibleItems.reduce(
-    //   (sum, item) => sum + item.quantity,
-    //   0
-    // );
-
-    // // console.log(totalQuantity, "totalQuantity");
-
-    // let totalDiscountPrice = discountEligibleItems.reduce(
-    //   (sum, item) => sum + item.productPrice,
-    //   0
-    // );
-
-    // let totalNonDiscountPrice = nondiscountEligibleItems.reduce(
-    //   (sum, item) => sum + item.productPrice,
-    //   0
-    // );
-
-    // console.log(totalDiscountPrice, totalNonDiscountPrice, "totalPrice");
-    // let discountAmount = 0;
-    // let discountedTotal = 0;
-    // let appliedDiscountRate = 0;
-
-    // // Determine correct discount rate
-    // let discountRate = 0.4;
-    // if (totalQuantity === 1) discountRate = 0.6; // 40%
-    // else if (totalQuantity === 2) discountRate = 0.5; //50%
-    // else if (totalQuantity >= 3) discountRate = 0.4; //60%
-
-    // // console.log(discountRate * totalDiscountPrice);
-    // // console.log(discountRate * totalDiscountPrice + totalNonDiscountPrice);
-
-    // const afterDiscountPrice = Math.round(discountRate * totalDiscountPrice);
-
-    // // Standardize final prices
-    // let totalPrice = afterDiscountPrice + totalNonDiscountPrice;
-    // // eslint-disable-next-line no-unused-vars
-    // discountedTotal = Math.round(discountedTotal);
-    // discountAmount = Math.round((1 - discountRate) * totalDiscountPrice);
-
-    // await model.Order.update(
-    //   {
-    //     discountPercentage: (1 - discountRate) * 100,
-    //     discountAmount: Math.round(discountAmount),
-    //     soldPrice: Math.round(totalPrice),
-    //   },
-    //   { where: { id: orderId } }
-    // );
-
-    //#endregion
-
-    const shipping = await model.Shipping.findOne({ where: { orderId } });
-    if (!shipping)
-      throw new Error("No shipping record found for orderId:", orderId);
-
-    const shippingCountry = shipping?.country || "default";
-    const shipCost = await model.ShippingCharge.findOne({
-      where: { country: shippingCountry.toLowerCase() },
-    });
-
-    // let
-    // console.log(getOrderDetails, "ll");
-    let sellingPrice = getOrderDetails.totalPrice + shipCost.amount;
-    // return;
-
-    const updateOrder = await model.Order.update(
-      {
-        soldPrice: Number(sellingPrice),
-        shippingCharge: Number(shipCost.amount),
-      },
-      {
-        where: {
-          id: orderId,
-        },
-      }
-    );
-
-    if (!updateOrder) {
-      throw new Error("Cannot update order");
-    }
-
-    const createPayment = await model.Payment.create({
-      orderId: orderId,
-      customerId: getOrderDetails.customerId || null,
-      paymentStatus: false,
-      failureMessage: "",
-    });
-
-    if (!createPayment) {
-      throw new Error("Cannot create payment entry");
-    }
+    let sellingPrice =
+      getOrderDetails.totalPrice + getOrderDetails.shippingCharge;
 
     let orderObj = {
       totalPrice: Math.round(sellingPrice),
       email: getOrderDetails.customerId || getOrderDetails.email,
-      shippingCost: shipCost.amount,
+      shippingCost: getOrderDetails.shippingCharge,
     };
 
     console.log(orderObj, "Final Order Object Sent to Payment");

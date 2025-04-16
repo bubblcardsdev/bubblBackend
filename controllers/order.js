@@ -1,7 +1,7 @@
 import loggers from "../config/logger.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import model from "../models/index.js";
-import { shippingDetails } from "../validations/orderShipping.js";
+import { checkOutValidation } from "../validations/orderShipping.js";
 import { sequelize } from "../models/index.js";
 import logger from "../config/logger.js";
 import { Op } from "sequelize";
@@ -390,7 +390,7 @@ async function cancelOrder(req, res) {
 async function checkOut(req, res) {
   const userId = req.user?.id || null;
   const { productData, shippingFormData } = req.body;
-  const { error } = shippingDetails.validate(req.body, {
+  const { error } = checkOutValidation.validate(req.body, {
     abortEarly: false,
   });
   if (error) {
@@ -412,7 +412,7 @@ async function checkOut(req, res) {
         where: {
           customerId: userId,
           productStatus: false,
-          productUUId: {
+          productId: {
             [Op.ne]: null,
           },
         },
@@ -426,16 +426,42 @@ async function checkOut(req, res) {
       if (!productData || !productData.length) {
         throw new Error("No products provided for guest checkout.");
       }
-      cartItems = productData.map((item) => ({
-        productUUId: item.productId,
-        quantity: item.quantity,
-        fontId: item.fontId || null,
-        nameOnCard: item.customName || null,
-      }));
+
+      cartItems = await Promise.all(
+        productData.map(async (item) => {
+          const getProductId = await model.DeviceInventories.findOne({
+            where: {
+              productId: item.productId,
+            },
+            transaction,
+          });
+
+          if (!getProductId) {
+            return res.status(500).json({
+              success: false,
+              message: "Product not found",
+            });
+          }
+
+          return {
+            productId: getProductId?.id,
+            quantity: item.quantity,
+            fontId: item.fontId || null,
+            nameOnCard: item.customName || null,
+          };
+        })
+      );
     }
-    // Fetch product details in bulk
+
+    console.log(cartItems.length, "kk");
+
+    let shippingCharge = await decideShippingCharge(
+      shippingFormData?.country,
+      transaction
+    );
+
     const productDetails = await model.DeviceInventories.findAll({
-      where: { productId: cartItems.map((item) => item.productUUId) },
+      where: { id: cartItems.map((item) => item.productId) },
       include: [
         { model: model.DeviceColorMasters },
         { model: model.DeviceTypeMasters },
@@ -443,21 +469,15 @@ async function checkOut(req, res) {
       ],
       transaction,
     });
+
     if (productDetails.length !== cartItems.length) {
       throw new Error("One or more products could not be found.");
     }
-
-    // Fetch order status
-    const orderStatusMaster = await model.OrderStatusMaster.findOne({
-      where: { id: 1 },
-      transaction,
-    });
 
     let totalOrderPrice = 0;
     let totalDiscountAmount = 0;
     let totalDiscountPercentage = 0;
 
-    // Process cart items and calculate discounts
     const orderItems = cartItems.map((cartItem, index) => {
       const product = productDetails[index];
 
@@ -470,7 +490,7 @@ async function checkOut(req, res) {
       totalDiscountPercentage += product.discountPercentage;
 
       return {
-        productUUId: cartItem.productUUId,
+        productId: cartItem.productId,
         quantity: cartItem.quantity,
         totalPrice,
         discountPercentage: product.discountPercentage,
@@ -482,6 +502,7 @@ async function checkOut(req, res) {
         discountedPrice,
       };
     });
+
     console.log(orderItems);
 
     // Create Order
@@ -489,13 +510,11 @@ async function checkOut(req, res) {
       {
         customerId: userId,
         totalPrice: totalOrderPrice,
-        cancelledOrder: false,
         email: shippingFormData?.emailId,
         orderStatusId: 1,
-        orderStatus: orderStatusMaster?.name || "cart",
-        discountPercentage: totalDiscountPercentage,
         discountAmount: totalDiscountAmount,
         isLoggedIn: !!userId,
+        shippingCharge: shippingCharge,
       },
       { transaction }
     );
@@ -504,14 +523,15 @@ async function checkOut(req, res) {
     await model.OrderBreakDown.bulkCreate(
       orderItems.map((item) => ({
         orderId: createdOrder.id,
-        productId: item.productUUId,
+        productId: item.productId,
         quantity: item.quantity,
         originalPrice: item.productPrice,
         discountedAmount: item.discountAmount,
         discountedPrice: item.discountedPrice,
+        discountPercentage: item.discountPercentage,
         sellingPrice: item.totalPrice,
         fontId: item.fontId,
-        nameOnCard: item.nameOnCard,
+        customName: item.nameOnCard,
       })),
       { transaction }
     );
@@ -549,8 +569,32 @@ async function checkOut(req, res) {
     return res.status(500).json({
       success: false,
       message: "An error occurred during checkout.",
-      error: error,
+      error: error.message,
     });
+  }
+}
+
+async function decideShippingCharge(userCountry, transaction) {
+  try {
+    const shippingCharges = await model.ShippingCharge.findAll({ transaction });
+
+    const country = userCountry || "Others";
+
+    let selectedShipping = shippingCharges.find(
+      (charge) => charge.country.toLowerCase() === country.toLowerCase()
+    );
+
+    if (!selectedShipping) {
+      selectedShipping = shippingCharges.find(
+        (charge) => charge.country.toLowerCase() === "others"
+      );
+    }
+
+    const shippingChargeAmount = selectedShipping ? selectedShipping.amount : 0;
+
+    return shippingChargeAmount;
+  } catch (error) {
+    throw error;
   }
 }
 

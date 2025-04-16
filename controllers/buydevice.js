@@ -2,6 +2,7 @@ import model from "../models/index.js";
 import {
   addToCartSchema,
   addToNonUserCartSchema,
+  cancelCartValidation,
   getProductId,
 } from "../validations/cart.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
@@ -10,7 +11,6 @@ import loggers from "../config/logger.js";
 import pkg from "lodash";
 import { uploadFileToS3 } from "../middleware/fileUpload.js";
 const { isEmpty, sumBy } = pkg;
-import { Op } from "sequelize";
 import { sequelize } from "../models/index.js";
 
 async function getAllDevices(req, res) {
@@ -23,6 +23,14 @@ async function getAllDevices(req, res) {
         { model: model.MaterialTypeMasters },
       ],
     });
+
+    if (!devices || devices.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "No devices found. Something went wrong while fetching devices",
+      });
+    }
 
     const transformedDevices = await Promise.all(
       devices.map(async (device) => {
@@ -55,6 +63,7 @@ async function getAllDevices(req, res) {
 
     return res.json({
       success: true,
+      message: "Products fetched successfully",
       data: transformedDevices,
     });
   } catch (error) {
@@ -72,11 +81,11 @@ async function getProductDetails(req, res) {
   const { productId } = req.body;
 
   const { error } = getProductId.validate(req.body, {
-    abortEarly: false,
+    abortEarly: true,
   });
 
   if (error) {
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         error: error.details,
@@ -85,6 +94,8 @@ async function getProductDetails(req, res) {
   }
 
   try {
+    //find all to getall the colors, in the array.
+
     let devices = await model.DeviceInventories.findAll({
       include: [
         { model: model.DeviceImageInventories },
@@ -93,6 +104,14 @@ async function getProductDetails(req, res) {
         { model: model.MaterialTypeMasters },
       ],
     });
+
+    if (!devices || devices.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Error fetching product",
+      });
+    }
+
     const productDetail = await model.DeviceInventories.findOne({
       where: {
         productId: productId,
@@ -113,6 +132,13 @@ async function getProductDetails(req, res) {
         },
       ],
     });
+
+    if (!productDetail) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
     const color = [];
     const pattern = [];
     const material = [];
@@ -159,6 +185,7 @@ async function getProductDetails(req, res) {
 
     return res.json({
       success: true,
+      message: "Product Details",
       data: {
         productId: productDetail.productId,
         productName: productDetail.name,
@@ -179,7 +206,7 @@ async function getProductDetails(req, res) {
     });
   } catch (error) {
     logger.error(error, "from the getProductDetails method");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -279,6 +306,123 @@ async function getProductDetails(req, res) {
 // }
 //#endregion
 
+//#region - adding to cart old logic
+// async function addToCart(req, res) {
+//   try {
+//     const userId = req.user.id;
+//     const { productId, fontId, customName, quantity } = req.body;
+
+//     const { error } = addToCartSchema.validate(req.body, {
+//       abortEarly: false,
+//     });
+
+//     if (error) {
+//       return res.status(500).json({
+//         success: false,
+//         data: {
+//           error: error.details,
+//         },
+//       });
+//     }
+
+//     const getProductDetails = await model.DeviceInventories.findOne({
+//       where: {
+//         productId: productId,
+//       },
+//       include: [
+//         {
+//           model: model.DeviceColorMasters,
+//         },
+//         {
+//           model: model.DeviceTypeMasters,
+//         },
+//         {
+//           model: model.DevicePatternMasters,
+//         },
+//       ],
+//     });
+
+//     if (!getProductDetails || !getProductDetails?.DeviceTypeMaster?.name) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Product not found",
+//       })
+//     }
+
+//     let totalQuantity = Number(quantity);
+//     const findCartItem = await model.Cart.findAll({
+//       where: {
+//         customerId: userId,
+//         productUUId: productId,
+//         productStatus: false,
+//       },
+//     });
+
+//     if (findCartItem) {
+//       Promise.all(
+//         findCartItem.map(async (data) => {
+//           totalQuantity += data.quantity;
+//           await model.Cart.update(
+//             {
+//               productStatus: true,
+//             },
+//             {
+//               where: {
+//                 id: data.id,
+//               },
+//             }
+//           );
+//         })
+//       );
+//     }
+
+//     const createCartItem = await model.Cart.create({
+//       customerId: userId,
+//       productUUId: productId,
+//       quantity: totalQuantity,
+//       productPrice: getProductDetails.price,
+//       productType: getProductDetails.DeviceTypeMaster.name,
+//       productColor: getProductDetails?.DeviceColorMaster?.name
+//         ? getProductDetails?.DeviceColorMaster?.name
+//         : getProductDetails?.DevicePatternMaster?.name,
+//       productStatus: false,
+//       nameCustomNameOnCard: customName,
+//       fontId: fontId,
+//     });
+
+//     if (!createCartItem) {
+//       throw new Error("cannot create cart item");
+//     }
+
+//     //use if needed
+//     // createOrder(
+//     //   userId,
+//     //   productId,
+//     //   totalPrice,
+//     //   discountPrice,
+//     //   getProductDetails,
+//     //   1,
+//     //   fontId,
+//     //   customName
+//     // );
+//     return res.json({
+//       success: true,
+//       data: {
+//         cartId: createCartItem.id,
+//         message: "Cart Updated successfully",
+//       },
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     logger.error(error, "from addToCart function");
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// }
+//#endregion
+
 async function addToCart(req, res) {
   try {
     const userId = req.user.id;
@@ -289,7 +433,7 @@ async function addToCart(req, res) {
     });
 
     if (error) {
-      return res.json({
+      return res.status(500).json({
         success: false,
         data: {
           error: error.details,
@@ -315,76 +459,69 @@ async function addToCart(req, res) {
     });
 
     if (!getProductDetails || !getProductDetails?.DeviceTypeMaster?.name) {
-      throw new Error("Cannot find the product");
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
     }
-    console.log(typeof quantity);
-    
-    let totalQuantity = Number(quantity);
-    const findCartItem = await model.Cart.findAll({
-      where:{
-        customerId: userId,
-        productUUId: productId,
-        productStatus: false
-      }
-    });
-    console.log(totalQuantity);
-    
-    if(findCartItem){
-      Promise.all(findCartItem.map(async(data)=>{
-        totalQuantity += data.quantity;
-        await model.Cart.update({
-          productStatus: true
-        },{
-          where:{
-            id:data.id
-          }
+
+    if (Number(getProductDetails.DeviceTypeMaster.id) === 6) {
+      if (!customName || !fontId) {
+        return res.status(400).json({
+          success: false,
+          message: "FontId and CustomName are required",
         });
-      })
-    );
-    }
-    
-    const createCartItem = await model.Cart.create({
-      customerId: userId,
-      productUUId: productId,
-      quantity: totalQuantity,
-      productPrice: getProductDetails.price,
-      productType: getProductDetails.DeviceTypeMaster.name,
-      productColor: getProductDetails?.DeviceColorMaster?.name
-        ? getProductDetails?.DeviceColorMaster?.name
-        : getProductDetails?.DevicePatternMaster?.name,
-      productStatus: false,
-      nameCustomNameOnCard: customName,
-      fontId: fontId,
-    });
-
-    if (!createCartItem) {
-      throw new Error("cannot create cart item");
+      }
     }
 
-    //use if needed
-    // createOrder(
-    //   userId,
-    //   productId,
-    //   totalPrice,
-    //   discountPrice,
-    //   getProductDetails,
-    //   1,
-    //   fontId,
-    //   customName
-    // );
-    return res.json({
-      success: true,
-      data: {
-        cartId: createCartItem.id,
-        message: "Cart Updated successfully",
+    const existingCartItem = await model.Cart.findOne({
+      where: {
+        customerId: userId,
+        productId: getProductDetails.id,
+        productStatus: false,
+        fontId: fontId || null,
+        customName: customName || null,
       },
     });
+
+    if (existingCartItem) {
+      await existingCartItem.update({
+        quantity: existingCartItem.quantity + Number(quantity),
+        fontId: fontId || null,
+        customName: customName || null,
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          cartId: existingCartItem.id,
+          message: "Item Added to Cart",
+        },
+      });
+    } else {
+      const newCartItem = await model.Cart.create({
+        customerId: userId,
+        productId: getProductDetails.id,
+        quantity: Number(quantity),
+        productStatus: false,
+        fontId: fontId || null,
+        customName: customName || null,
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          cartId: newCartItem.id,
+          message: "Item Added to Cart",
+        },
+      });
+    }
   } catch (error) {
     console.log(error);
     logger.error(error, "from addToCart function");
-    return res.json({
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Something went wrong",
     });
   }
 }
@@ -438,119 +575,51 @@ async function createOrder(
 async function getCart(req, res) {
   const userId = req.user.id;
   try {
-    const cart = await model.Order.findOne({
-      attributes: { exclude: ["ShippingId", "PaymentId"] },
+    const getCart = await model.Cart.findAll({
       where: {
         customerId: userId,
-        orderStatus: "cart",
+        productStatus: false,
       },
-      include: {
-        model: model.Cart,
-        where: {
-          productStatus: true,
-        },
-      },
+      attributes: [
+        "id",
+        "customerId",
+        "quantity",
+        "productId",
+        "customName",
+        "fontId",
+      ],
     });
-    let deviceImages = [];
-    let deviceInventory = "";
-    let productPrice = [];
-    let displayName = [];
-    let cartLength = "";
 
-    deviceImages = await Promise.all(
-      cart.Carts.map(async (cartVal) => {
-        if (cartVal.productType.includes("NC-")) {
-          const getImageId = await model.NameDeviceImageInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
-          if (getImageId) {
-            const deviceInventory = await model.NameCustomImages.findOne({
-              where: {
-                NameCustomDeviceId: getImageId.id,
-                cardView: false,
-              },
-            });
-            const itemImg = await generateSignedUrl(deviceInventory.imageUrl);
-            return itemImg;
-          }
-        } else {
-          deviceInventory = await model.DeviceInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-              deviceColor: cartVal.productColor,
-            },
-          });
+    if (!getCart) {
+      return res.status(404).json({
+        success: false,
+        message: "No Cart found",
+      });
+    }
 
-          const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
-          cartLength = cart?.Carts?.length || 0;
+    await Promise.all(
+      getCart.map(async (cartVal) => {
+        const product = await model.DeviceInventories.findOne({
+          where: {
+            id: cartVal.productId,
+          },
+        });
 
-          return itemImg;
-        }
-      })
-    );
-
-    productPrice = await Promise.all(
-      cart.Carts.map(async (cartVal) => {
-        if (cartVal.productType.includes("NC-")) {
-          const deviceInventData = await model.NameDeviceImageInventory.findOne(
-            {
-              where: {
-                deviceType: cartVal.productType,
-              },
-            }
-          );
-          return deviceInventData.price;
-        } else {
-          const deviceInvent = await model.DeviceInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-            },
-          });
-          return deviceInvent.price;
-        }
-      })
-    );
-
-    displayName = await Promise.all(
-      cart.Carts.map(async (cartVal) => {
-        if (cartVal.productType.includes("NC-")) {
-          const deviceInventData = await model.NameDeviceImageInventory.findOne(
-            {
-              where: {
-                deviceType: cartVal.productType,
-              },
-            }
-          );
-          return deviceInventData.displayName;
-        } else {
-          const deviceInvent = await model.DeviceInventory.findOne({
-            where: {
-              deviceType: cartVal.productType,
-            },
-          });
-          return deviceInvent.deviceType;
+        if (product) {
+          cartVal.productId = product.productId;
         }
       })
     );
 
     return res.json({
       success: true,
-      data: {
-        message: "Cart Details",
-        cartLength,
-        cart,
-        productPrice,
-        deviceImages,
-        displayName,
-      },
+      message: "Cart Details",
+      data: getCart,
     });
   } catch (error) {
     logger.error(error.message);
     console.log(error);
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         message: error.message,
@@ -561,27 +630,41 @@ async function getCart(req, res) {
 
 async function cancelCart(req, res) {
   const userId = req.user.id;
-  const { productId, cartId } = req.body;
+  const { cartId } = req.body;
 
   try {
+    const { error } = cancelCartValidation.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        data: {
+          error: error.details,
+        },
+      });
+    }
     const checkCart = await model.Cart.findOne({
       where: {
         id: cartId,
         customerId: userId,
-        productUUId: productId,
-        productStatus: false,
       },
     });
-
     if (checkCart) {
-      const updateCartItem = await model.Cart.update(
+      if (checkCart.productStatus === true) {
+        return res.status(400).json({
+          success: false,
+          message: "Item already removed from cart",
+        });
+      }
+      await model.Cart.update(
         {
-          productStatus: true,
+          productStatus: true, //change after changing the logic.
         },
         {
           where: {
             customerId: userId,
-            productUUId: productId,
             id: cartId,
           },
         }
@@ -591,14 +674,14 @@ async function cancelCart(req, res) {
         message: "Item removed from Cart",
       });
     } else {
-      return res.json({
+      return res.status(404).json({
         success: false,
         message: "Cannot find the product in cart",
       });
     }
   } catch (error) {
     logger.error(error + "from cancelCart function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

@@ -21,20 +21,19 @@ module.exports = (sequelize, Sequelize) => {
         },
       },
       productId: {
-        type: Sequelize.UUID,
-        references: {
-          model: "DeviceInventories",
-          key: "productId",
-        },
-      },
-      fontId: {
         type: Sequelize.INTEGER,
         references: {
-          model: "CustomFontMasters",
+          model: "DeviceInventories",
           key: "id",
         },
       },
-      nameOnCard: {
+      quantity: {
+        type: Sequelize.INTEGER,
+      },
+      fontId: {
+        type: Sequelize.INTEGER,
+      },
+      customName: {
         type: Sequelize.STRING,
       },
       originalPrice: {
@@ -43,13 +42,13 @@ module.exports = (sequelize, Sequelize) => {
       discountedPrice: {
         type: Sequelize.INTEGER,
       },
+      discountPercentage: {
+        type: Sequelize.INTEGER,
+      },
       discountedAmount: {
         type: Sequelize.INTEGER,
       },
       sellingPrice: {
-        type: Sequelize.INTEGER,
-      },
-      quantity: {
         type: Sequelize.INTEGER,
       },
     },

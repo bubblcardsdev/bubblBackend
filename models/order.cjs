@@ -23,31 +23,13 @@ module.exports = (sequelize, Sequelize) => {
       },
       totalPrice: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      discountPercentage: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      discountAmount: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      soldPrice: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
         defaultValue: 0,
       },
       orderStatus: {
         type: Sequelize.STRING,
-        allowNull: false,
       },
       deliveryBy: {
         type: Sequelize.STRING,
-        allowNull: false,
         defaultValue: "",
       },
       cancelledOrder: {
@@ -58,9 +40,6 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      productUUId: {
-        type: Sequelize.UUID,
-      },
       orderStatusId: {
         type: Sequelize.INTEGER,
       },
@@ -70,11 +49,15 @@ module.exports = (sequelize, Sequelize) => {
       shippingCharge: {
         type: Sequelize.INTEGER,
       },
-      fontId: {
+      discountAmount: {
         type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
-      nameOnCard: {
-        type: Sequelize.STRING,
+      soldPrice: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
     },
     {

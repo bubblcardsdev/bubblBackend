@@ -17,26 +17,28 @@ module.exports = {
         },
       },
       productId: {
-        type: Sequelize.UUID,
-        references: {
-          model: "DeviceInventories",
-          key: "productId",
-        },
-      },
-      fontId: {
         type: Sequelize.INTEGER,
         references: {
-          model: "CustomFontMasters",
+          model: "DeviceInventories",
           key: "id",
         },
       },
-      nameOnCard: {
+      quantity: {
+        type: Sequelize.INTEGER,
+      },
+      fontId: {
+        type: Sequelize.INTEGER,
+      },
+      customName: {
         type: Sequelize.STRING,
       },
       originalPrice: {
         type: Sequelize.INTEGER,
       },
       discountedPrice: {
+        type: Sequelize.INTEGER,
+      },
+      discountPercentage: {
         type: Sequelize.INTEGER,
       },
       discountedAmount: {

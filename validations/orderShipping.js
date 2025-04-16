@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-const shippingDetails = Joi.object({
+const checkOutValidation = Joi.object({
   productData: Joi.array()
     .items(
       Joi.object({
@@ -26,8 +26,8 @@ const shippingDetails = Joi.object({
     zipcode: Joi.number().integer().required(),
     country: Joi.string().min(2).max(50).required(),
     landmark: Joi.string().optional().allow(""),
-    isShipped: Joi.boolean().required(),
+    // isShipped: Joi.boolean().required(),
   }).required(),
 });
 
-export { shippingDetails };
+export { checkOutValidation  };

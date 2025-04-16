@@ -9,17 +9,18 @@ import {
   getNonUserCart,
   cancelNonUserCart,
   clearCartNonuser,
-  getProductDetails
+  getProductDetails,
 } from "../controllers/buydevice.js";
 import { authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
 
-router.get("/alldevices", getAllDevices);
-router.post("/productDetails", getProductDetails);
-router.put("/addtocart", authenticateToken, addToCart);
-router.get("/all", authenticateToken, getCart);
-router.put("/cancel", authenticateToken, cancelCart);
+router.get("/alldevices", getAllDevices); //changed
+router.post("/productDetails", getProductDetails); //changed
+router.put("/addtocart", authenticateToken, addToCart); //changed
+router.get("/all", authenticateToken, getCart); //changed but not received any response structure
+router.put("/cancel", authenticateToken, cancelCart); //changed - to remove item from cart
+
 router.get("/clearItems", authenticateToken, clearCart);
 
 // Cart Flow before login

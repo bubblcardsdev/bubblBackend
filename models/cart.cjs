@@ -30,7 +30,6 @@ module.exports = (sequelize, Sequelize) => {
       },
       productType: {
         type: Sequelize.STRING,
-        allowNull: false,
       },
       quantity: {
         type: Sequelize.INTEGER,
@@ -39,11 +38,9 @@ module.exports = (sequelize, Sequelize) => {
       },
       productColor: {
         type: Sequelize.STRING,
-        allowNull: false,
       },
       productPrice: {
         type: Sequelize.INTEGER,
-        allowNull: false,
         defaultValue: 0,
       },
       productStatus: {
@@ -51,15 +48,15 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
-      productUUId: {
-        type: Sequelize.UUID,
+      productId: {
+        type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: "DeviceInventories",
-          key: "productId",
+          key: "id",
         },
       },
-      nameCustomNameOnCard: {
+      customName: {
         type: Sequelize.STRING,
       },
       fontId: {
