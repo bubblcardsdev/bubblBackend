@@ -24,6 +24,7 @@ const createMobileUserSchema = Joi.object({
   modeId: Joi.number().required(),
   companyName: Joi.string().required().allow(""),
   phoneNumber: Joi.string().required(),
+  countryCode: Joi.string().required(),
   profileName: Joi.string().required(),
   designation:Joi.string().required().allow("")
 });

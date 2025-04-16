@@ -6,6 +6,7 @@ export default async function MobileOnboardingProfileCreate(
   email,
   profileName,
   phoneNumber,
+  countryCode,
   companyName,
   templateId,
   designation,
@@ -17,33 +18,27 @@ export default async function MobileOnboardingProfileCreate(
       userId,
     },
   });
-  
+
   if (profile) {
     throw new Error("Profile name already exists");
   }
 
   const create = await model.Profile.create({
-    userId:userId,
-    profileName:profileName,
-    firstName:firstName,
+    userId: userId,
+    profileName: profileName,
+    firstName: firstName,
     lastName: lastName,
     designation: designation,
-    companyName:companyName,
-    templateId:templateId
+    companyName: companyName,
+    templateId: templateId,
   });
-  
 
   if (create) {
-    // await model.ProfileInfo.create({
-    //   userId: userId,
-    //   profileId: create.id,
-    //   templateId: templateId,
-    // });
     await model.ProfilePhoneNumber.create({
       profileId: create.id,
       phoneNumber: phoneNumber,
       phoneNumberType: "",
-      countryCode: "+91",
+      countryCode: countryCode,
       checkBoxStatus: true,
       activeStatus: true,
     });
