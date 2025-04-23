@@ -482,6 +482,7 @@ async function checkOut(req, res) {
 
     const orderItems = cartItems.map((cartItem, index) => {
       const product = productDetails[index];
+      const originalPrice = product.price * quantity;
 
       const discountAmount = (product.price * product.discountPercentage) / 100;
       const discountedPrice = product.price - discountAmount;
@@ -502,6 +503,7 @@ async function checkOut(req, res) {
           cartItem.nameOnCard || cartItem.nameCustomNameOnCard || null,
         productPrice: product.price,
         discountedPrice,
+        originalPrice,
       };
     });
 
@@ -527,7 +529,7 @@ async function checkOut(req, res) {
         orderId: createdOrder.id,
         productId: item.productId,
         quantity: item.quantity,
-        originalPrice: item.productPrice,
+        originalPrice: item.originalPrice,
         discountedAmount: item.discountAmount,
         discountedPrice: item.discountedPrice,
         discountPercentage: item.discountPercentage,
