@@ -429,6 +429,7 @@ async function checkOut(req, res) {
         throw new Error("No products provided for guest checkout.");
       }
 
+      console.log(productData, "productData");
       cartItems = await Promise.all(
         productData.map(async (item) => {
           const getProductId = await model.DeviceInventories.findOne({
@@ -444,10 +445,10 @@ async function checkOut(req, res) {
               message: "Product not found",
             });
           }
-
+          console.log(getProductId, "getProductId");
           return {
             productId: getProductId?.id,
-            quantity: item.quantity,
+            quantity: item?.quantity,
             fontId: item.fontId || null,
             nameOnCard: item.customName || null,
           };
@@ -482,7 +483,7 @@ async function checkOut(req, res) {
 
     const orderItems = cartItems.map((cartItem, index) => {
       const product = productDetails[index];
-      const originalPrice = product.price * quantity;
+      const originalPrice = product.price * cartItem.quantity;
 
       const discountAmount = (product.price * product.discountPercentage) / 100;
       const discountedPrice = product.price - discountAmount;
