@@ -21,7 +21,7 @@ import {
   getUserDetails,
   getProfileName,
   updateProfileName,
-  createCompleteProfileBulk
+  // createCompleteProfileBulk
   // getProfileOne
   // getProfileByMode,
 } from "../controllers/profile.js";
@@ -32,7 +32,7 @@ const router = express.Router();
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
 router.post("/create", authenticateToken, createProfile);
-router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
+// router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
 router.get("/", getProfileByDevice);
