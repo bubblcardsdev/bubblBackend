@@ -2,7 +2,7 @@ import Joi from "joi";
 
 const addToCartSchema = Joi.object({
   productId: Joi.string().required(),
-  fontId: Joi.string().optional(),
+  fontId: Joi.number().optional(),
   customName: Joi.string().optional(),
   quantity: Joi.number().min(1).required(),
 });

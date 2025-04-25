@@ -496,7 +496,6 @@ async function addToCart(req, res) {
       where: {
         customerId: userId,
         productId: getProductDetails.id,
-        productStatus: false,
         fontId: fontId || null,
         customName: customName || null,
       },
@@ -504,9 +503,10 @@ async function addToCart(req, res) {
 
     if (existingCartItem) {
       await existingCartItem.update({
-        quantity: existingCartItem.quantity + Number(quantity),
+        quantity: quantity,
         fontId: fontId || null,
         customName: customName || null,
+        productStatus: true,
       });
 
       return res.json({
@@ -521,9 +521,10 @@ async function addToCart(req, res) {
         customerId: userId,
         productId: getProductDetails.id,
         quantity: Number(quantity),
-        productStatus: false,
+        productStatus: true,
         fontId: fontId || null,
         customName: customName || null,
+        productPrice: getProductDetails.price,
       });
 
       return res.json({
@@ -670,7 +671,7 @@ async function cancelCart(req, res) {
       },
     });
     if (checkCart) {
-      if (checkCart.productStatus === true) {
+      if (checkCart.productStatus === false) {
         return res.status(400).json({
           success: false,
           message: "Item already removed from cart",
@@ -678,7 +679,7 @@ async function cancelCart(req, res) {
       }
       await model.Cart.update(
         {
-          productStatus: true, //change after changing the logic.
+          productStatus: false, //change after changing the logic.
         },
         {
           where: {
