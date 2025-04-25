@@ -70,6 +70,7 @@ async function getAllDevices(req, res) {
 
     const uniqueItemsName = [];
 
+    // remove duplicates based on productName
     let removeDuplicates = transformedDevices.map((item) => {
       if (!uniqueItemsName.includes(item.productName)) {
         uniqueItemsName.push(item.productName);
@@ -77,6 +78,7 @@ async function getAllDevices(req, res) {
       }
     });
 
+    // remove undefined values from the array
     removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
     return res.json({

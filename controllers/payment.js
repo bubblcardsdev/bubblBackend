@@ -26,13 +26,19 @@ async function initialePay(req, res) {
 
     if (
       Number(paymentObj.orderType) === 0 ||
-      Number(paymentObj.orderType) === 1
+      Number(paymentObj.orderType) === 2
     ) {
       getDataForPayment = await getDataForPaymentService(orderId);
-    } else {
+    } else if (Number(paymentObj.orderType) === 1) {
       getDataForPayment = await getDataForPlanPaymentService(
         paymentObj.planType
       );
+    } else {
+      // default case to handle unexpected order types
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order type",
+      });
     }
     console.log(getDataForPayment, "getDataForPayment");
 
