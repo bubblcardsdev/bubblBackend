@@ -41,7 +41,14 @@ async function getAllDevices(req, res) {
         );
         const color = [];
         devices.filter((deviceType) => {
-          if (deviceType.name === device.name) {
+          if (
+            deviceType.name === device.name &&
+            deviceType.deviceTypeId === 6
+          ) {
+            deviceType.DevicePatternMaster &&
+              !color.includes(deviceType.DevicePatternMaster.name) &&
+              color.push(deviceType.DevicePatternMaster.name);
+          } else if (deviceType.name === device.name) {
             deviceType.DeviceColorMaster &&
               color.push(deviceType.DeviceColorMaster.name);
           }
@@ -61,10 +68,21 @@ async function getAllDevices(req, res) {
       })
     );
 
+    const uniqueItemsName = [];
+
+    let removeDuplicates = transformedDevices.map((item) => {
+      if (!uniqueItemsName.includes(item.productName)) {
+        uniqueItemsName.push(item.productName);
+        return item;
+      }
+    });
+
+    removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
+
     return res.json({
       success: true,
       message: "Products fetched successfully",
-      data: transformedDevices,
+      data: removeDuplicates,
     });
   } catch (error) {
     console.error("Error", error);
