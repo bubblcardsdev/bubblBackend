@@ -16,7 +16,7 @@ import {
   resetPassword,
   verifyEmailOtp,
   resendMailOtp,
-  createUserBulkController,
+  // createUserBulkController,
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -24,7 +24,7 @@ const router = express.Router();
 
 router.post("/token", issueNewToken);
 router.post("/register", createUser);
-router.post("/registerBulk", createUserBulkController);
+// router.post("/registerBulk", createUserBulkController);
 router.post("/verifygoogleuser", verifyGoogleUser);
 router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
