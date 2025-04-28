@@ -25,17 +25,17 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.INTEGER,
         defaultValue: 0,
       },
-      orderStatus: {
-        type: Sequelize.STRING,
-      },
-      deliveryBy: {
-        type: Sequelize.STRING,
-        defaultValue: "",
-      },
-      cancelledOrder: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-      },
+      // orderStatus: {
+      //   type: Sequelize.STRING,
+      // },
+      // deliveryBy: {
+      //   type: Sequelize.STRING,
+      //   defaultValue: "",
+      // },
+      // cancelledOrder: {
+      //   type: Sequelize.BOOLEAN,
+      //   defaultValue: false,
+      // },
       email: {
         type: Sequelize.STRING,
         allowNull: true,

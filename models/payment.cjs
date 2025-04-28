@@ -38,10 +38,10 @@ module.exports = (sequelize, Sequelize) => {
           key: "id",
         },
       },
-      shippingCharge: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
+      // shippingCharge: {
+      //   type: Sequelize.INTEGER,
+      //   allowNull: true,
+      // },
       paymentStatus: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
@@ -58,6 +58,9 @@ module.exports = (sequelize, Sequelize) => {
       paymentMethod: {
         type: Sequelize.STRING,
         allowNull: true,
+      },
+      email: {
+        type: Sequelize.STRING,
       },
     },
     {

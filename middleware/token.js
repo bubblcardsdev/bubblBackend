@@ -103,10 +103,10 @@ const authenticateCheckoutToken = (req, res, next) =>{
       req.user = user;
       next();
     } catch (error) {
-      return res.json({
+      return res.status(500).json({
         success: false,
         data: {
-          error,
+          message: error.message,
         },
       });
     }

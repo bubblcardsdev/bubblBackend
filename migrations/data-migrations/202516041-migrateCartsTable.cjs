@@ -1,6 +1,5 @@
 module.exports = async (sequelize, Sequelize) => {
   const { Op } = Sequelize;
-  const t = await sequelize.transaction();
   // Define models
   const Carts = sequelize.define(
     "Carts",
@@ -97,7 +96,7 @@ module.exports = async (sequelize, Sequelize) => {
   try {
     const carts = await Carts.findAll({
       where: { productId: null },
-      transaction: t,
+    
     });
 
     for (const cart of carts) {
@@ -108,7 +107,7 @@ module.exports = async (sequelize, Sequelize) => {
 
         const deviceType = await DeviceTypes.findOne({
           where: { name: deviceTypeName },
-          transaction: t,
+         
         });
 
         if (!deviceType) {
@@ -148,12 +147,12 @@ module.exports = async (sequelize, Sequelize) => {
             where: {
               name: patternNameFromEnum,
             },
-            transaction: t,
+
           });
         } else {
           color = await Colors.findOne({
             where: { name: cart.productColor },
-            transaction: t,
+          
           });
         }
 
@@ -193,9 +192,7 @@ module.exports = async (sequelize, Sequelize) => {
             {
               productId: matchedInventory.id,
             },
-            {
-              transaction: t,
-            }
+            
           );
           console.log(
             `Cart ID ${cart.id} updated with productId ${matchedInventory.id}`
@@ -287,13 +284,13 @@ module.exports = async (sequelize, Sequelize) => {
       }
     }
 
-    await t.commit();
+
 
     console.log("Cart productStatus toggle completed");
 
     console.log("Cart productId backfill completed");
   } catch (error) {
-    await t.rollback();
-    console.log("Transaction rolled back due to error:", error.message);
+    console.error("Error during migration:", error.message);
+    
   }
 };

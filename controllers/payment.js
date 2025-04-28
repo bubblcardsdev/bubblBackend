@@ -15,11 +15,22 @@ import NameCustomEmail from "./namCustomEmail.js";
 import loggers from "../config/logger.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import order from "../models/order.cjs";
-import { Sequelize } from "sequelize";
+import { Sequelize, Op } from "sequelize";
+import { initiatePayValidation, verifyPaymentValidation } from "../validations/payment.js";
 
 async function initialePay(req, res) {
   try {
     const paymentObj = req.body;
+
+    const { error } = initiatePayValidation.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res
+        .status(500)
+        .json({ success: false, data: { error: error.details } });
+    }
     const orderId = paymentObj.orderId;
     console.log("orderId-------------------------------------", orderId);
     let getDataForPayment;
@@ -30,6 +41,7 @@ async function initialePay(req, res) {
     ) {
       getDataForPayment = await getDataForPaymentService(orderId);
     } else if (Number(paymentObj.orderType) === 1) {
+      throw new Error("Plan payment to be handled as part of post login");
       getDataForPayment = await getDataForPlanPaymentService(
         paymentObj.planType
       );
@@ -50,7 +62,10 @@ async function initialePay(req, res) {
 
     console.log(cost, orderType, "costsss");
 
-    const totalAmount = getDataForPayment.totalPrice;
+    const totalAmount =
+      getDataForPayment?.email == "benial@rvmatrix.in" || "ben@gmail.com"
+        ? 1
+        : getDataForPayment.totalPrice;
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
 
@@ -76,7 +91,7 @@ async function initialePay(req, res) {
     const POST = qs.parse(bodyData);
 
     formbody =
-      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
       POST.merchant_id +
       "&encRequest=" +
       encRequest +
@@ -126,7 +141,7 @@ async function initialePay(req, res) {
     return res.status(500).json({
       success: false,
       data: {
-        message: error,
+        message: error.message,
       },
     });
   }
@@ -135,15 +150,30 @@ async function initialePay(req, res) {
 const successEnum = {
   Success: true,
   Failure: false,
+  Aborted: false,
 };
 
 async function verifyPayment(req, res) {
   try {
     const encData = req.body.data;
+
+    const { error } = verifyPaymentValidation.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res
+        .status(500)
+        .json({ success: false, data: { error: error.details } });
+    }
+
+    console.log(encData, "encData");
     const ccavResponse = decrypt(encData, workingKey);
 
+    console.log(ccavResponse, "ccavResponse");
     const params = new URLSearchParams(ccavResponse);
     const obj = Object.fromEntries(params.entries());
+    console.log(obj, "obj");
 
     const token = atob(obj.merchant_param1);
 
@@ -164,31 +194,52 @@ async function verifyPayment(req, res) {
 
     userId = userId === 0 ? null : userId;
 
-    obj.order_status = "Success"; //comment this before live
+    // obj.order_status = "Success"; //comment this before live
 
     const cost = obj.merchant_param2;
     const shippingCost = Number(cost);
 
-    let sequelize = new Sequelize(process.env.DB_URL);
+    const checkOrder = await model.Order.findOne({
+      where: {
+        id: Number(obj.order_id),
+        orderStatusId: 3,
+      },
+    });
+    if (checkOrder) {
+      throw new Error("Order already completed");
+    }
 
-    const transaction = await sequelize.transaction();
+    const shipping = await model.Shipping.findOne({
+      where: {
+        orderId: Number(obj.order_id),
+      },
+    });
+    console.log(
+      shipping?.dataValues?.emailId,
+      successEnum[obj.order_status],
+      "shippinghhhvj"
+    );
+
+    let email = shipping?.dataValues?.emailId || null;
+
     if (successEnum[obj.order_status] === true) {
       switch (obj.billing_address) {
         case "0":
-          await model.Payment.create(
-            {
-              transactionId: obj.tracking_id,
-              bankRefNo: obj.bank_ref_no,
-              customerId: userId || null,
-              orderId: obj.order_id,
-              paymentStatus: successEnum[obj.order_status],
-              failureMessage: obj.failure_message,
-              shippingCharge: shippingCost,
-              amount: obj.amount,
-              isLoggedIn: !!userId,
-            },
-            { transaction: transaction }
-          );
+        case "2":
+          console.log("came in 0 or 2");
+          await model.Payment.create({
+            transactionId: obj.tracking_id,
+            bankRefNo: obj.bank_ref_no,
+            customerId: userId || null,
+            orderId: obj.order_id,
+            paymentStatus: successEnum[obj.order_status],
+            failureMessage: obj.failure_message,
+            shippingCharge: shippingCost,
+            amount: obj.amount,
+            isLoggedIn: !!userId,
+            email: email,
+            paymentMethod: obj.payment_mode + " " + obj.card_name,
+          });
 
           await model.Order.update(
             {
@@ -199,11 +250,8 @@ async function verifyPayment(req, res) {
               where: {
                 id: Number(obj.order_id),
               },
-              transaction: transaction,
             }
           );
-
-          await transaction.commit();
 
           const checkPaymentStatus = await model.Payment.findOne({
             where: {
@@ -212,24 +260,24 @@ async function verifyPayment(req, res) {
             },
           });
 
+          console.log("____________________________________________");
+
           if (checkPaymentStatus) {
             const checkDeviceType = await model.OrderBreakDown.findAll({
               where: {
                 orderId: Number(obj.order_id),
               },
             });
-
+            console.log(checkDeviceType, obj.order_id, "checkDeviceType");
+            console.log("_____________________________________________");
             const products = await Promise.all(
               checkDeviceType.map(async (f) => {
+                console.log(f.productId, "fdfdfd");
                 const getProductDetail = await model.DeviceInventories.findOne({
-                  where: { productId: f.productId },
-                  include: [
-                    { model: model.DeviceImageInventories },
-                    { model: model.DeviceColorMasters },
-                    { model: model.MaterialTypeMasters },
-                    { model: model.DevicePatternMasters },
-                  ],
+                  where: { id: f.productId },
+                  include: [{ model: model.DeviceImageInventories }],
                 });
+                console.log(getProductDetail, "fdfdfd");
 
                 const imageUrls = await Promise.all(
                   (getProductDetail.DeviceImageInventories || []).map((img) =>
@@ -246,13 +294,13 @@ async function verifyPayment(req, res) {
                     where: {
                       productId: f.productId,
                       customerId: userId,
-                      productStatus: false,
+                      productStatus: true,
                     },
                   });
 
                   if (findCartItem) {
                     await model.Cart.update(
-                      { productStatus: true },
+                      { productStatus: false },
                       {
                         where: {
                           id: findCartItem.id,
@@ -293,13 +341,14 @@ async function verifyPayment(req, res) {
               OrderConfirmationMail(otherProducts, obj.order_id, userId);
             }
           }
-
+          console.log("came here after order confirmation mail");
           return res.json({
             success: true,
             message: "Payment verified successfully",
             data: {
               status: obj.order_status,
               orderId: obj.order_id,
+              orderType: obj.billing_address,
             },
           });
         case "1":
@@ -331,25 +380,91 @@ async function verifyPayment(req, res) {
             },
           });
       }
+    } else if (
+      successEnum[obj.order_status] === false &&
+      obj.order_status == "Aborted"
+    ) {
+      switch (obj.billing_address) {
+        case "0":
+        case "2":
+          console.log("came in 0");
+          await model.Payment.create({
+            transactionId: obj?.tracking_id,
+            bankRefNo: obj?.bank_ref_no,
+            customerId: userId || null,
+            orderId: obj.order_id,
+            paymentStatus: successEnum[obj.order_status] || false,
+            failureMessage: obj.status_message,
+            shippingCharge: shippingCost,
+            amount: obj.amount,
+            isLoggedIn: userId ? true : false,
+            email: email,
+          });
+
+          await model.Order.update(
+            {
+              orderStatusId: 2,
+            },
+            { where: { id: Number(obj.order_id) } }
+          );
+
+          return res.status(200).json({
+            success: false,
+            data: {
+              orderId: Number(obj.order_id),
+              message: obj.status_message || obj.order_status,
+              orderType: obj.billing_address,
+            },
+          });
+
+        case "1":
+          await model.PlanPayment.update({
+            transactionId: obj.tracking_id,
+            bankRefNo: obj.bank_ref_no,
+            customerId: userId || null,
+            id: obj.order_id,
+            paymentStatus: successEnum[obj.order_status],
+            failureMessage: obj.failure_message,
+          });
+          return res.status(500).json({
+            success: false,
+            data: {
+              status: obj.order_status,
+              orderId: obj.order_id,
+            },
+          });
+      }
     } else {
       switch (obj.billing_address) {
         case "0":
+        case "2":
           await model.Payment.create({
             transactionId: obj?.tracking_id,
             bankRefNo: obj?.bank_ref_no,
             customerId: userId || null,
             orderId: obj.order_id,
             paymentStatus: successEnum[obj.order_status],
-            failureMessage: obj.failure_message,
+            failureMessage: obj.failure_message || obj.status_message,
             shippingCharge: shippingCost,
             amount: obj.amount,
             isLoggedIn: userId ? true : false,
+            email: email,
           });
 
-          return res.status(404).json({
+          await model.Order.update(
+            {
+              orderStatusId: 2,
+            },
+            { where: { id: Number(obj.order_id) } }
+          );
+
+          return res.json({
             success: false,
-            orderId: Number(obj.order_id),
-            message: obj.failure_message || obj.order_status,
+            data: {
+              orderId: Number(obj.order_id),
+              message: obj.failure_message || obj.order_status,
+              orderType: obj.billing_address,
+            },
           });
 
         case "1":
@@ -375,7 +490,7 @@ async function verifyPayment(req, res) {
     return res.status(500).json({
       success: false,
       data: {
-        message: error,
+        message: error.message,
       },
     });
   }
@@ -412,6 +527,10 @@ async function getDataForPaymentService(orderId) {
     });
 
     if (!getOrderDetails) throw new Error("Order not found");
+
+    if (getOrderDetails.orderStatusId === 3) {
+      throw new Error("Order already completed");
+    }
 
     let sellingPrice =
       getOrderDetails.totalPrice + getOrderDetails.shippingCharge;

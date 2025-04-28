@@ -10,14 +10,17 @@ const checkOutValidation = Joi.object({
         quantity: Joi.number().integer().min(1).required(),
       })
     )
-    .min(1).optional(),
+    .min(1)
+    .optional(),
 
-  promoCode: Joi.string().optional(),
+  promoCode: Joi.string().optional().allow(""), // Allow empty string
 
   shippingFormData: Joi.object({
     firstName: Joi.string().min(1).max(50).required(),
     lastName: Joi.string().min(1).max(50).required(),
-    phoneNumber: Joi.string().required(),
+    phoneNumber: Joi.string()
+      .pattern(/^\+?[0-9]{7,15}$/) // Supports optional "+" and 7-15 digits
+      .required(),
     emailId: Joi.string().email().required(),
     companyName: Joi.string().optional().allow(""), // Allow empty string
     address: Joi.string().min(5).required(),
@@ -30,4 +33,8 @@ const checkOutValidation = Joi.object({
   }).required(),
 });
 
-export { checkOutValidation  };
+const getOrderValidation = Joi.object({
+  orderId: Joi.number().required().greater(0),
+});
+
+export { checkOutValidation, getOrderValidation };

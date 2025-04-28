@@ -28,21 +28,21 @@ module.exports = (sequelize, Sequelize) => {
           key: "id",
         },
       },
-      productType: {
-        type: Sequelize.STRING,
-      },
+      // productType: {
+      //   type: Sequelize.STRING,
+      // },
       quantity: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 1,
       },
-      productColor: {
-        type: Sequelize.STRING,
-      },
-      productPrice: {
-        type: Sequelize.INTEGER,
-        defaultValue: 0,
-      },
+      // productColor: {
+      //   type: Sequelize.STRING,
+      // },
+      // productPrice: {
+      //   type: Sequelize.INTEGER,
+      //   defaultValue: 0,
+      // },
       productStatus: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

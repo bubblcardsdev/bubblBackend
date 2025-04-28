@@ -70,7 +70,6 @@ async function getAllDevices(req, res) {
 
     const uniqueItemsName = [];
 
-    // remove duplicates based on productName
     let removeDuplicates = transformedDevices.map((item) => {
       if (!uniqueItemsName.includes(item.productName)) {
         uniqueItemsName.push(item.productName);
@@ -78,7 +77,6 @@ async function getAllDevices(req, res) {
       }
     });
 
-    // remove undefined values from the array
     removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
     return res.json({
@@ -485,6 +483,15 @@ async function addToCart(req, res) {
       });
     }
 
+    if (Number(getProductDetails.DeviceTypeMaster.id) !== 6) {
+      if (customName || fontId) {
+        return res.status(400).json({
+          success: false,
+          message: "This product does not require custom name or fontId",
+        });
+      }
+    }
+
     if (Number(getProductDetails.DeviceTypeMaster.id) === 6) {
       if (!customName || !fontId) {
         return res.status(400).json({
@@ -599,7 +606,7 @@ async function getCart(req, res) {
     const getCart = await model.Cart.findAll({
       where: {
         customerId: userId,
-        productStatus: false,
+        productStatus: true,
       },
       attributes: [
         "id",
@@ -681,7 +688,7 @@ async function cancelCart(req, res) {
       }
       await model.Cart.update(
         {
-          productStatus: false, //change after changing the logic.
+          productStatus: false,
         },
         {
           where: {
@@ -697,7 +704,7 @@ async function cancelCart(req, res) {
     } else {
       return res.status(404).json({
         success: false,
-        message: "Cannot find the product in cart",
+        message: "Invalid Cart ID",
       });
     }
   } catch (error) {

@@ -136,4 +136,23 @@ module.exports = async (sequelize, Sequelize) => {
       );
     }
   }
+
+  // const cancelledOrders = await Orders.findAll({
+  //   where: {
+  //     orderStatusId: 2,
+  //   },
+  // });
+
+  // for (const order of cancelledOrders) {
+  //   await Carts.update(
+  //     {
+  //       productStatus: false,
+  //     },
+  //     {
+  //       where: {
+  //         orderId: order.id,
+  //       },
+  //     }
+  //   );
+  // }
 };
