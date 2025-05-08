@@ -28,6 +28,10 @@ module.exports = {
       },
       fontId: {
         type: Sequelize.INTEGER,
+        references: {
+          model: "CustomFontMasters",
+          key: "id",
+        },
       },
       customName: {
         type: Sequelize.STRING,

@@ -216,9 +216,9 @@ async function getOrderById(req, res) {
       paymentStatus: orderStatus.name,
       paidAt: payment?.updatedAt || null,
       payMethod: payment?.paymentMethod || null,
-      totalPaidAmount: payment?.totalPrice || 0,
-      totalDiscountAmount: payment?.discountAmount || 0,
-      shippingCost: payment?.shippingCharge || 0,
+      totalPaidAmount: payment?.amount || 0,
+      totalDiscountAmount: order?.discountAmount || 0,
+      shippingCost: order?.shippingCharge || 0,
     };
 
     return res.json({
@@ -408,6 +408,7 @@ async function cancelOrder(req, res) {
 
 //#endregion
 
+//#region
 // async function checkOut(req, res) {
 //   console.log("checkOut function called");
 //   const userId = req.user?.id || null;
@@ -614,6 +615,200 @@ async function cancelOrder(req, res) {
 //     });
 //   }
 // }
+//#endregion
+
+//#region  - checkout with order update
+// async function checkOut(req, res) {
+//   const userId = req.user?.id || null;
+//   const { productData, shippingFormData } = req.body;
+//   const { error } = checkOutValidation.validate(req.body, {
+//     abortEarly: false,
+//   });
+
+//   if (error) {
+//     return res
+//       .status(500)
+//       .json({ success: false, data: { error: error.details } });
+//   }
+
+//   const transaction = await sequelize.transaction();
+
+//   try {
+//     let cartItems = [];
+
+//     if (userId) {
+//       cartItems = await model.Cart.findAll({
+//         where: {
+//           customerId: userId,
+//           productStatus: true,
+//           productId: { [Op.ne]: null },
+//         },
+//         transaction,
+//       });
+
+//       if (!cartItems.length) throw new Error("Cannot find items in the cart.");
+//     } else {
+//       if (!productData || !productData.length)
+//         throw new Error("No products provided for guest checkout.");
+//       const productIdMap = {};
+
+//       for (const item of productData) {
+//         if (!item.productId) continue;
+
+//         if (productIdMap[item.productId]) {
+//           throw new Error(
+//             `Duplicate productId found: ${item.productId}. Please update quantity instead of repeating the product.`
+//           );
+//         } else {
+//           productIdMap[item.productId] = true;
+//         }
+//       }
+
+//       cartItems = await Promise.all(
+//         productData.map(async (item) => {
+//           const getProductId = await model.DeviceInventories.findOne({
+//             where: { productId: item.productId },
+//           });
+
+//           if (!getProductId) {
+//             throw new Error(`Product not found: ${item.productId}`);
+//           }
+
+//           if (getProductId.deviceTypeId === 6) {
+//             if (!item.customName || !item.fontId) {
+//               throw new Error(
+//                 `FontId and CustomName are required for product - ${item.productId}`
+//               );
+//             }
+//           }
+
+//           return {
+//             productId: getProductId.id,
+//             quantity: item.quantity,
+//             fontId: item.fontId || null,
+//             nameOnCard: item.customName || null,
+//           };
+//         })
+//       );
+//     }
+
+//     const shippingCharge = await decideShippingCharge(
+//       shippingFormData?.country,
+//       transaction
+//     );
+
+//     const productDetails = await model.DeviceInventories.findAll({
+//       where: { id: cartItems.map((item) => item.productId) },
+//       include: [
+//         { model: model.DeviceColorMasters },
+//         { model: model.DeviceTypeMasters },
+//         { model: model.DevicePatternMasters },
+//       ],
+//       transaction,
+//     });
+
+//     if (productDetails.length !== cartItems.length)
+//       throw new Error("One or more products could not be found.");
+
+//     let totalOrderPrice = 0;
+//     let totalDiscountAmount = 0;
+//     let totalOriginalPrice = 0;
+
+//     const orderItems = cartItems.map((cartItem, index) => {
+//       const product = productDetails[index];
+//       const discountAmountPerUnit =
+//         (product.price * product.discountPercentage) / 100;
+//       const discountedPrice = product.price - discountAmountPerUnit;
+//       const totalPrice = discountedPrice * cartItem.quantity;
+//       const originalPrice = product.price * cartItem.quantity;
+//       const totalDiscountForItem = discountAmountPerUnit * cartItem.quantity;
+
+//       totalOrderPrice += totalPrice;
+//       totalDiscountAmount += totalDiscountForItem;
+//       totalOriginalPrice += originalPrice;
+
+//       return {
+//         productId: cartItem.productId,
+//         quantity: cartItem.quantity,
+//         totalPrice,
+//         discountPercentage: product.discountPercentage,
+//         discountAmount: totalDiscountForItem,
+//         fontId: cartItem.fontId || null,
+//         nameOnCard:
+//           cartItem.nameOnCard || cartItem.nameCustomNameOnCard || null,
+//         productPrice: product.price,
+//         discountedPrice,
+//         originalPrice,
+//       };
+//     });
+
+//     let createdOrder = null;
+
+//     createdOrder = await model.Order.create(
+//       {
+//         customerId: userId,
+//         totalPrice: totalOrderPrice,
+//         email: shippingFormData?.emailId,
+//         orderStatusId: 1,
+//         discountAmount: totalDiscountAmount,
+//         isLoggedIn: !!userId,
+//         shippingCharge: shippingCharge,
+//       },
+//       { transaction }
+//     );
+
+//     await model.OrderBreakDown.bulkCreate(
+//       orderItems.map((item) => ({
+//         orderId: createdOrder.id,
+//         productId: item.productId,
+//         quantity: item.quantity,
+//         originalPrice: item.originalPrice,
+//         discountedAmount: item.discountAmount,
+//         discountedPrice: item.discountedPrice,
+//         discountPercentage: item.discountPercentage,
+//         sellingPrice: item.totalPrice,
+//         fontId: item.fontId,
+//         customName: item.nameOnCard,
+//       })),
+//       { transaction }
+//     );
+
+//     await model.Shipping.create(
+//       {
+//         orderId: createdOrder.id,
+//         firstName: shippingFormData?.firstName,
+//         lastName: shippingFormData?.lastName,
+//         phoneNumber: shippingFormData?.phoneNumber,
+//         emailId: shippingFormData?.emailId,
+//         flatNumber: shippingFormData?.flatNumber,
+//         address: shippingFormData?.address,
+//         city: shippingFormData?.city,
+//         state: shippingFormData?.state,
+//         zipcode: shippingFormData?.zipcode,
+//         country: shippingFormData?.country,
+//         landmark: shippingFormData?.landmark,
+//         isShipped: false,
+//       },
+//       { transaction }
+//     );
+
+//     await transaction.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "Order placed successfully!",
+//       orderId: createdOrder.id,
+//     });
+//   } catch (error) {
+//     await transaction.rollback();
+//     logger.error(`${error.message} from checkOut function`);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// }
+//#endregion
 
 async function checkOut(req, res) {
   const userId = req.user?.id || null;
@@ -709,139 +904,71 @@ async function checkOut(req, res) {
 
     let totalOrderPrice = 0;
     let totalDiscountAmount = 0;
-    let totalOriginalPrice = 0;
+    let totalSellingPrice = 0;
 
     const orderItems = cartItems.map((cartItem, index) => {
+      console.log(
+        cartItem.quantity,
+        cartItem.customName,
+        cartItem.fontId,
+        "ite,sss"
+      );
       const product = productDetails[index];
-      const discountAmountPerUnit =
-        (product.price * product.discountPercentage) / 100;
-      const discountedPrice = product.price - discountAmountPerUnit;
-      const totalPrice = discountedPrice * cartItem.quantity;
-      const originalPrice = product.price * cartItem.quantity;
-      const totalDiscountForItem = discountAmountPerUnit * cartItem.quantity;
+      const quantity = cartItem.quantity;
 
-      totalOrderPrice += totalPrice;
-      totalDiscountAmount += totalDiscountForItem;
-      totalOriginalPrice += originalPrice;
+      const originalPricePerUnit = product.price;
+      const discountAmountPerUnit =
+        (originalPricePerUnit * product.discountPercentage) / 100;
+      const discountedPricePerUnit =
+        originalPricePerUnit - discountAmountPerUnit;
+
+      totalOrderPrice += originalPricePerUnit * quantity;
+      totalSellingPrice += discountedPricePerUnit * quantity;
+      totalDiscountAmount += discountAmountPerUnit * quantity;
 
       return {
         productId: cartItem.productId,
-        quantity: cartItem.quantity,
-        totalPrice,
+        quantity,
+        originalPrice: originalPricePerUnit, // per unit
+        discountAmount: discountAmountPerUnit, // per unit
+        discountedPrice: discountedPricePerUnit, // per unit
         discountPercentage: product.discountPercentage,
-        discountAmount: totalDiscountForItem,
+        sellingPrice: discountedPricePerUnit, // per unit
         fontId: cartItem.fontId || null,
-        nameOnCard:
-          cartItem.nameOnCard || cartItem.nameCustomNameOnCard || null,
-        productPrice: product.price,
-        discountedPrice,
-        originalPrice,
+        customName: cartItem.customName || null,
       };
     });
 
-    let createdOrder = null;
+    const createdOrder = await model.Order.create(
+      {
+        customerId: userId,
+        totalPrice: totalOrderPrice,
+        email: shippingFormData?.emailId,
+        orderStatusId: 1,
+        discountAmount: totalDiscountAmount,
+        isLoggedIn: !!userId,
+        shippingCharge: shippingCharge,
+        soldPrice: totalSellingPrice,
+      },
+      { transaction }
+    );
 
-    if (userId) {
-      createdOrder = await model.Order.findOne({
-        where: {
-          customerId: userId,
-          orderStatusId: 1,
-        },
-        transaction,
-      });
-    } else {
-      console.log("came here else user");
-      createdOrder = await model.Order.findOne({
-        where: {
-          email: shippingFormData?.emailId,
-          orderStatusId: 1,
-          customerId: null,
-        },
-        transaction,
-      });
-    }
-
-    if (createdOrder) {
-      await createdOrder.update(
-        {
-          totalPrice: totalOrderPrice,
-          discountAmount: totalDiscountAmount,
-          shippingCharge: shippingCharge,
-        },
-        { transaction }
-      );
-
-      for (const item of orderItems) {
-        const existingBreakdown = await model.OrderBreakDown.findOne({
-          where: {
-            orderId: createdOrder.id,
-            productId: item.productId,
-          },
-          transaction,
-        });
-
-        if (existingBreakdown) {
-          await existingBreakdown.update(
-            {
-              quantity: item.quantity,
-              originalPrice: item.originalPrice,
-              discountedAmount: item.discountAmount,
-              discountedPrice: item.discountedPrice,
-              discountPercentage: item.discountPercentage,
-              sellingPrice: item.totalPrice,
-              fontId: item.fontId,
-              customName: item.nameOnCard,
-            },
-            { transaction }
-          );
-        } else {
-          await model.OrderBreakDown.create(
-            {
-              orderId: createdOrder.id,
-              productId: item.productId,
-              quantity: item.quantity,
-              originalPrice: item.originalPrice,
-              discountedAmount: item.discountAmount,
-              discountedPrice: item.discountedPrice,
-              discountPercentage: item.discountPercentage,
-              sellingPrice: item.totalPrice,
-              fontId: item.fontId,
-              customName: item.nameOnCard,
-            },
-            { transaction }
-          );
-        }
-      }
-    } else {
-      createdOrder = await model.Order.create(
-        {
-          customerId: userId,
-          totalPrice: totalOrderPrice,
-          email: shippingFormData?.emailId,
-          orderStatusId: 1,
-          discountAmount: totalDiscountAmount,
-          isLoggedIn: !!userId,
-          shippingCharge: shippingCharge,
-        },
-        { transaction }
-      );
-
-      await model.OrderBreakDown.bulkCreate(
-        orderItems.map((item) => ({
-          orderId: createdOrder.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          originalPrice: item.originalPrice,
-          discountedAmount: item.discountAmount,
-          discountedPrice: item.discountedPrice,
-          discountPercentage: item.discountPercentage,
-          sellingPrice: item.totalPrice,
-          fontId: item.fontId,
-          customName: item.nameOnCard,
-        })),
-        { transaction }
-      );
-    }
+    // Create OrderBreakDowns (unit prices only)
+    await model.OrderBreakDown.bulkCreate(
+      orderItems.map((item) => ({
+        orderId: createdOrder.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        originalPrice: item.originalPrice, // per unit
+        discountedAmount: item.discountAmount, // per unit
+        discountedPrice: item.discountedPrice, // per unit
+        discountPercentage: item.discountPercentage,
+        sellingPrice: item.sellingPrice, // per unit
+        fontId: item.fontId,
+        customName: item.customName,
+      })),
+      { transaction }
+    );
 
     await model.Shipping.create(
       {

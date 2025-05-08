@@ -16,7 +16,10 @@ import loggers from "../config/logger.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import order from "../models/order.cjs";
 import { Sequelize, Op } from "sequelize";
-import { initiatePayValidation, verifyPaymentValidation } from "../validations/payment.js";
+import {
+  initiatePayValidation,
+  verifyPaymentValidation,
+} from "../validations/payment.js";
 
 async function initialePay(req, res) {
   try {
@@ -31,15 +34,45 @@ async function initialePay(req, res) {
         .status(500)
         .json({ success: false, data: { error: error.details } });
     }
+
     const orderId = paymentObj.orderId;
     console.log("orderId-------------------------------------", orderId);
     let getDataForPayment;
 
-    if (
-      Number(paymentObj.orderType) === 0 ||
-      Number(paymentObj.orderType) === 2
-    ) {
-      getDataForPayment = await getDataForPaymentService(orderId);
+    const decodedToken = atob(paymentObj.token);
+
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decodedToken);
+    const isJWT = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(
+      decodedToken
+    );
+
+    if (Number(paymentObj.orderType) === 0) {
+      if (!isJWT) {
+        return res.status(400).json({
+          success: false,
+          message: "Required Logged in user's identity",
+        });
+      }
+
+      getDataForPayment = await getDataForPaymentService(
+        orderId,
+        decodedToken,
+        isEmail,
+        isJWT
+      );
+    } else if (Number(paymentObj.orderType) === 2) {
+      if (!isEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Required Guest user's identity",
+        });
+      }
+      getDataForPayment = await getDataForPaymentService(
+        orderId,
+        decodedToken,
+        isEmail,
+        isJWT
+      );
     } else if (Number(paymentObj.orderType) === 1) {
       throw new Error("Plan payment to be handled as part of post login");
       getDataForPayment = await getDataForPlanPaymentService(
@@ -55,6 +88,10 @@ async function initialePay(req, res) {
     console.log(getDataForPayment, "getDataForPayment");
 
     const orderType = paymentObj.orderType;
+
+    let token =
+      orderType == 1 ? btoa(getDataForPayment?.email) : paymentObj.token;
+
     const cost =
       getDataForPayment.shippingCost !== undefined
         ? Number(getDataForPayment.shippingCost)
@@ -69,8 +106,6 @@ async function initialePay(req, res) {
 
     const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
 
-    let token =
-      orderType == 1 ? btoa(getDataForPayment?.email) : paymentObj.token;
     const shippingCost = cost.toString();
 
     console.log(totalAmount, "value");
@@ -101,31 +136,6 @@ async function initialePay(req, res) {
 
     console.log("encRequest-----------------", encRequest, "-----------------");
     console.log(formbody);
-
-    // Configure Nodemailer
-    // const transporter = nodemailer.createTransport({
-    //   host: config.sesSmtpHost,
-    //   port: config.sesSmtpPort,
-    //   secure: false,
-    //   auth: {
-    //     user: config.sesSmtpUsername,
-    //     pass: config.sesSmtpPassword,
-    //   },
-    // });
-
-    // const mailOptions = {
-    //   from: config.smtpFromEmail,
-    //   to: [
-    //     "shunmugapriya@rvmatrix.in",
-    //     "kiran@rvmatrix.in",
-    //     "sai.darshan@rvmatrix.in",
-    //     "sahilreddy21@gmail.com",
-    //   ],
-    //   subject: "HTML content for plan payment",
-    //   text: formbody,
-    // };
-
-    // await transporter.sendMail(mailOptions);
 
     return res.json({
       success: true,
@@ -244,7 +254,6 @@ async function verifyPayment(req, res) {
           await model.Order.update(
             {
               orderStatusId: 3,
-              soldPrice: obj.amount,
             },
             {
               where: {
@@ -520,12 +529,25 @@ async function getShippingCharge(req, res) {
   }
 }
 
-async function getDataForPaymentService(orderId) {
+async function getDataForPaymentService(orderId, token, isEmail, isJWT) {
   try {
-    const getOrderDetails = await model.Order.findOne({
-      where: { id: orderId },
-    });
+    let getOrderDetails;
 
+    if (isEmail) {
+      getOrderDetails = await model.Order.findOne({
+        where: { id: orderId, email: token },
+      });
+    } else if (isJWT) {
+      const customer = jwt.verify(token, config.accessSecret);
+      console.log("cam in", customer);
+      getOrderDetails = await model.Order.findOne({
+        where: { id: orderId, customerId: customer.id },
+      });
+    } else {
+      getOrderDetails = await model.Order.findOne({
+        where: { id: orderId },
+      });
+    }
     if (!getOrderDetails) throw new Error("Order not found");
 
     if (getOrderDetails.orderStatusId === 3) {

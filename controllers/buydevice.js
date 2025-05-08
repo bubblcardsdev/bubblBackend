@@ -459,6 +459,19 @@ async function addToCart(req, res) {
       });
     }
 
+    const fonts = await model.CustomFontMaster.findOne({
+      where: {
+        id: fontId,
+      },
+    });
+
+    if (!fonts) {
+      return res.status(404).json({
+        success: false,
+        message: "FontId not found",
+      });
+    }
+
     const getProductDetails = await model.DeviceInventories.findOne({
       where: {
         productId: productId,

@@ -15,6 +15,10 @@ module.exports = {
     });
     await queryInterface.addColumn("Carts", "fontId", {
       type: Sequelize.INTEGER,
+      references: {
+        model: "CustomFontMasters",
+        key: "id",
+      },
     });
   },
 
