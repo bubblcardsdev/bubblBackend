@@ -1,48 +1,35 @@
 const XLSX = require("xlsx");
 const path = require("path");
+const { log } = require("console");
 // const excel = require("./excel/DeviceInventories.xlsx");
 
 module.exports = async (sequelize, Sequelize) => {
-  const { Op } = Sequelize;
+  try {
+    const filePath = path.resolve(__dirname, "./Deviceinventories.xlsx");
+    console.log(filePath, "file path");
+    const workbook = XLSX.readFile(filePath);
+    console.log(workbook, "workbook");
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    console.log(sheet, "sheet");
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    console.log(rows, "rows");
 
-  const deviceInventories = sequelize.define(
-    "DeviceInventories",
-    {
-      id: { type: Sequelize.INTEGER, primaryKey: true },
-      name: Sequelize.STRING,
-      deviceTypeId: Sequelize.INTEGER,
-      colorId: Sequelize.INTEGER,
-      patternId: Sequelize.INTEGER,
-      materialId: Sequelize.INTEGER,
-      productId: Sequelize.UUID,
-      shortDescription: Sequelize.STRING,
-      deviceDescription: Sequelize.STRING,
-      productDetails: Sequelize.STRING,
-      price: Sequelize.INTEGER,
-      discountPercentage: Sequelize.INTEGER,
-      availability: Sequelize.BOOLEAN,
-    },
-    {
-      tableName: "DeviceInventories",
-      timestamps: false,
-    }
-  );
-
-  const filePath = path.resolve(__dirname, "./DeviceInventories.xlsx");
-  const workbook = XLSX.readFile(filePath);
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-  for (const row of rows) {
-    const sql = row[18];
-    if (sql && typeof sql === "string") {
-      try {
-        const cleanSql = sql.replace(/''/g, "NULL");
-        await sequelize.query(cleanSql);
-        console.log(`Executed: ${sql}`);
-      } catch (error) {
-        console.log(`Error running: ${sql}\n${error}`);
+    for (const row of rows) {
+      console.log(row, "row");
+      const sql = row[17];
+      if (sql && typeof sql === "string") {
+        try {
+          console.log(`Running: ${sql}`);
+          const cleanSql = sql.replace(/''/g, "NULL");
+          console.log(`Running: ${cleanSql}`);
+          await sequelize.query(cleanSql);
+          console.log(`Executed: ${sql}`);
+        } catch (error) {
+          console.log(`Error running: ${sql}\n${error}`);
+        }
       }
     }
+  } catch (error) {
+    console.error("Error reading Excel file:", error);
   }
 };

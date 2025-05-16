@@ -89,7 +89,7 @@ module.exports = async (sequelize, Sequelize) => {
   };
   for (const orders of getAllOrders) {
     const oldStatus = orders.orderStatus?.toLowerCase();
-    const mappedStatus = statusMapping[oldStatus] || "Paid";
+    const mappedStatus = statusMapping[oldStatus] || "paid";
     const orderStatuses = orderStatusEnum[mappedStatus];
     const payment = await Payments.findOne({
       where: {
@@ -97,6 +97,8 @@ module.exports = async (sequelize, Sequelize) => {
         paymentStatus: true,
       },
     });
+
+    // console.log("payment", payment.id);
     await Orders.update(
       {
         orderStatusId: orderStatuses,

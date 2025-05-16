@@ -1,19 +1,27 @@
-import swaggerJSDoc from "swagger-jsdoc";
+// import swaggerJSDoc from "swagger-jsdoc";
+import swaggerAutogen from "swagger-autogen";
 
 const swaggerOption = {
-  swaggerDefinition: {
+  definition: {
+    openapi: "3.0.0",
     info: {
-      title: "Swagger api",
-      description: "Swagger api documentation",
+      title: "Swagger API",
+      version: "1.0.0",
+      description: "Swagger API documentation",
       termsOfService: "",
       contact: {
-        name: "Rv Matrix",
+        name: "Developer Rv Matrix software technologies pvt ltd",
       },
-      server: ["http://localhost:5000"],
     },
   },
 };
 
-const swaggerDocs = swaggerJSDoc(swaggerOption);
+const outputFile = "./../swagger-output.json";
+const endpointsFiles = ["./routes/index.route.js"];
 
-export default swaggerDocs;
+swaggerAutogen()(outputFile, endpointsFiles, swaggerOption).then(() => {
+  console.log("Swagger documentation generated");
+});
+// const swaggerDocs = swaggerJSDoc(swaggerOption);
+
+// export default swaggerDocs;

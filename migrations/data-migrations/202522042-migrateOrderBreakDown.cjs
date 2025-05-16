@@ -122,7 +122,7 @@ module.exports = async (sequelize, Sequelize) => {
     const findAllCarts = await Carts.findAll({
       where: {
         orderId: orders.id,
-        productStatus: true,
+        productStatus: false,
       },
     });
 
@@ -157,7 +157,7 @@ module.exports = async (sequelize, Sequelize) => {
     const ncCards = await Carts.findAll({
       where: {
         orderId: orders.id,
-        productStatus: true,
+        productStatus: false,
         productType: {
           [Op.like]: "%NC%",
         },

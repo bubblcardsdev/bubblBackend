@@ -54,13 +54,6 @@ module.exports = (sequelize, Sequelize) => {
           key: "id",
         },
       },
-      fontId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: "CustomFontMasters",
-          key: "id",
-        },
-      },
       productDetails: {
         type: Sequelize.TEXT,
       },

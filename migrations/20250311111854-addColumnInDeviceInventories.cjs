@@ -3,13 +3,6 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("DeviceInventories", "fontId", {
-      type: Sequelize.INTEGER,
-      references: {
-        model: "CustomFontMasters",
-        key: "id",
-      },
-    });
     await queryInterface.changeColumn("DeviceInventories", "materialTypeId", {
       type: Sequelize.INTEGER,
       allowNull: true,
