@@ -1,11 +1,9 @@
 const XLSX = require("xlsx");
 const path = require("path");
-const { log } = require("console");
-// const excel = require("./excel/DeviceInventories.xlsx");
 
 module.exports = async (sequelize, Sequelize) => {
   try {
-    const filePath = path.resolve(__dirname, "./Deviceinventories.xlsx");
+    const filePath = path.resolve(__dirname, "../data/Deviceinventories.xlsx");
     console.log(filePath, "file path");
     const workbook = XLSX.readFile(filePath);
     console.log(workbook, "workbook");
