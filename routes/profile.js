@@ -34,7 +34,7 @@ const router = express.Router();
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
 router.post("/create", authenticateToken, createProfile);
-router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
+// router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
 

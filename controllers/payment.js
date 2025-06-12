@@ -147,13 +147,16 @@ const successEnum = {
 async function verifyPayment(req, res) {
   try {
     const encData = req.body.data;
+    console.log(req.body.data, "req.body.data");
     //check if it has encrypted data or validate
     const ccavResponse = decrypt(encData, workingKey);
  
     const params = new URLSearchParams(ccavResponse);
+    console.log(params, "params");
     const obj = Object.fromEntries(params.entries());
  
     const token = atob(obj.merchant_param1);
+    console.log(token, "token");
     let userId = 0;
  
     if (obj?.billing_address != "2") {
@@ -173,6 +176,8 @@ async function verifyPayment(req, res) {
         id: Number(obj.order_id),
       },
     });
+    console.log(getOrderDetails, "getOrderDetails");
+    console.log(obj, "obj");
     if (successEnum[obj.order_status] === true) {
       // const cost = obj.merchant_param2;
       // const shippingCost = Number(cost);
@@ -293,6 +298,10 @@ async function verifyPayment(req, res) {
               paymentStatus: successEnum[obj.order_status],
               failureMessage: obj.failure_message,
               shippingCharge: shippingCost,
+              totalPrice: getOrderDetails.totalPrice,
+              discountAmount: getOrderDetails.discountAmount,
+              discountPercentage: getOrderDetails.discountPercentage,
+              paidAmount: getOrderDetails.soldPrice,
             },
             {
               where: {
@@ -414,6 +423,10 @@ async function verifyPayment(req, res) {
             paymentStatus: successEnum[obj.order_status],
             failureMessage: obj.failure_message,
             shippingCharge: shippingCost,
+            totalPrice: getOrderDetails.totalPrice,
+            discountAmount: getOrderDetails.discountAmount,
+            discountPercentage: getOrderDetails.discountPercentage,
+            paidAmount: getOrderDetails.soldPrice,
           });
           // create entry in db with obj.tracking_id, obj.bank_ref_no, obj.failure_message
           return res.json({

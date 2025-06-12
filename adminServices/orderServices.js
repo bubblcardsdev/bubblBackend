@@ -1,9 +1,13 @@
 import model from "../models/index.js";
 import { generateSignedUrl } from "../middleware/fileUpload.js";
- 
+import { Op } from "sequelize";
+
 // function for getting all false shipping Orders
 async function getTotalOrderServices() {
   const orderId = await model.Order.findAll({
+    where: {
+      orderStatus: { [Op.ne]: "cart" },
+    },
     include: [
       { model: model.Cart },
       {
@@ -50,6 +54,7 @@ async function getTotalOrderServices() {
         required: false,
       },
     ],
+    order: [["id", "DESC"]],
   });
   return orderId;
 }
@@ -109,23 +114,35 @@ async function getShippedOrderServices() {
 
 // function for getting Cont for the Orders
 async function getCountServices() {
-  const orderCount = model.Order.count();
+  const orderCount = model.Order.count({ 
+      where: {
+        orderStatus: "Paid",
+      },
+  });
   return orderCount;
 }
-
 
 // function for getting count for the pendingOrders
  
 async function PendingOrderCountServices() {
+  const orders = await model.Order.findAll({
+    where: {
+      orderStatus: "Paid",
+      cancelledOrder: false,
+    },
+  });
+ 
+  const ids = orders.map((f) => f.dataValues.id);
   const pendingOrders = await model.Shipping.findAll({
     where: {
+      orderId: ids,
       isShipped: false,
     },
   });
   const pendingOrderCount = pendingOrders.length;
   return pendingOrderCount;
 }
- 
+
 // get orders by orderId
 // async function getOrderByIdServices(res, orderId) {
 //   const checkOrderId = await model.Cart.findOne({

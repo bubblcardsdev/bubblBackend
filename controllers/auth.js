@@ -389,7 +389,7 @@ async function createUser(req, res) {
 
 async function createUser2(firstName, lastName, email, password) {
   try {
-    const emailParse = email.toLowerCase();
+    const emailParse = email.trim().toLowerCase();
     const checkUser = await model.User.findOne({
       where: {
         email: emailParse,
