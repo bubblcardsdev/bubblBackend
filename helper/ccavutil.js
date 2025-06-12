@@ -24,4 +24,22 @@ const decrypt = function (encText, workingKey) {
 };
 
 
-export {encrypt, decrypt};
+function base64UrlDecode(base64Url) {
+    // Replace URL-safe characters
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    // Add padding if necessary
+    const padding = base64.length % 4 === 0 ? "" : "=".repeat(4 - (base64.length % 4));
+    return Buffer.from(base64 + padding, "base64");
+  }
+const decryptProfileId = function (encryptedText) {
+    const key = "bubblprofikey123";
+    const iv = "profilekey2025bl";
+    const encryptedBuffer = base64UrlDecode(encryptedText);
+    const decipher = crypto.createDecipheriv("aes-128-cbc", key, iv);
+    let decrypted = decipher.update(encryptedBuffer, null, "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;  
+  };
+export {encrypt, decrypt, decryptProfileId};
+
+

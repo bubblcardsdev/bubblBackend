@@ -87,14 +87,14 @@ async function selectTemplate(req, res) {
           //     },
           //   }
           // );
-        // } else {
-        //   console.log("Inside else");
-        //   // await model.DeviceBranding.create({
-        //   //   templateId: checkTemplate.id,
-        //   //   deviceLinkId: deviceId,
-        //   //   profileId: profileId,
-        //   // });
-         }
+          // } else {
+          //   console.log("Inside else");
+          //   // await model.DeviceBranding.create({
+          //   //   templateId: checkTemplate.id,
+          //   //   deviceLinkId: deviceId,
+          //   //   profileId: profileId,
+          //   // });
+        }
 
         if (profileId) {
           await model.Profile.update(
@@ -211,7 +211,9 @@ async function switchTemplate(req, res) {
         if (checkTemplate) {
           const deviceTemplate = await model.DeviceLink.findOne({
             where: {
-              templateId: checkTemplate.id,
+              // templateId: checkTemplate.id,
+              id: checkProfileDeviceLink.id,
+              profileId: profileId,
             },
           });
           if (deviceTemplate) {
@@ -222,6 +224,7 @@ async function switchTemplate(req, res) {
               {
                 where: {
                   profileId: profileId,
+                  id: checkProfileDeviceLink.id,
                 },
               }
             );
@@ -241,6 +244,7 @@ async function switchTemplate(req, res) {
               message: "Successfully updated",
             });
           } else {
+            console.log("inside else");
             await model.DeviceLink.update(
               {
                 templateId: checkTemplate.id,
@@ -268,19 +272,19 @@ async function switchTemplate(req, res) {
             });
           }
         } else {
-          return res.json({
+          return res.status(500).json({
             success: false,
             message: " Invalid template",
           });
         }
       } else {
-        return res.json({
+        return res.status(500).json({
           success: false,
           message: " Invalid device",
         });
       }
     } else {
-      return res.json({
+      return res.status(500).json({
         success: false,
         message: "Check your Device Number",
       });
@@ -288,7 +292,7 @@ async function switchTemplate(req, res) {
   } catch (error) {
     console.log(error);
     loggers.error(error + "from switchTemplate function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error,
     });

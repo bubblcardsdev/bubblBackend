@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 import _profile from "./profile.cjs";
 import _user from "./user.cjs";
 import _profilePhoneNumber from "./profilePhoneNumber.cjs";
@@ -8,6 +9,7 @@ import _profileSocialMediaLink from "./profileSocialMediaLink.cjs";
 import _profileDigitalPayment from "./profileDigitalPayment.cjs";
 import _profileDigitalPaymentLink from "./profileDigitalPaymentLink.cjs";
 import _profileImages from "./profileimages.cjs";
+// import _profileInfo from "./profileInfo.cjs";
 import _device from "./device.cjs";
 import _accountDeviceLink from "./accountdevicelink.cjs";
 import _deviceLink from "./deviceLink.cjs";
@@ -38,7 +40,7 @@ import _nameCustomImageInventory from "./namecustomdeviceinventory.cjs";
 import _nameCustomImages from "./namecustomimages.cjs";
 import _actionLookup from "./actionlookup.cjs";
 import _uniqueNameDeviceLink from "./uniqueusernamedevicelink.cjs";
-import _userRd from "./userrd.cjs"
+import _userRd from "./userrd.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -54,6 +56,7 @@ export default function dbModel(sequelize, Sequelize) {
     Sequelize
   );
   const ProfileImages = _profileImages(sequelize, Sequelize);
+  // const ProfileInfo = _profileInfo(sequelize, Sequelize);
   const Device = _device(sequelize, Sequelize);
   const AccountDeviceLink = _accountDeviceLink(sequelize, Sequelize);
   const DeviceLink = _deviceLink(sequelize, Sequelize);
@@ -115,6 +118,11 @@ export default function dbModel(sequelize, Sequelize) {
   DeviceLink.belongsTo(Template);
   DeviceLink.belongsTo(Mode);
   DeviceLink.hasMany(DeviceBranding);
+  // ProfileInfo.belongsTo(Profile);
+  // ProfileInfo.belongsTo(Template);
+  // User.hasMany(ProfileInfo);
+  // Template.hasMany(ProfileInfo);
+  // Profile.hasOne(ProfileInfo);
   DeviceBranding.belongsTo(DeviceLink);
   Order.hasMany(Cart);
   Order.hasMany(Shipping);
@@ -179,6 +187,7 @@ export default function dbModel(sequelize, Sequelize) {
     NameCustomImages,
     ActionLookUp,
     UniqueNameDeviceLink,
-    UserRd
+    UserRd,
+    // ProfileInfo
   };
 }

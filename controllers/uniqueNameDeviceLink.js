@@ -22,13 +22,13 @@ async function uniqueUserName(req, res) {
       const uniqueNameDetails = await model.UniqueNameDeviceLink.findOne({
         where: {
           deviceLinkId: deviceLinkId,
-          uniqueName: uniqueName,
           userId: userId,
           profileId:profileId
         },
       });
 
       if (uniqueNameDetails) {
+        console.log("abc"); 
         const updateUniqueName = await model.UniqueNameDeviceLink.update(
           {
             uniqueName: uniqueName,
@@ -93,7 +93,6 @@ async function uniqueUserName(req, res) {
       const uniqueNameDetails = await model.UniqueNameDeviceLink.findOne({
         where: {
           profileId: profileId,
-          uniqueName: uniqueName,
           userId: userId,
         },
       });
