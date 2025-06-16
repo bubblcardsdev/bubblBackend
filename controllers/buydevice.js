@@ -8,9 +8,7 @@ import {
 import { generateSignedUrl } from "../middleware/fileUpload.js";
 import logger from "../config/logger.js";
 import loggers from "../config/logger.js";
-import pkg from "lodash";
-import { uploadFileToS3 } from "../middleware/fileUpload.js";
-const { isEmpty, sumBy } = pkg;
+
 import { sequelize } from "../models/index.js";
 
 async function getAllDevices(req, res) {
@@ -449,7 +447,7 @@ async function addToCart(req, res) {
     const { error } = addToCartSchema.validate(req.body, {
       abortEarly: false,
     });
-
+ 
     if (error) {
       return res.status(500).json({
         success: false,
@@ -567,52 +565,52 @@ async function addToCart(req, res) {
   }
 }
 
-async function createOrder(
-  userId,
-  productId,
-  totalPrice,
-  discountPrice,
-  productDetails,
-  orderStatus,
-  fontId,
-  customName
-) {
-  try {
-    const orderStatusMaster = await model.OrderStatusMaster.findOne({
-      where: {
-        id: orderStatus,
-      },
-    });
+// async function createOrder(
+//   userId,
+//   productId,
+//   totalPrice,
+//   discountPrice,
+//   productDetails,
+//   orderStatus,
+//   fontId,
+//   customName
+// ) {
+//   try {
+//     const orderStatusMaster = await model.OrderStatusMaster.findOne({
+//       where: {
+//         id: orderStatus,
+//       },
+//     });
 
-    const createOrder = await model.Order.create({
-      productUUId: productId,
-      customerId: userId,
-      orderStatus: orderStatusMaster.name,
-      totalPrice: totalPrice,
-      cancelledOrder: false,
-      discountPercentage: productDetails.discountPercentage,
-      discountAmount: discountPrice,
-      orderStatusId: orderStatus,
-      isLoggedIn: true,
-      fontId: fontId,
-      nameOnCard: customName,
-    });
+//     const createOrder = await model.Order.create({
+//       productUUId: productId,
+//       customerId: userId,
+//       orderStatus: orderStatusMaster.name,
+//       totalPrice: totalPrice,
+//       cancelledOrder: false,
+//       discountPercentage: productDetails.discountPercentage,
+//       discountAmount: discountPrice,
+//       orderStatusId: orderStatus,
+//       isLoggedIn: true,
+//       fontId: fontId,
+//       nameOnCard: customName,
+//     });
 
-    if (!createOrder) {
-      throw new Error("Cannot create Order");
-    }
+//     if (!createOrder) {
+//       throw new Error("Cannot create Order");
+//     }
 
-    return createOrder;
-  } catch (error) {
-    console.log(error);
-    logger.error(error, "from addToCart function");
-    return res.json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
+//     return createOrder;
+//   } catch (error) {
+//     console.log(error);
+//     logger.error(error, "from addToCart function");
+//     return res.json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// }
+ 
 async function getCart(req, res) {
   const userId = req.user.id;
   try {
@@ -651,7 +649,7 @@ async function getCart(req, res) {
         }
       })
     );
-
+ 
     return res.json({
       success: true,
       message: "Cart Details",
@@ -668,7 +666,7 @@ async function getCart(req, res) {
     });
   }
 }
-
+ 
 async function cancelCart(req, res) {
   const userId = req.user.id;
   const { cartId } = req.body;
@@ -728,10 +726,10 @@ async function cancelCart(req, res) {
     });
   }
 }
-
+ 
 async function clearCart(req, res) {
   const userId = req.user.id;
-
+ 
   try {
     const clearCartRequest = await model.Order.findOne({
       where: {
@@ -739,7 +737,7 @@ async function clearCart(req, res) {
         orderStatus: "cart",
       },
     });
-
+ 
     if (clearCartRequest) {
       await model.Order.update(
         {
@@ -752,7 +750,7 @@ async function clearCart(req, res) {
           },
         }
       );
-
+ 
       await model.Cart.update(
         {
           productStatus: false,
@@ -764,7 +762,7 @@ async function clearCart(req, res) {
           },
         }
       );
-
+ 
       return res.json({
         success: true,
         message: "cart cleared",
@@ -782,9 +780,9 @@ async function clearCart(req, res) {
     });
   }
 }
-
+ 
 // async function clearCartNonUser(req, res) {
-
+ 
 //   try {
 //     const {email} = req.body;
 //     const clearCartRequest = await model.Order.findOne({
@@ -793,7 +791,7 @@ async function clearCart(req, res) {
 //         orderStatus: "cart",
 //       },
 //     });
-
+ 
 //     if (clearCartRequest) {
 //       await model.Order.update(
 //         {
@@ -806,7 +804,7 @@ async function clearCart(req, res) {
 //           },
 //         }
 //       );
-
+ 
 //       await model.Cart.update(
 //         {
 //           productStatus: false,
@@ -818,7 +816,7 @@ async function clearCart(req, res) {
 //           },
 //         }
 //       );
-
+ 
 //       return res.json({
 //         success: true,
 //         message: "cart cleared",
@@ -836,15 +834,15 @@ async function clearCart(req, res) {
 //     });
 //   }
 // }
-
+ 
 // async function addToNonUserCart(req, res) {
 //   try {
 //     const { cartItem, email } = req.body;
-
+ 
 //     const { error } = addToNonUserCartSchema.validate(req.body, {
 //       abortEarly: false,
 //     });
-
+ 
 //     if (error) {
 //       return res.json({
 //         success: false,
@@ -853,13 +851,13 @@ async function clearCart(req, res) {
 //         },
 //       });
 //     }
-
+ 
 //     let getOrder = await model.Order.create({
 //       email: email,
 //       totalPrice: cartItem.productPrice,
 //       orderStatus: "cart",
 //     });
-
+ 
 //     const checkCart = await model.Cart.findOne({
 //       where: {
 //         orderId: getOrder.id,
@@ -873,16 +871,16 @@ async function clearCart(req, res) {
 //         deviceColor: cartItem.productColor,
 //       },
 //     });
-
+ 
 //     if (getProduct === null) {
 //       return res.json({
 //         success: false,
 //         message: "Product not found",
 //       });
 //     }
-
+ 
 //     let productCost = getProduct.price * cartItem.quantity;
-
+ 
 //     console.log(productCost, "cost");
 //     if (checkCart === null) {
 //       await model.Cart.create({
@@ -900,7 +898,7 @@ async function clearCart(req, res) {
 //       if (checkCart.productStatus) {
 //         // quantity += cartItem.quantity;
 //         // productPrice += getProduct.productPrice;
-
+ 
 //         await model.Cart.update(
 //           {
 //             quantity: cartItem.quantity,
@@ -927,16 +925,16 @@ async function clearCart(req, res) {
 //         );
 //       }
 //     }
-
+ 
 //     const getCartPrice = await model.Cart.sum("productPrice", {
 //       where: { orderId: getOrder.id, productStatus: true },
 //     });
-
+ 
 //     await model.Order.update(
 //       { totalPrice: getCartPrice },
 //       { where: { email: email, orderStatus: "cart" } }
 //     );
-
+ 
 //     return res.json({
 //       success: true,
 //       data: {
@@ -952,7 +950,7 @@ async function clearCart(req, res) {
 //     });
 //   }
 // }
-
+ 
 async function getNonUserCart(req, res) {
   const email = req?.query?.email;
   try {
@@ -980,7 +978,7 @@ async function getNonUserCart(req, res) {
     let productPrice = [];
     let displayName = [];
     let cartLength = "";
-
+ 
     deviceImages = await Promise.all(
       cart.Carts.map(async (cartVal) => {
         if (cartVal.productType.includes("NC-")) {
@@ -1007,15 +1005,15 @@ async function getNonUserCart(req, res) {
               deviceColor: cartVal.productColor,
             },
           });
-
+ 
           const itemImg = await generateSignedUrl(deviceInventory.deviceImage);
           cartLength = cart?.Carts?.length || 0;
-
+ 
           return itemImg;
         }
       })
     );
-
+ 
     productPrice = await Promise.all(
       cart.Carts.map(async (cartVal) => {
         if (cartVal.productType.includes("NC-")) {
@@ -1037,7 +1035,7 @@ async function getNonUserCart(req, res) {
         }
       })
     );
-
+ 
     displayName = await Promise.all(
       cart.Carts.map(async (cartVal) => {
         if (cartVal.productType.includes("NC-")) {
@@ -1059,7 +1057,7 @@ async function getNonUserCart(req, res) {
         }
       })
     );
-
+ 
     return res.json({
       success: true,
       data: {
@@ -1082,20 +1080,20 @@ async function getNonUserCart(req, res) {
     });
   }
 }
-
+ 
 async function cancelNonUserCart(req, res) {
   const { orderId, cartId, email } = req.body;
-
+ 
   try {
     const checkOrder = await model.Order.findOne({
       where: {
         id: orderId,
       },
     });
-
+ 
     if (checkOrder) {
       const orderStatus = checkOrder.orderStatus;
-
+ 
       if (orderStatus === "cart") {
         const updateCartItem = await model.Cart.update(
           {
@@ -1133,7 +1131,7 @@ async function cancelNonUserCart(req, res) {
     });
   }
 }
-
+ 
 async function clearCartNonuser(req, res) {
   try {
     const { email } = req.body;
@@ -1143,14 +1141,14 @@ async function clearCartNonuser(req, res) {
         message: "Email required",
       });
     }
-
+ 
     const clearCartRequest = await model.Order.findOne({
       where: {
         email,
         orderStatus: "cart",
       },
     });
-
+ 
     if (clearCartRequest) {
       await model.Order.update(
         {
@@ -1163,7 +1161,7 @@ async function clearCartNonuser(req, res) {
           },
         }
       );
-
+ 
       await model.Cart.update(
         {
           productStatus: false,
@@ -1175,7 +1173,7 @@ async function clearCartNonuser(req, res) {
           },
         }
       );
-
+ 
       return res.json({
         success: true,
         message: "cart cleared",
@@ -1193,7 +1191,7 @@ async function clearCartNonuser(req, res) {
     });
   }
 }
-
+ 
 async function addToNonUserCart(req, res) {
   const { productData, promoCode, shippingFormData } = req.body;
 

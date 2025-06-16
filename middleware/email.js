@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 /* eslint-disable no-useless-catch */
 import * as nodemailer from "nodemailer";
 import config from "../config/config.js";

@@ -46,9 +46,16 @@ const addToNonUserCartSchema = Joi.object({
   }).required(),
 });
 
+
+const productListSchema = Joi.object({
+  id: Joi.number().required(),
+});
+
 export {
   addToCartSchema,
   addToNonUserCartSchema,
   getProductId,
   cancelCartValidation,
+  productListSchema
 };
+

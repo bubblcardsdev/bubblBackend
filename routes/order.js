@@ -7,11 +7,12 @@ import {
   proceedPayment,
   cancelOrder,
   checkOutNonUser,
-  getNonUserOrderById,
+  getNonUserOrderById
 } from "../controllers/order.js";
 import { authenticateCheckoutToken, authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
+
 
 router.get("/all", authenticateToken, getOrderDetails);
 router.post("/one", getOrderById);
