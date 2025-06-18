@@ -22,7 +22,8 @@ module.exports = (sequelize, Sequelize) => {
         },
       },
       totalPrice: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
         defaultValue: 0,
       },
       // orderStatus: {
@@ -47,15 +48,17 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.BOOLEAN,
       },
       shippingCharge: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
       },
       discountAmount: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
       },
       soldPrice: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
       },

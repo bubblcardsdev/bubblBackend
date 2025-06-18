@@ -1,6 +1,7 @@
 /* eslint-disable no-useless-catch */
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
+import model from "../models/index.js";
 
 const generateToken = function (user, secret, expiration) {
   return jwt.sign(user, secret, {
@@ -32,7 +33,7 @@ const issueToken = (token) => {
   }
 };
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const token = req.headers.authorization;
   if (token) {
     try {
@@ -53,7 +54,16 @@ const authenticateToken = (req, res, next) => {
         lastName,
         email,
       };
+      const getUser = await model.User.findOne({ where: { id: id } });
 
+      if (!getUser) {
+        return res.status(401).json({
+          success: false,
+          data: {
+            message: "User not found",
+          },
+        });
+      }
       req.user = user;
       next();
     } catch (error) {
@@ -74,7 +84,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-const authenticateCheckoutToken = (req, res, next) =>{
+const authenticateCheckoutToken = (req, res, next) => {
   const token = req.headers.authorization;
   if (!token) {
     req.email = {};
@@ -118,5 +128,5 @@ export {
   generateRefreshToken,
   issueToken,
   authenticateToken,
-  authenticateCheckoutToken
+  authenticateCheckoutToken,
 };

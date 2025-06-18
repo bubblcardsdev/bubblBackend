@@ -1,5 +1,9 @@
 //creating order breakdown table from carts table
 
+const pkg = require("lodash");
+
+const { isEmpty } = pkg;
+
 module.exports = async (sequelize, Sequelize) => {
   const { Op } = Sequelize;
 
@@ -8,12 +12,12 @@ module.exports = async (sequelize, Sequelize) => {
     {
       id: { type: Sequelize.INTEGER, primaryKey: true },
       email: Sequelize.STRING,
-      totalPrice: Sequelize.INTEGER,
-      discountAmount: Sequelize.INTEGER,
-      discountPercentage: Sequelize.INTEGER,
-      soldPrice: Sequelize.INTEGER,
+      totalPrice: Sequelize.DECIMAL(10, 2),
+      discountAmount: Sequelize.DECIMAL(10, 2),
+      discountPercentage: Sequelize.DECIMAL(10, 2),
+      soldPrice: Sequelize.DECIMAL(10, 2),
       orderStatusId: Sequelize.INTEGER,
-      shippingCharge: Sequelize.INTEGER,
+      shippingCharge: Sequelize.DECIMAL(10, 2),
       orderStatus: Sequelize.STRING,
       isLoggedIn: Sequelize.BOOLEAN,
       customerId: Sequelize.INTEGER,
@@ -56,7 +60,7 @@ module.exports = async (sequelize, Sequelize) => {
       orderId: Sequelize.INTEGER,
       productId: Sequelize.INTEGER,
       quantity: Sequelize.INTEGER,
-      productPrice: Sequelize.INTEGER,
+      productPrice: Sequelize.DECIMAL(10, 2),
     },
     {
       tableName: "Carts",
@@ -70,7 +74,7 @@ module.exports = async (sequelize, Sequelize) => {
       id: { type: Sequelize.INTEGER, primaryKey: true },
       deviceTypeId: Sequelize.INTEGER,
       price: Sequelize.INTEGER,
-      discountPercentage: Sequelize.INTEGER,
+      discountPercentage: Sequelize.DECIMAL(10, 2),
       productId: Sequelize.UUID,
     },
     {
@@ -87,11 +91,11 @@ module.exports = async (sequelize, Sequelize) => {
       quantity: Sequelize.INTEGER,
       fontId: Sequelize.INTEGER,
       customName: Sequelize.STRING,
-      originalPrice: Sequelize.INTEGER,
-      discountedPrice: Sequelize.INTEGER,
-      discountPercentage: Sequelize.INTEGER,
-      discountedAmount: Sequelize.INTEGER,
-      sellingPrice: Sequelize.INTEGER,
+      originalPrice: Sequelize.DECIMAL(10, 2),
+      discountedPrice: Sequelize.DECIMAL(10, 2),
+      discountPercentage: Sequelize.DECIMAL(10, 2),
+      discountedAmount: Sequelize.DECIMAL(10, 2),
+      sellingPrice: Sequelize.DECIMAL(10, 2),
       createdAt: Sequelize.DATE,
       updatedAt: Sequelize.DATE,
     },
@@ -101,9 +105,9 @@ module.exports = async (sequelize, Sequelize) => {
     }
   );
   const getAllOrders = await Orders.findAll({
-    where: {
-      orderStatusId: 3,
-    },
+    // where: {
+    //   orderStatusId: 3,
+    // },
   });
   const orderStatusEnum = {
     Created: 1,
@@ -122,28 +126,45 @@ module.exports = async (sequelize, Sequelize) => {
     const findAllCarts = await Carts.findAll({
       where: {
         orderId: orders.id,
-        productStatus: false,
+        productStatus: true,
       },
     });
+    const sumCarts = await Carts.sum("productPrice", {
+      where: {
+        orderId: orders.id,
+        productStatus: true,
+      },
+    });
+    const totalPrice = parseFloat(orders.totalPrice || 0);
+    const cartSum = parseFloat(sumCarts || 0);
 
+    const isExactMatch =
+      Math.round(cartSum * 100) === Math.round(totalPrice * 100);
     for (const item of findAllCarts) {
       const product = await DeviceInventories.findOne({
         where: {
           productId: item.productId,
         },
       });
+      const quantity = item?.quantity || 1;
+      const productPrice = isExactMatch
+        ? item.productPrice / quantity
+        : item.productPrice;
 
-      const discountAmount =
-        (item.productPrice * orders.discountPercentage) / 100;
-      const discountedPrice = item.productPrice - discountAmount;
+      const discountedPrice = (quantity > 1 || findAllCarts.length > 1) ?
+        (productPrice -
+        (productPrice * (orders?.discountPercentage || 0)) / 100) :
+        Math.round(productPrice - (productPrice * (orders?.discountPercentage || 0)) / 100);
+
+      const discountAmount = productPrice - discountedPrice;
 
       const orderBreakDown = {
         orderId: orders.id,
         productId: item.productId,
-        quantity: item.quantity,
+        quantity: quantity,
         fontId: null,
         customName: null,
-        originalPrice: item.productPrice,
+        originalPrice: productPrice,
         discountedPrice: discountedPrice,
         discountPercentage: orders.discountPercentage,
         discountedAmount: discountAmount,
@@ -157,7 +178,7 @@ module.exports = async (sequelize, Sequelize) => {
     const ncCards = await Carts.findAll({
       where: {
         orderId: orders.id,
-        productStatus: false,
+        productStatus: true,
         productType: {
           [Op.like]: "%NC%",
         },

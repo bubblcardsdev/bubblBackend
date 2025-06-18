@@ -41,19 +41,21 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
       },
       originalPrice: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
       },
       discountedPrice: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
       },
       discountPercentage: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
+        defaultValue: 0,
       },
       discountedAmount: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
+        defaultValue: 0,
       },
       sellingPrice: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
       },
     },
     {

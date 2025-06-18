@@ -1007,7 +1007,7 @@ async function checkOut(req, res) {
 }
 
 async function decideShippingCharge(userCountry, transaction) {
-  try {
+  // try {
     const shippingCharges = await model.ShippingCharge.findAll({ transaction });
 
     const country = userCountry || "Others";
@@ -1025,9 +1025,9 @@ async function decideShippingCharge(userCountry, transaction) {
     const shippingChargeAmount = selectedShipping ? selectedShipping.amount : 0;
 
     return shippingChargeAmount;
-  } catch (error) {
-    throw error;
-  }
+  // } catch (error) {
+  //   throw error;
+  // }
 }
 
 async function checkOutNonUser(req, res) {

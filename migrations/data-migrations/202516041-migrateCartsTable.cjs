@@ -265,24 +265,24 @@ module.exports = async (sequelize, Sequelize) => {
       });
     }
 
-    const allCarts = await Carts.findAll();
+    // const allCarts = await Carts.findAll();
 
-    for (const cart of allCarts) {
-      try {
-        if (cart.productStatus === true || cart.productStatus === false) {
-          const newStatus = !cart.productStatus;
-          await cart.update({ productStatus: newStatus });
-          console.log(
-            `Cart ID ${cart.id}: productStatus updated to ${newStatus}`
-          );
-        }
-      } catch (error) {
-        console.log(
-          `Error updating productStatus for cart ID ${cart.id}:`,
-          error.message
-        );
-      }
-    }
+    // for (const cart of allCarts) {
+    //   try {
+    //     if (cart.productStatus === true || cart.productStatus === false) {
+    //       const newStatus = !cart.productStatus;
+    //       await cart.update({ productStatus: newStatus });
+    //       console.log(
+    //         `Cart ID ${cart.id}: productStatus updated to ${newStatus}`
+    //       );
+    //     }
+    //   } catch (error) {
+    //     console.log(
+    //       `Error updating productStatus for cart ID ${cart.id}:`,
+    //       error.message
+    //     );
+    //   }
+    // }
 
 
 

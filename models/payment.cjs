@@ -50,7 +50,8 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
       },
       amount: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10,2),
+        allowNull: false,
       },
       isLoggedIn: {
         type: Sequelize.BOOLEAN,

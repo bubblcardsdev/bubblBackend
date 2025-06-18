@@ -6,12 +6,12 @@ module.exports = async (sequelize, Sequelize) => {
     {
       id: { type: Sequelize.INTEGER, primaryKey: true },
       email: Sequelize.STRING,
-      totalPrice: Sequelize.INTEGER,
-      discountAmount: Sequelize.INTEGER,
-      discountPercentage: Sequelize.INTEGER,
-      soldPrice: Sequelize.INTEGER,
+      totalPrice: Sequelize.DECIMAL(10, 2),
+      discountAmount: Sequelize.DECIMAL(10, 2),
+      discountPercentage: Sequelize.DECIMAL(10, 2),
+      soldPrice: Sequelize.DECIMAL(10, 2),
       orderStatusId: Sequelize.INTEGER,
-      shippingCharge: Sequelize.INTEGER,
+      shippingCharge: Sequelize.DECIMAL(10, 2),
       orderStatus: Sequelize.STRING,
       isLoggedIn: Sequelize.BOOLEAN,
       customerId: Sequelize.INTEGER,
@@ -27,7 +27,7 @@ module.exports = async (sequelize, Sequelize) => {
       id: { type: Sequelize.INTEGER, primaryKey: true },
       orderId: Sequelize.STRING,
       customerId: Sequelize.INTEGER,
-      shippingCharge: Sequelize.INTEGER,
+      shippingCharge: Sequelize.DECIMAL(10, 2),
       paymentStatus: Sequelize.BOOLEAN,
     },
     {
@@ -43,7 +43,7 @@ module.exports = async (sequelize, Sequelize) => {
       orderId: Sequelize.INTEGER,
       productId: Sequelize.INTEGER,
       quantity: Sequelize.INTEGER,
-      productPrice: Sequelize.INTEGER,
+      productPrice: Sequelize.DECIMAL(10, 2),
     },
     {
       tableName: "Carts",
@@ -60,11 +60,11 @@ module.exports = async (sequelize, Sequelize) => {
       quantity: Sequelize.INTEGER,
       fontId: Sequelize.INTEGER,
       customName: Sequelize.STRING,
-      originalPrice: Sequelize.INTEGER,
-      discountedPrice: Sequelize.INTEGER,
-      discountPercentage: Sequelize.INTEGER,
-      discountedAmount: Sequelize.INTEGER,
-      sellingPrice: Sequelize.INTEGER,
+      originalPrice: Sequelize.DECIMAL(10, 2),
+      discountedPrice: Sequelize.DECIMAL(10, 2),
+      discountPercentage: Sequelize.DECIMAL(10, 2),
+      discountedAmount: Sequelize.DECIMAL(10, 2),
+      sellingPrice: Sequelize.DECIMAL(10, 2),
       createdAt: Sequelize.DATE,
       updatedAt: Sequelize.DATE,
     },
@@ -94,7 +94,7 @@ module.exports = async (sequelize, Sequelize) => {
     const payment = await Payments.findOne({
       where: {
         orderId: orders.id,
-        paymentStatus: true,
+        // paymentStatus: true,
       },
     });
 
@@ -113,30 +113,31 @@ module.exports = async (sequelize, Sequelize) => {
     );
   }
 
-  const completedOrders = await Orders.findAll({
-    where: {
-      orderStatusId: 3,
-    },
+  const orders = await Orders.findAll({
+    // where: {
+    //   orderStatusId: 3,
+    // },
   });
 
-  for (const order of completedOrders) {
-    if (
-      order.totalPrice !== order.soldPrice &&
-      order.discountAmount === 0 &&
-      order.soldPrice === 0
-    ) {
-      console.log("came here", order.id);
-      await Orders.update(
-        {
-          soldPrice: order.totalPrice,
+  for (const order of orders) {
+    // if (
+    //   order.totalPrice !== order.soldPrice &&
+    //   order.discountAmount === 0 &&
+    //   order.soldPrice === 0
+    // ) {
+    console.log("came here", order.id);
+    await Orders.update(
+      {
+        soldPrice:
+          (order?.soldPrice || 0) == 0 ? order.totalPrice : order.soldPrice,
+      },
+      {
+        where: {
+          id: order.id,
         },
-        {
-          where: {
-            id: order.id,
-          },
-        }
-      );
-    }
+      }
+    );
+    // }
   }
 
   // const cancelledOrders = await Orders.findAll({

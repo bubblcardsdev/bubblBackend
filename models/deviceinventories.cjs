@@ -58,10 +58,11 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.TEXT,
       },
       price: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
       },
       discountPercentage: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.DECIMAL(10, 2),
+        defaultValue: 0.0,
       },
       availability: {
         type: Sequelize.BOOLEAN,

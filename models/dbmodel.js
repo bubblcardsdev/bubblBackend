@@ -114,6 +114,16 @@ export default function dbModel(sequelize, Sequelize) {
   User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
   User.hasMany(ClaimLink);
   User.hasMany(BubblPlanManagement);
+  User.hasMany(Cart, { foreignKey: "customerId" });
+  User.hasMany(Order, { foreignKey: "customerId" });
+  User.hasMany(Payment, { foreignKey: "customerId" });
+  User.hasMany(Shipping, { foreignKey: "customerId" });
+  // User.hasMany(LeadGen);
+  // User.hasMany(PlanPayment);
+  // User.hasMany(Plan);
+  // User.hasMany(NewsLetter);
+  // User.hasMany(Analytics);
+  User.hasMany(ShippingCharge);
   Profile.hasMany(ProfilePhoneNumber, { as: "profilePhoneNumbers" });
   Profile.hasMany(ProfileEmail, { as: "profileEmails" });
   Profile.hasMany(ProfileWebsite, { as: "profileWebsites" });
@@ -142,7 +152,7 @@ export default function dbModel(sequelize, Sequelize) {
   // Template.hasMany(ProfileInfo);
   // Profile.hasOne(ProfileInfo);
   DeviceBranding.belongsTo(DeviceLink);
-  Order.hasMany(Cart);
+  // Order.hasMany(Cart);
   Order.hasMany(Shipping);
   Order.hasMany(Payment);
   BubblPlanManagement.belongsTo(Plan);
@@ -183,6 +193,10 @@ export default function dbModel(sequelize, Sequelize) {
   });
 
   Order.hasMany(OrderBreakDown, { foreignKey: "orderId" });
+
+  Cart.belongsTo(DeviceInventories, { foreignKey: "productId" });
+  Cart.belongsTo(User, { foreignKey: "customerId" });
+
   //#endregion
 
   return {
