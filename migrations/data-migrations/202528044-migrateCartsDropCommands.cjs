@@ -138,4 +138,5 @@ module.exports = async (sequelize, Sequelize) => {
   await queryInterface.removeColumn("Carts", "productColor");
   await queryInterface.removeColumn("Carts", "email");
   await queryInterface.removeColumn("Carts", "productPrice");
+  await queryInterface.removeColumn("Carts", "orderId");
 };
