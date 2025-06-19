@@ -20,7 +20,11 @@ async function getAllDevices(req, res) {
         { model: model.DevicePatternMasters },
         { model: model.MaterialTypeMasters },
       ],
+      group:['deviceTypeId', 'materialTypeId'],
     });
+
+    
+    
 
     if (!devices || devices.length === 0) {
       return res.status(404).json({
@@ -66,21 +70,21 @@ async function getAllDevices(req, res) {
       })
     );
 
-    const uniqueItemsName = [];
+    // const uniqueItemsName = [];
 
-    let removeDuplicates = transformedDevices.map((item) => {
-      if (!uniqueItemsName.includes(item.productName)) {
-        uniqueItemsName.push(item.productName);
-        return item;
-      }
-    });
+    // let removeDuplicates = transformedDevices.map((item) => {
+    //   if (!uniqueItemsName.includes(item.productName)) {
+    //     uniqueItemsName.push(item.productName);
+    //     return item;
+    //   }
+    // });
 
-    removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
+    // removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
     return res.json({
       success: true,
       message: "Products fetched successfully",
-      data: removeDuplicates,
+      data: transformedDevices,
     });
   } catch (error) {
     console.error("Error", error);
@@ -764,7 +768,7 @@ async function clearCart(req, res) {
         },
         {
           where: {
-            orderId: clearCartRequest.id,
+            // orderId: clearCartRequest.id,
             customerId: userId,
           },
         }

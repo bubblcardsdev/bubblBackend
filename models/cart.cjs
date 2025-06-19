@@ -21,13 +21,13 @@ module.exports = (sequelize, Sequelize) => {
           key: "id",
         },
       },
-      orderId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: "Orders",
-          key: "id",
-        },
-      },
+      // orderId: {
+      //   type: Sequelize.INTEGER,
+      //   references: {
+      //     model: "Orders",
+      //     key: "id",
+      //   },
+      // },
       // productType: {
       //   type: Sequelize.STRING,
       // },
