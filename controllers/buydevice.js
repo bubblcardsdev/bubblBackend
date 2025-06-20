@@ -10,6 +10,9 @@ import logger from "../config/logger.js";
 import loggers from "../config/logger.js";
 
 import { sequelize } from "../models/index.js";
+import pkg from "lodash";
+
+const { isEmpty } = pkg;
 
 async function getAllDevices(req, res) {
   try {
@@ -20,11 +23,8 @@ async function getAllDevices(req, res) {
         { model: model.DevicePatternMasters },
         { model: model.MaterialTypeMasters },
       ],
-      group:['deviceTypeId', 'materialTypeId'],
+      group: ["deviceTypeId", "materialTypeId", "colorId", "patternId"],
     });
-
-    
-    
 
     if (!devices || devices.length === 0) {
       return res.status(404).json({
@@ -66,25 +66,33 @@ async function getAllDevices(req, res) {
           primaryImage: imageUrls[0] || null,
           secondaryImage: imageUrls[1] || null,
           colors: color,
+          material: device.MaterialTypeMaster.name,
         };
       })
     );
 
-    // const uniqueItemsName = [];
+    const uniqueItems = [];
 
-    // let removeDuplicates = transformedDevices.map((item) => {
-    //   if (!uniqueItemsName.includes(item.productName)) {
-    //     uniqueItemsName.push(item.productName);
-    //     return item;
-    //   }
-    // });
+    let removeDuplicates = transformedDevices.map((item) => {
+      const findItem = !isEmpty(uniqueItems)
+        ? uniqueItems.find(
+            (product) =>
+              product.name === item.productName &&
+              product.material === item.material
+          )
+        : null;
+      if (!findItem) {
+        uniqueItems.push({ name: item.productName, material: item.material });
+        return item;
+      }
+    });
 
-    // removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
+    removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
     return res.json({
       success: true,
       message: "Products fetched successfully",
-      data: transformedDevices,
+      data: removeDuplicates,
     });
   } catch (error) {
     console.error("Error", error);
@@ -637,7 +645,7 @@ async function getCart(req, res) {
           model: model.DeviceInventories,
           // attributes: [],
         },
-      ]
+      ],
     });
 
     if (!getCart) {
