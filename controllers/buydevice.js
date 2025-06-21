@@ -67,6 +67,7 @@ async function getAllDevices(req, res) {
           secondaryImage: imageUrls[1] || null,
           colors: color,
           material: device.MaterialTypeMaster.name,
+          deviceTypeId:device.deviceTypeId
         };
       })
     );
@@ -89,10 +90,29 @@ async function getAllDevices(req, res) {
 
     removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
+    const basicTypes = [1,2,3]
+    const finalResponse = {
+      basic: [],
+      custom:[],
+      others:[]
+    }
+
+    removeDuplicates.map((record)=>{
+      if(basicTypes.includes(record.deviceTypeId)){
+        finalResponse.basic.push(record)
+      }
+      else if(record.productName.includes('Custom')){
+        finalResponse.custom.push(record)
+      }
+      else{
+        finalResponse.others.push(record)
+      }
+    })
+
     return res.json({
       success: true,
       message: "Products fetched successfully",
-      data: removeDuplicates,
+      data: finalResponse,
     });
   } catch (error) {
     console.error("Error", error);

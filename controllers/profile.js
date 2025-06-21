@@ -1,6 +1,7 @@
 import model from "../models/index.js";
 import {
   createProfileSchema,
+  createProfileSchemaLatest,
   updateProfileSchema,
 } from "../validations/profile.js";
 import { updateProfileDigitalPaymentLinks } from "../functions/updateDigitalPayment.js";
@@ -9,7 +10,7 @@ import { generateSignedUrl } from "../middleware/fileUpload.js";
 import loggers from "../config/logger.js";
 import axios from "axios";
 import { decryptProfileId } from "../helper/ccavutil.js";
-import { Op, Sequelize } from "sequelize";
+import { Op, Sequelize, where } from "sequelize";
 
 async function getProfileName(req, res) {
   try {
@@ -157,6 +158,60 @@ async function createProfile(req, res) {
     });
   }
 }
+
+
+async function createProfileLatest(req,res){
+ const userId = req.user.id;
+const {
+  profileName, templateId, darkMode, firstName, lastName,
+  designation, companyName, companyAddress, shortDescription, address,
+  city, zipCode, state, country, brandingFontColor,
+  brandingBackGroundColor, brandingAccentColor, brandingFont, phoneNumberEnable, emailEnable,
+  websiteEnable, socialMediaEnable, digitalMediaEnable, phoneNumbers, emailIds,
+  websites, socialMediaNames, digitalPaymentLinks
+} = req.body;
+
+
+ const { error } = createProfileSchemaLatest.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+
+  const filteredBody = Object.fromEntries(
+  Object.entries(req.body).filter(
+    ([_, value]) => value !== undefined && value !== null && value !== ''
+  )
+);
+
+try{
+  const bubblPlan  = await model.BubblPlanManagement.findOne({where:{userId:userId}})
+if(bubblPlan){
+ const planId = bubblPlan?.planId
+const profileLimit = planId == 1 ? 2 : 5
+await model.Profile.create(filteredBody)
+
+
+}
+  return res.status(200).json(bubblPlan)
+
+}
+catch(err){
+ console.log(error);
+    loggers.error(error + "from createProfile function");
+    return res.json({
+      success: false,
+      message: error,
+    });
+  }
+}
+
 
 async function updateProfile(req, res) {
   const userId = req.user.id;
@@ -3134,4 +3189,5 @@ export {
   createCompleteProfileBulk,
   getProfileOne,
   findAllProfilesForMob,
+  createProfileLatest
 };

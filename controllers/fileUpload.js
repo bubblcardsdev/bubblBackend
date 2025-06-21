@@ -109,6 +109,76 @@ async function profileImageUpload(req, res) {
   }
 }
 
+async function profileImageUploadLatest(req, res) {
+  const { profileId } = req.body;
+  console.log(req.files, "/",profileId);
+
+  const {
+    profileImage: [profileImage],
+    companyLogo: [companyLogo],
+  } = req.files;
+
+  const { error } = profileImageUploadSchema.validate(profileId, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+  try {
+    const profile = await model.Profile.findOne({
+      where: { id: profileId },
+    });
+
+if (profile) { // need to upload company logo in company image
+  const [rowsAffected] = await model.ProfileImages.upsert(
+    { image: profileImage[0].key },
+    { where: { id: profileId } }
+  );
+  const [affected] =  await model.Profile.update(
+        { brandingLogo: companyLogo[0].key },
+        { where: { id: profileId } }
+      );
+
+  if (rowsAffected > 0 || affected > 0) {
+
+    const signedUrl =  await generateSignedUrl(profileImage[0].key)
+     const brandingLogoUrl = await generateSignedUrl(key);
+    return res.status(200).json({
+      success: true,
+      message: "Profile image updated successfully.",
+      data: {profilr_image:signedUrl,compamy_logo:brandingLogoUrl}
+    });
+  } else {
+    return res.status(404).json({
+      success: false,
+      message: "No matching record found or image is unchanged.",
+    });
+  }
+} else {
+  return res.status(404).json({
+    success: false,
+    message: "Profile not found.",
+  });
+}
+
+  } catch (err) {
+    console.log(error);
+    loggers.error(error + "from profileImageUpload function");
+    return res.status(500).json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+
+}
+
 async function pdfImageUpload(res, keyFileName, userId, email = "") {
   try {
     const whereClause = email
@@ -294,4 +364,5 @@ export {
   qrCodeImageUpload,
   userImageUpload,
   pdfImageUpload,
+  profileImageUploadLatest,
 };
