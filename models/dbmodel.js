@@ -123,7 +123,7 @@ export default function dbModel(sequelize, Sequelize) {
   // User.hasMany(Plan);
   // User.hasMany(NewsLetter);
   // User.hasMany(Analytics);
-  User.hasMany(ShippingCharge);
+  // User.hasMany(ShippingCharge);
   Profile.hasMany(ProfilePhoneNumber, { as: "profilePhoneNumbers" });
   Profile.hasMany(ProfileEmail, { as: "profileEmails" });
   Profile.hasMany(ProfileWebsite, { as: "profileWebsites" });

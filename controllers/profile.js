@@ -160,21 +160,14 @@ async function createProfile(req, res) {
 }
 
 
-async function createProfileLatest(req,res){
- const userId = req.user.id;
-const {
-  profileName, templateId, darkMode, firstName, lastName,
-  designation, companyName, companyAddress, shortDescription, address,
-  city, zipCode, state, country, brandingFontColor,
-  brandingBackGroundColor, brandingAccentColor, brandingFont, phoneNumberEnable, emailEnable,
-  websiteEnable, socialMediaEnable, digitalMediaEnable, phoneNumbers, emailIds,
-  websites, socialMediaNames, digitalPaymentLinks
-} = req.body;
+async function createProfileLatest(req, res) {
+  const userId = req.user.id;
 
-
- const { error } = createProfileSchemaLatest.validate(req.body, {
+  // 1. Validate body
+  const { error } = createProfileSchemaLatest.validate(req.body, {
     abortEarly: false,
   });
+
   if (error) {
     return res.status(400).json({
       success: false,
@@ -184,33 +177,85 @@ const {
     });
   }
 
-  const filteredBody = Object.fromEntries(
-  Object.entries(req.body).filter(
-    ([_, value]) => value !== undefined && value !== null && value !== ''
-  )
-);
+  const {
+    phoneNumbers,
+    emailIds,
+    websites,
+    socialMediaNames,
+    digitalPaymentLinks,
+    ...profileDetails
+  } = req.body;
 
-try{
-  const bubblPlan  = await model.BubblPlanManagement.findOne({where:{userId:userId}})
-if(bubblPlan){
- const planId = bubblPlan?.planId
-const profileLimit = planId == 1 ? 2 : 5
-await model.Profile.create(filteredBody)
+  profileDetails.userId = userId;
+
+  try {
+    // 3. Check user plan
+    const bubblPlan = await model.BubblPlanManagement.findOne({ where: { userId } });
+
+    if (!bubblPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "No subscription plan found",
+      });
+    }
+
+    const planId = bubblPlan.planId;
+    const limit = planId === 1 ? 2 : 5;
+
+    const profileCount = await model.Profile.count({ where: { userId } });
+
+    if (profileCount >= limit) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reached your profile limit",
+      });
+    }
+
+    // 4. Create Profile
+    const newProfile = await model.Profile.create(profileDetails);
+    const profileId = newProfile.id;
+
+      const insertMany = async (arr, modelRef, key) => {
+      if (!Array.isArray(arr) || arr.length === 0) return;
+
+      const cleaned = arr
+        .filter(item => item !== undefined && item !== null && item !== '')
+        .map(item => ({
+          profileId,
+          [key]: item,
+        }));
+
+      if (cleaned.length > 0) {
+        await modelRef.bulkCreate(cleaned);
+      }
+    };
+
+    // 6. Insert mapping tables
+    await insertMany(phoneNumbers, model.ProfilePhoneNumber, 'phoneNumber');
+    await insertMany(emailIds, model.ProfileEmail, 'email');
+    await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, 'link');
+    await insertMany(websites, model.ProfileWebsite, 'url');
+    await insertMany(socialMediaNames, model.ProfileSocialMediaLink, 'socialMedia');
 
 
-}
-  return res.status(200).json(bubblPlan)
+    // 7. Done
+    return res.status(200).json({
+      success: true,
+      message: "Profile created successfully",
+      profile: newProfile,
+    });
 
-}
-catch(err){
- console.log(error);
-    loggers.error(error + "from createProfile function");
-    return res.json({
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " from createProfileLatest function");
+
+    return res.status(500).json({
       success: false,
-      message: error,
+      message: "Something went wrong while creating the profile.",
     });
   }
 }
+
 
 
 async function updateProfile(req, res) {

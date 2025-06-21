@@ -811,7 +811,7 @@ async function cancelOrder(req, res) {
 //#endregion
 
 async function checkOut(req, res) {
-  const userId = req.user?.id || null;
+  const userId = req?.user?.id || null;
   const { productData, shippingFormData } = req.body;
   const { error } = checkOutValidation.validate(req.body, {
     abortEarly: false,
@@ -997,11 +997,13 @@ async function checkOut(req, res) {
       orderId: createdOrder.id,
     });
   } catch (error) {
+    console.log(error,"/");
+    
     await transaction.rollback();
     logger.error(`${error.message} from checkOut function`);
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message + "hi",
     });
   }
 }
