@@ -10,6 +10,9 @@ import logger from "../config/logger.js";
 import loggers from "../config/logger.js";
 
 import { sequelize } from "../models/index.js";
+import pkg from "lodash";
+
+const { isEmpty } = pkg;
 
 async function getAllDevices(req, res) {
   try {
@@ -20,6 +23,7 @@ async function getAllDevices(req, res) {
         { model: model.DevicePatternMasters },
         { model: model.MaterialTypeMasters },
       ],
+      group: ["deviceTypeId", "materialTypeId", "colorId", "patternId"],
     });
 
     if (!devices || devices.length === 0) {
@@ -62,25 +66,53 @@ async function getAllDevices(req, res) {
           primaryImage: imageUrls[0] || null,
           secondaryImage: imageUrls[1] || null,
           colors: color,
+          material: device.MaterialTypeMaster.name,
+          deviceTypeId:device.deviceTypeId
         };
       })
     );
 
-    const uniqueItemsName = [];
+    const uniqueItems = [];
 
     let removeDuplicates = transformedDevices.map((item) => {
-      if (!uniqueItemsName.includes(item.productName)) {
-        uniqueItemsName.push(item.productName);
+      const findItem = !isEmpty(uniqueItems)
+        ? uniqueItems.find(
+            (product) =>
+              product.name === item.productName &&
+              product.material === item.material
+          )
+        : null;
+      if (!findItem) {
+        uniqueItems.push({ name: item.productName, material: item.material });
         return item;
       }
     });
 
     removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
+    const basicTypes = [1,2,3]
+    const finalResponse = {
+      basic: [],
+      custom:[],
+      others:[]
+    }
+
+    removeDuplicates.map((record)=>{
+      if(basicTypes.includes(record.deviceTypeId)){
+        finalResponse.basic.push(record)
+      }
+      else if(record.productName.includes('Custom')){
+        finalResponse.custom.push(record)
+      }
+      else{
+        finalResponse.others.push(record)
+      }
+    })
+
     return res.json({
       success: true,
       message: "Products fetched successfully",
-      data: removeDuplicates,
+      data: finalResponse,
     });
   } catch (error) {
     console.error("Error", error);
@@ -633,7 +665,7 @@ async function getCart(req, res) {
           model: model.DeviceInventories,
           // attributes: [],
         },
-      ]
+      ],
     });
 
     if (!getCart) {
@@ -764,7 +796,7 @@ async function clearCart(req, res) {
         },
         {
           where: {
-            orderId: clearCartRequest.id,
+            // orderId: clearCartRequest.id,
             customerId: userId,
           },
         }

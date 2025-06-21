@@ -120,4 +120,100 @@ const updateProfileSchema = Joi.object({
     ,
 });
 
-export { createProfileSchema, updateProfileSchema };
+const createProfileSchemaLatest = Joi.object({
+  profileName: Joi.string().required(),
+  templateId: Joi.number().required(),
+  darkMode: Joi.bool(),
+  firstName: Joi.string().optional(),
+  lastName: Joi.string().optional(),
+  designation: Joi.string().allow(""),
+  companyName: Joi.string().allow("").optional(),
+  companyAddress: Joi.string().allow("").optional(),
+  shortDescription: Joi.string().allow("").optional(),
+  address: Joi.string().allow("").optional(),
+  city: Joi.string().allow("").optional(),
+  zipCode: Joi.string().allow("").optional(),
+  state: Joi.string().allow("").optional(),
+  country: Joi.string().allow("").optional(),
+  brandingFontColor: Joi.string().allow("").optional(),
+  brandingBackGroundColor: Joi.string().allow("").optional(),
+  brandingAccentColor: Joi.string().allow("").optional(),
+  brandingFont: Joi.string().allow("").optional(),
+  phoneNumberEnable: Joi.bool().optional(),
+  emailEnable: Joi.bool().optional(),
+  websiteEnable: Joi.bool().optional(),
+  socialMediaEnable: Joi.bool().optional(),
+  digitalMediaEnable: Joi.bool().optional(),
+  phoneNumbers: Joi.array()
+  .items(
+    Joi.object({
+      phoneNumberId: Joi.number().required(),
+      countryCode: Joi.string().required(),
+      phoneNumber: Joi.string().required(),
+      phoneNumberType: Joi.string().optional(),
+      checkBoxStatus: Joi.boolean().optional(),
+      activeStatus: Joi.boolean().required(),
+    })
+  )
+  .max(2)       // Maximum 2 phone number objects
+  .optional(),
+  emailIds: Joi.array()
+  .items(
+    Joi.object({
+      emailIdNumber: Joi.number().required(),
+      emailId: Joi.string().email().required(),
+      emailType: Joi.string().optional(),
+      checkBoxStatus: Joi.boolean().optional(),
+      activeStatus: Joi.boolean().required(),
+    })
+  )
+  .max(2)
+  .optional(),
+  websites: Joi.array()
+    .items(
+      Joi.object({
+        websiteId: Joi.number().allow(null),
+        website: Joi.string().allow(""),
+        websiteType: Joi.string().allow(""),
+        checkBoxStatus: Joi.bool(),
+        activeStatus: Joi.bool(),
+      }).and(
+        "websiteId",
+        "website",
+        "websiteType",
+        "checkBoxStatus",
+        "activeStatus"
+      )
+    )
+    ,
+  socialMediaNames: Joi.array()
+    .items(
+      Joi.object({
+        profileSocialMediaLinkId: Joi.number().allow(null),
+        profileSocialMediaId: Joi.number().required(),
+        socialMediaName: Joi.string().required().min(1),
+        enableStatus: Joi.bool(),
+        activeStatus: Joi.bool(),
+      })
+    )
+    ,
+  digitalPaymentLinks: Joi.array()
+    .items(
+      Joi.object({
+        profileDigitalPaymentLinkId: Joi.number().allow(null),
+        profileDigitalPaymentsId: Joi.number().allow(""),
+        digitalPaymentLink: Joi.string().allow(""), // need to implement upi id check
+        enableStatus: Joi.bool(),
+        activeStatus: Joi.bool(),
+      })
+    )
+    ,
+});
+
+
+
+
+
+
+
+export { createProfileSchema, updateProfileSchema,createProfileSchemaLatest };

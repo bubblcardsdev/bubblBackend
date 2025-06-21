@@ -117,7 +117,7 @@ export default function dbModel(sequelize, Sequelize) {
   User.hasMany(Cart, { foreignKey: "customerId" });
   User.hasMany(Order, { foreignKey: "customerId" });
   User.hasMany(Payment, { foreignKey: "customerId" });
-  User.hasMany(Shipping, { foreignKey: "customerId" });
+  // User.hasMany(Shipping, { foreignKey: "customerId" });
   // User.hasMany(LeadGen);
   // User.hasMany(PlanPayment);
   // User.hasMany(Plan);

@@ -25,15 +25,18 @@ import {
   getProfileOne,
   // getProfileByMode,
   // findAllProfilesForMobile,
-  findAllProfilesForMob
+  findAllProfilesForMob,
+  createProfileLatest
 } from "../controllers/profile.js";
 import { authenticateToken } from "../middleware/token.js";
+
 
 const router = express.Router();
 
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
 router.post("/create", authenticateToken, createProfile);
+router.post("/create-profile",authenticateToken,createProfileLatest)
 // router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
