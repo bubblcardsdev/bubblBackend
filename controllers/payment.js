@@ -21,6 +21,8 @@ import {
   verifyPaymentValidation,
 } from "../validations/payment.js";
 
+import ValidateOrder from "../validations/order.js"
+
 async function initialePay(req, res) {
   try {
     const paymentObj = req.body;
@@ -91,6 +93,141 @@ async function initialePay(req, res) {
 
     let token =
       orderType == 1 ? btoa(getDataForPayment?.email) : paymentObj.token;
+
+    const cost =
+      getDataForPayment.shippingCost !== undefined
+        ? Number(getDataForPayment.shippingCost)
+        : 0;
+
+    console.log(cost, orderType, "costsss");
+
+    const totalAmount =
+      getDataForPayment?.email == "benial@rvmatrix.in" || "ben@gmail.com"
+        ? 1
+        : getDataForPayment.totalPrice;
+
+    const planType = paymentObj.planType === 0 ? "monthly" : "yearly";
+
+    const shippingCost = cost.toString();
+
+    console.log(totalAmount, "value");
+    console.log("token", orderType, orderId, planType, shippingCost);
+
+    //Put in the 32-Bit key shared by CCAvenues.
+    const accessCode = config.paymentAccessCode;
+
+    let encRequest = "";
+    let formbody = "";
+
+    let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+
+    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fdev.bubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+
+    // let bodyData = `merchant_id=2126372&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&cancel_url=https%3A%2F%2Fbubbl.cards%2Fcustom-api%2Fpost&language=EN&billing_name=${planType}&billing_address=${orderType}&merchant_param1=${token}&merchant_param2=${shippingCost}&billing_city=Chennai&billing_state=MH&billing_zip=400054&billing_country=India&billing_tel=9876543210&billing_email=testing%40domain.com&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    encRequest = encrypt(bodyData, workingKey);
+    const POST = qs.parse(bodyData);
+    // live
+    // formbody =
+    //   '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+    //   POST.merchant_id +
+    //   "&encRequest=" +
+    //   encRequest +
+    //   "&access_code=" +
+    //   accessCode +
+    //   '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
+    // test
+    formbody =
+      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+      POST.merchant_id +
+      "&encRequest=" +
+      encRequest +
+      "&access_code=" +
+      accessCode +
+      '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
+
+    console.log("encRequest-----------------", encRequest, "-----------------");
+    console.log(formbody);
+
+    return res.json({
+      success: true,
+      message: "Payment initiated Successfully",
+
+      data: {
+        formbody,
+      },
+    });
+  } catch (error) {
+    console.log("Error", error);
+    loggers.error(error + "from initialePay function");
+    return res.status(500).json({
+      success: false,
+      data: {
+        message: error.message,
+      },
+    });
+  }
+}
+
+async function initialePayLatest(req, res) {
+  try {
+    const paymentObj = req.body;
+
+
+    const { error } = initiatePayValidation.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res
+        .status(500)
+        .json({ success: false, data: { error: error.details } });
+    }
+
+    
+
+    const orderId = paymentObj.orderId;
+
+
+
+
+    console.log("orderId-------------------------------------", orderId);
+    let getDataForPayment;
+
+    const decodedToken = Buffer.from(paymentObj.token,'base64').toString('utf-8');
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decodedToken);
+    const isJWT = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(
+      decodedToken
+    );
+
+    const validOrder = await ValidateOrder(orderId,decodedToken)
+    if(!validOrder){
+      return res.status(400).json({
+          success: false,
+          message: "Not a valid order",
+        });
+    }
+
+   if (Number(paymentObj.orderType) === 1 && ![0, 1].includes(paymentObj.planType)) {
+    return res.status(400).json({
+          success: false,
+          message: "Plan type is needed for upgrading plan",
+        });
+  // throw new Error("Plan type is needed for upgrading plan");
+}
+
+     getDataForPayment = await getDataForPaymentService(
+        orderId,
+        decodedToken,
+        isEmail,
+        isJWT
+      );
+
+    console.log(getDataForPayment, "getDataForPayment");
+
+    const orderType = paymentObj.orderType;
+
+    let token =
+      orderType == 1 ?Buffer.from(paymentObj.token,'base64').toString('utf-8') : paymentObj.token;
 
     const cost =
       getDataForPayment.shippingCost !== undefined
@@ -612,4 +749,4 @@ async function getDataForPlanPaymentService(obj) {
   }
 }
 
-export { initialePay, verifyPayment, getShippingCharge };
+export { initialePay, verifyPayment, getShippingCharge ,initialePayLatest};

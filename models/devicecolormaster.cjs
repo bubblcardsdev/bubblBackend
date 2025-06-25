@@ -16,6 +16,9 @@ module.exports = (sequelize, Sequelize) => {
       name: {
         type: Sequelize.STRING,
       },
+       colorCode: {
+        type: Sequelize.STRING,
+      },
     },
     {
       sequelize,

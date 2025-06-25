@@ -147,7 +147,7 @@ const createProfileSchemaLatest = Joi.object({
   phoneNumbers: Joi.array()
   .items(
     Joi.object({
-      phoneNumberId: Joi.number().required(),
+      phoneNumberId: Joi.number().optional(),
       countryCode: Joi.string().required(),
       phoneNumber: Joi.string().required(),
       phoneNumberType: Joi.string().optional(),
@@ -160,7 +160,7 @@ const createProfileSchemaLatest = Joi.object({
   emailIds: Joi.array()
   .items(
     Joi.object({
-      emailIdNumber: Joi.number().required(),
+      emailIdNumber: Joi.number().optional(),
       emailId: Joi.string().email().required(),
       emailType: Joi.string().optional(),
       checkBoxStatus: Joi.boolean().optional(),
@@ -184,7 +184,7 @@ const createProfileSchemaLatest = Joi.object({
         "checkBoxStatus",
         "activeStatus"
       )
-    )
+    ).max(1)
     ,
   socialMediaNames: Joi.array()
     .items(
@@ -195,7 +195,7 @@ const createProfileSchemaLatest = Joi.object({
         enableStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
-    )
+    ).max(1)
     ,
   digitalPaymentLinks: Joi.array()
     .items(
@@ -206,7 +206,94 @@ const createProfileSchemaLatest = Joi.object({
         enableStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
-    )
+    ).max(1)
+    ,
+});
+
+
+const updateProfileSchemaLatest = Joi.object({
+  profileId:Joi.number().required(),
+  profileName: Joi.string().required(),
+  deviceLinkId: Joi.number().allow(null).optional(),
+  templateId: Joi.number().required(),
+  darkMode: Joi.bool(),
+  firstName: Joi.string().optional(),
+  lastName: Joi.string().optional(),
+  designation: Joi.string().allow(""),
+  companyName: Joi.string().allow("").optional(),
+  companyAddress: Joi.string().allow("").optional(),
+  shortDescription: Joi.string().allow("").optional(),
+  address: Joi.string().allow("").optional(),
+  city: Joi.string().allow("").optional(),
+  zipCode: Joi.string().allow("").optional(),
+  state: Joi.string().allow("").optional(),
+  country: Joi.string().allow("").optional(),
+  brandingFontColor: Joi.string().allow("").optional(),
+  brandingBackGroundColor: Joi.string().allow("").optional(),
+  brandingAccentColor: Joi.string().allow("").optional(),
+  brandingFont: Joi.string().allow("").optional(),
+  phoneNumberEnable: Joi.bool().optional(),
+  emailEnable: Joi.bool().optional(),
+  websiteEnable: Joi.bool().optional(),
+  socialMediaEnable: Joi.bool().optional(),
+  digitalMediaEnable: Joi.bool().optional(),
+  phoneNumbers: Joi.array()
+  .items(
+    Joi.object({
+      phoneNumberId: Joi.number(),
+      countryCode: Joi.string().required(),
+      phoneNumber: Joi.string().required(),
+      phoneNumberType: Joi.string().optional(),
+      checkBoxStatus: Joi.boolean().optional(),
+      activeStatus: Joi.boolean().required(),
+    })
+  )
+  .max(2)       // Maximum 2 phone number objects
+  .optional(),
+  emailIds: Joi.array()
+  .items(
+    Joi.object({
+      emailIdNumber: Joi.number(),
+      emailId: Joi.string().email().required(),
+      emailType: Joi.string().optional(),
+      checkBoxStatus: Joi.boolean().optional(),
+      activeStatus: Joi.boolean().required(),
+    })
+  )
+  .max(2)
+  .optional(),
+  websites: Joi.array()
+    .items(
+      Joi.object({
+        websiteId: Joi.number(),
+        website: Joi.string().allow(""),
+        websiteType: Joi.string().allow(""),
+        checkBoxStatus: Joi.bool(),
+        activeStatus: Joi.bool(),
+      })
+    ).max(1)
+    ,
+  socialMediaNames: Joi.array()
+    .items(
+      Joi.object({
+        profileSocialMediaLinkId: Joi.number(),
+        profileSocialMediaId: Joi.number().required(),
+        socialMediaName: Joi.string().required().min(1),
+        enableStatus: Joi.bool(),
+        activeStatus: Joi.bool(),
+      })
+    ).max(1)
+    ,
+  digitalPaymentLinks: Joi.array()
+    .items(
+      Joi.object({
+        profileDigitalPaymentLinkId: Joi.number(),
+        profileDigitalPaymentsId: Joi.number().allow(""),
+        digitalPaymentLink: Joi.string().allow(""), // need to implement upi id check
+        enableStatus: Joi.bool(),
+        activeStatus: Joi.bool(),
+      })
+    ).max(1)
     ,
 });
 
@@ -216,4 +303,5 @@ const createProfileSchemaLatest = Joi.object({
 
 
 
-export { createProfileSchema, updateProfileSchema,createProfileSchemaLatest };
+
+export { createProfileSchema, updateProfileSchema,createProfileSchemaLatest,updateProfileSchemaLatest };
