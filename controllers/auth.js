@@ -258,7 +258,7 @@ async function createUser(req, res) {
   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
 
   if (error) {
-    return res.json({
+    return res.status(400).json({
       success: false,
       data: {
         error: error.details,
@@ -276,7 +276,7 @@ async function createUser(req, res) {
     });
 
     if (checkUser) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         data: {
           message: "Email already exists",
@@ -378,7 +378,7 @@ async function createUser(req, res) {
         },
       });
     }
-    return res.json({
+    return res.status(400).json({
       success: false,
       data: {
         error,

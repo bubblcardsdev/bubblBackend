@@ -8,6 +8,7 @@ import {
   replaceDevice,
   getDeviceLink,
   fetchCardDetails,
+  getDeviceLinkLatest
 } from "../controllers/device.js";
 import { authenticateToken } from "./../middleware/token.js";
 
@@ -15,6 +16,8 @@ const router = express.Router();
 
 router.post("/link", authenticateToken, deviceLink);
 router.get("/status", authenticateToken, getDeviceLink);
+// router.get("/status", authenticateToken, getDeviceLinkLatest);
+
 
 router.put("/update", authenticateToken, updateLinkDevice);
 router.put("/delete", authenticateToken, deleteDevice);

@@ -189,6 +189,7 @@ async function createProfileLatest(req, res) {
      brandingFontColor, // nned to  insert it later if needed 
       brandingBackGroundColor,
       brandingAccentColor,
+      darkMode,
     ...profileDetails
   } = req.body;
 
@@ -221,6 +222,40 @@ async function createProfileLatest(req, res) {
     const newProfile = await model.Profile.create(profileDetails);
     const profileId = newProfile.id;
 
+
+   if (newProfile?.id) {
+  try {
+    const brandingData = {
+      profileId: newProfile.id,
+      darkMode,
+      brandingFontColor,
+      brandingBackGroundColor,
+      brandingAccentColor,
+    };
+
+    // Remove any fields with null or undefined
+    const cleanedData = Object.fromEntries(
+      Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
+    );
+
+    await model.DeviceBranding.create(cleanedData);
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " while inserting in the device brandings.");
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while inserting in the device brandings.",
+    });
+  }
+}
+else{
+ return res.status(500).json({
+      success: false,
+      message: "No profileId is found",
+    });
+}
+
       const insertMany = async (arr, modelRef, key) => {
       if (!Array.isArray(arr) || arr.length === 0) return;
 
@@ -243,12 +278,29 @@ async function createProfileLatest(req, res) {
     await insertMany(websites, model.ProfileWebsite, 'url');
     await insertMany(socialMediaNames, model.ProfileSocialMediaLink, 'socialMedia');
 
+const createdProfile = await model.Profile.findOne({
+  where: { id: newProfile?.id },
+  include: [
+    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+    { model: model.ProfileEmail, as: "profileEmails" },
+    { model: model.ProfileWebsite, as: "profileWebsites" },
+    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+    {model:model.DeviceBranding, as: "DeviceBranding" }
+  ]
+});
 
+
+
+const data={
+  createdProfile:createdProfile,
+  // deviceBrandings:
+}
     // 7. Done
     return res.status(200).json({
       success: true,
       message: "Profile created successfully",
-      profile: newProfile,
+      profile: createdProfile,
     });
 
   } catch (err) {
@@ -477,7 +529,17 @@ if (websites?.length > 0) {
   }
 }
 
-const updatedProfile = await model.Profile.findOne({
+
+  if(!isEmpty(brandingData)){
+    brandingData.profileId = profileId;
+    brandingData.deviceLinkId = deviceLinkId;
+    await model.DeviceBranding.update(brandingData, {
+    where: { id: profileId },
+  });
+  }
+
+
+  const updatedProfile = await model.Profile.findOne({
   where: { id: profileId },
   include: [
     { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
@@ -485,24 +547,14 @@ const updatedProfile = await model.Profile.findOne({
     { model: model.ProfileWebsite, as: "profileWebsites" },
     { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
     { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+    {model:model.DeviceBranding, as: "DeviceBranding" }
+
   ]
 });
-
-
-  // if(!isEmpty(brandingData) && deviceLinkId){
-  //   brandingData.profileId = profileId;
-  //   brandingData.deviceLinkId = deviceLinkId;
-  //   await model.DeviceBranding.update(brandingData, {
-  //   where: { id: profileId },
-  // });
-  // }
-
-  // need to update dEVICE branding
   
 
   return res.status(200).json({
     success: true,
-    // brandingData:brandingData,
     updatedData:updatedProfile,
     data: { message: "Profile updated successfully" },
   });

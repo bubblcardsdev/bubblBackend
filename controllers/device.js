@@ -592,6 +592,62 @@ async function getDeviceLink(req, res) {
   }
 }
 
+async function getDeviceLinkLatest(req, res) {
+  try {
+    const userId = req.user.id;
+    // const userId = req.query.userId;
+    const offset = Number(req.query.offset);
+    const limit = Number(req.query.limit);
+
+    const linkedDevices = await model.AccountDeviceLink.findAll({
+      where: {
+        userId: userId,
+      },
+      include: [
+        {
+          model: model.Device,
+          required: false,
+        },
+        {
+          model: model.DeviceLink,
+          required: false,
+        },
+      ],
+      offset:offset,
+      limit:limit,
+    });
+
+    if (!linkedDevices || linkedDevices.length === 0) {
+      return res.json({
+        success: false,
+        message: "No devices found",
+      });
+    }
+    const unlinkedDevices = linkedDevices.filter((link) => {
+      return !link.DeviceLink;
+    });
+
+    // if (unlinkedDevices.length === 0) {
+    //   return res.json({
+    //     success: false,
+    //     message: "No unlinked devices found",
+    //   });
+    // }
+
+    return res.json({
+      success: true,
+      message: "Unlinked Devices",
+      unlinkedDevices: linkedDevices,
+    });
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: `Error Occurred ${error.message}`,
+    });
+  }
+}
+
+
 async function fetchCardDetails(req, res) {
   const { deviceUId } = req.body;
   try {
@@ -650,4 +706,5 @@ export {
   replaceDevice,
   getDeviceLink,
   fetchCardDetails,
+  getDeviceLinkLatest
 };
