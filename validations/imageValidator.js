@@ -1,5 +1,5 @@
 import path from "path";
-const { fileTypeFromBuffer } = require("file-type");
+import { fileTypeFromBuffer } from "file-type"
 
 const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
 const allowedExtensions = [".jpeg", ".jpg", ".png", ".webp"];
@@ -28,10 +28,10 @@ async function ImageValidator(req,res,next){
 
   const fileSizeMB = file.size / 1024 /1024;
 
-  if(fileSizeMB >= 3){
+  if(fileSizeMB >= 5){
  return res.status(400).json({
       success: false,
-      message: "File size must be less than 10MB",
+      message: "File size must be less than 5MB",
     });
   }
 
@@ -74,4 +74,4 @@ next()
 }
 
 
-export {ImageValidator}
+export {ImageValidator};
