@@ -135,7 +135,7 @@ async function getOrderById(req, res) {
 
   if (error) {
     return res
-      .status(500)
+      .status(400)
       .json({ success: false, data: { error: error.details } });
   }
 
@@ -263,7 +263,7 @@ async function cancelOrder(req, res) {
     }
   } catch (error) {
     loggers.error(error + "from cancelOrder function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -1268,7 +1268,7 @@ async function proceedPayment(req, res) {
     }
   } catch (error) {
     loggers.error(error + "from proceedPayment function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

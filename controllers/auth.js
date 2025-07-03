@@ -79,7 +79,7 @@ async function login(req, res) {
 
   if (error) {
     // logger.error(error.message);
-    return res.json({
+    return res.status(400).json({
       success: false,
       data: {
         error: error.details,
@@ -90,7 +90,7 @@ async function login(req, res) {
   try {
     const checkUser = await model.User.findOne({ where: { email } });
     if (!checkUser) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         data: {
           message: "Email or password is incorrect",
@@ -124,7 +124,7 @@ async function login(req, res) {
 
       if (phoneVerified === false || emailVerified === false) {
         if (phoneVerified === false) {
-          return res.json({
+          return res.status(400).json({
             success: false,
             data: {
               message: "Please verify your Phone Number",
@@ -235,7 +235,7 @@ async function login(req, res) {
         },
       });
     } else {
-      return res.json({
+      return res.status(400).json({
         success: false,
         data: {
           message: "Check the Credentials",
@@ -244,7 +244,7 @@ async function login(req, res) {
     }
   } catch (error) {
     loggers.error(error + "from login function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         error,
@@ -371,7 +371,7 @@ async function createUser(req, res) {
     loggers.error(error + "from createUser function");
     if (error instanceof UniqueConstraintError) {
       await model.User.findOne({ where: { email } });
-      return res.json({
+      return res.status(500).json({
         success: false,
         data: {
           message: `${error.errors[0].path} already exists`,
