@@ -263,7 +263,7 @@ async function getProductDetails(req, res) {
 }
 
 
-async function getProductDetailsLatest(req,res){
+async function getProductDetailsLatest(req, res) {
   const { productId } = req.body;
 
   const { error } = getProductId.validate(req.body, {
@@ -279,128 +279,129 @@ async function getProductDetailsLatest(req,res){
     });
   }
 
-  const deviceType = await model.DeviceInventories.findOne(
-    {where:{productId:productId}}
-  )
-  
+  const deviceType = await model.DeviceInventories.findOne({
+    where: { productId: productId },
+  });
 
   const devices = await model.DeviceInventories.findAll({
-  // attributes: ['id', 'name', 'shortDescription','deviceTypeId','productId','deviceDescription'],
-  where: {
-    deviceTypeId: deviceType?.deviceTypeId,
-  },
-  include: [
-    {
-      model: model.DeviceColorMasters,
-      attributes: ['name', 'colorCode'],
+    where: {
+      deviceTypeId: deviceType?.deviceTypeId,
     },
-    {
-      model: model.DeviceImageInventories,
-      attributes: ['imageKey','deviceId'],
-    },
-     { model: model.DevicePatternMasters },
-     { model: model.MaterialTypeMasters,attributes: ['name', 'id'], }
-
-  ],
-});
-  // const devices  = await model.DeviceInventories.findAll({
-  //    include: [
-  //       { model: model.DeviceImageInventories },
-  //       { model: model.DeviceColorMasters },
-  //       { model: model.DevicePatternMasters },
-  //       { model: model.MaterialTypeMasters },
-  //     ],
-  //     where:{deviceTypeId:deviceType?.deviceTypeId}
-  // })
+    include: [
+      {
+        model: model.DeviceColorMasters,
+        attributes: ['name', 'colorCode'],
+      },
+      {
+        model: model.DeviceImageInventories,
+        attributes: ['imageKey', 'deviceId'],
+      },
+      {
+        model: model.DevicePatternMasters,
+      },
+      {
+        model: model.MaterialTypeMasters,
+        attributes: ['name', 'id'],
+      },
+    ],
+  });
 
   if (!devices || devices.length === 0) {
     return res.status(404).json({
       success: false,
-      message: "No devices found for this type",
+      message: 'No devices found for this type',
     });
   }
 
-  const primaryImage = devices.find((e)=>e.productId === productId)
-  console.log(primaryImage,"/");
-  
+  // Find the primary device for the requested productId
+  const primaryImage = devices.find((e) => e.productId === productId);
 
-const colors = [];
-const patterns = [];
-const material = [];
-
-const materialSet = new Set();
-const patternSet = new Set();
-
-await Promise.all(
-  devices?.map(async (device) => {
-    const productId = device?.productId;
-    const imageKey = device?.DeviceImageInventories?.[0]?.imageKey;
-    const imageUrl = imageKey ? await generateSignedUrl(imageKey) : null;
-
-    // Handle color
-    const colorName = device?.DeviceColorMaster?.name;
-    const colorCode = device?.DeviceColorMaster?.colorCode;
-    if (colorName && colorCode) {
-      colors.push({
-        productId,
-        colorCode,
-        colorName,
-        imageUrl,
-      });
-    }
-
-    // Handle material (deduplicate by materialName)
-    const materialName = device?.MaterialTypeMaster?.name;
-    if (materialName && !materialSet.has(materialName)) {
-      materialSet.add(materialName);
-      material.push({
-        productId,
-        materialName,
-        imageUrl,
-      });
-    }
-
-    // Handle pattern (deduplicate by patternName)
-    const patternName = device?.DevicePatternMaster?.name;
-    if (patternName && !patternSet.has(patternName)) {
-      patternSet.add(patternName);
-      patterns.push({
-        productId,
-        patternName,
-        imageUrl,
-      });
-    }
-  })
-);
-
-const {
-  DeviceColorMaster,
-  DeviceImageInventories,
-  DevicePatternMaster,
-  MaterialTypeMaster,
-  ...cleanedPrimaryImage
-} = primaryImage.toJSON();
-
-
- const data = {
-    productDetail:cleanedPrimaryImage,
-    color:colors,
-    material:material,
-    patterns:patterns,
+  if (!primaryImage) {
+    return res.status(404).json({
+      success: false,
+      message: 'Primary device not found',
+    });
   }
 
+  const colors = [];
+  const patterns = [];
+  const material = [];
+
+  const materialSet = new Set();
+  const patternSet = new Set();
+
+  await Promise.all(
+    devices?.map(async (device) => {
+      const productId = device?.productId;
+      const imageKey = device?.DeviceImageInventories?.[0]?.imageKey;
+      const imageUrl = imageKey ? await generateSignedUrl(imageKey) : null;
+
+      // Color
+      const colorName = device?.DeviceColorMaster?.name;
+      const colorCode = device?.DeviceColorMaster?.colorCode;
+      if (colorName && colorCode) {
+        colors.push({
+          productId,
+          colorCode,
+          colorName,
+          imageUrl,
+        });
+      }
+
+      // Material
+      const materialName = device?.MaterialTypeMaster?.name;
+      if (materialName && !materialSet.has(materialName)) {
+        materialSet.add(materialName);
+        material.push({
+          productId,
+          materialName,
+          imageUrl,
+        });
+      }
+
+      // Pattern
+      const patternName = device?.DevicePatternMaster?.name;
+      if (patternName && !patternSet.has(patternName)) {
+        patternSet.add(patternName);
+        patterns.push({
+          productId,
+          patternName,
+          imageUrl,
+        });
+      }
+    })
+  );
+
+  // Clean primary image object and add its image URL
+  const {
+    DeviceColorMaster,
+    DeviceImageInventories,
+    DevicePatternMaster,
+    MaterialTypeMaster,
+    ...cleanedPrimaryImage
+  } = primaryImage.toJSON();
+
+  // ✅ Add primary image URL
+  const primaryImageKey = DeviceImageInventories?.[0]?.imageKey;
+  const primaryImageUrl = primaryImageKey
+    ? await generateSignedUrl(primaryImageKey)
+    : null;
+
+  cleanedPrimaryImage.imageUrl = primaryImageUrl;
+
+  const data = {
+    productDetail: cleanedPrimaryImage,
+    color: colors,
+    material: material,
+    patterns: patterns,
+  };
+
   return res.status(200).json({
-    "status":200,
-    "data":data
-  })
-
-
-
-
-
-
-
+    status: 200,
+    data: data,
+  });
 }
+
 
 //#region - adding to cart in one shot
 // async function addToCart(req, res) {
