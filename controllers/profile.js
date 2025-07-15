@@ -2,6 +2,7 @@ import model from "../models/index.js";
 import {
   createProfileSchema,
   createProfileSchemaLatest,
+  duplicateProfileSchema,
   updateProfileSchema,
   updateProfileSchemaLatest,
 } from "../validations/profile.js";
@@ -310,6 +311,173 @@ const data={
     return res.status(500).json({
       success: false,
       message: "Something went wrong while creating the profile.",
+    });
+  }
+}
+
+
+async function DuplicateProfile(req, res) {
+  const userId = req.user.id;
+
+  const { error } = duplicateProfileSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+      const profileId = req.body.profileId
+
+
+  try {
+
+     const ExistingProfile = await model.Profile.findOne({
+  where: { id: profileId },
+  include: [
+    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+    { model: model.ProfileEmail, as: "profileEmails" },
+    { model: model.ProfileWebsite, as: "profileWebsites" },
+    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+    {model:model.DeviceBranding, as: "DeviceBranding" }
+  ]
+});
+
+if (!ExistingProfile) {
+  return res.status(404).json({ message: "Profile not found" });
+}
+
+ const existingPlain = ExistingProfile.get({ plain: true });
+
+const {
+  DeviceBranding,
+  profilePhoneNumbers,
+  profileEmails,
+  profileWebsites,
+  profileSocialMediaLinks,
+  profileDigitalPaymentLinks,
+  ...profileDetails
+} = existingPlain;
+
+delete profileDetails.id;           // avoid primary key conflict
+delete profileDetails.UserId;       // avoid userId duplication
+delete profileDetails.TemplateId;   // avoid templateId duplication
+delete profileDetails.ModeId;       // avoid modeId duplication
+
+    // 3. Check user plan
+    const bubblPlan = await model.BubblPlanManagement.findOne({ where: { userId } });
+
+    if (!bubblPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "No subscription plan found",
+      });
+    }
+
+    const planId = bubblPlan.planId;
+    const limit = planId === 1 ? 2 : 5;
+
+    const profileCount = await model.Profile.count({ where: { userId } });
+
+    if (profileCount >= limit) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reached your profile limit",
+      });
+    }
+
+    // 4. Create Profile
+    const newProfile = await model.Profile.create(profileDetails);
+    // const profileId = newProfile.id;
+
+
+   if (newProfile?.id) {
+  try {
+    const brandingData = {
+      profileId: newProfile?.id,
+      darkMode:DeviceBranding?.darkMode,
+      brandingFontColor:DeviceBranding?.brandingFontColor,
+      brandingBackGroundColor:DeviceBranding?.brandingBackGroundColor,
+      brandingAccentColor:DeviceBranding?.brandingAccentColor,
+    };
+
+    // Remove any fields with null or undefined
+    const cleanedData = Object.fromEntries(
+      Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
+    );
+
+    await model.DeviceBranding.create(cleanedData);
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " while inserting in the device brandings.");
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while inserting in the device brandings.",
+      error:err
+    });
+  }
+}
+else{
+ return res.status(500).json({
+      success: false,
+      message: "No profileId is found",
+    });
+}
+
+      const insertMany = async (arr, modelRef, key) => {
+      if (!Array.isArray(arr) || arr.length === 0) return;
+
+      const cleaned = arr
+        .filter(item => item !== undefined && item !== null && item !== '')
+        .map(item => ({
+          profileId,
+          [key]: item,
+        }));
+
+      if (cleaned.length > 0) {
+        await modelRef.bulkCreate(cleaned);
+      }
+    };
+
+    // 6. Insert mapping tables
+    await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, 'phoneNumber');
+    await insertMany(profileEmails, model.ProfileEmail, 'email');
+    await insertMany(profileSocialMediaLinks, model.ProfileDigitalPaymentLink, 'link');
+    await insertMany(profileWebsites, model.ProfileWebsite, 'url');
+    await insertMany(profileSocialMediaLinks, model.ProfileSocialMediaLink, 'socialMedia');
+
+const createdProfile = await model.Profile.findOne({
+  where: { id: newProfile?.id },
+  include: [
+    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+    { model: model.ProfileEmail, as: "profileEmails" },
+    { model: model.ProfileWebsite, as: "profileWebsites" },
+    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+    {model:model.DeviceBranding, as: "DeviceBranding" }
+  ]
+});
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile created successfully",
+      profile: createdProfile,
+    });
+
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " from createProfileLatest function");
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while creating the profile.",
+      error:err
     });
   }
 }
@@ -3540,5 +3708,6 @@ export {
   createCompleteProfileBulk,
   getProfileOne,
   findAllProfilesForMob,
-  createProfileLatest
+  createProfileLatest,
+  DuplicateProfile
 };

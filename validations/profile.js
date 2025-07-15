@@ -210,6 +210,10 @@ const createProfileSchemaLatest = Joi.object({
     ,
 });
 
+const duplicateProfileSchema = Joi.object({
+    profileId:Joi.number().required(),
+})
+
 
 const updateProfileSchemaLatest = Joi.object({
   profileId:Joi.number().required(),
@@ -304,4 +308,4 @@ const updateProfileSchemaLatest = Joi.object({
 
 
 
-export { createProfileSchema, updateProfileSchema,createProfileSchemaLatest,updateProfileSchemaLatest };
+export { createProfileSchema, updateProfileSchema,createProfileSchemaLatest,updateProfileSchemaLatest,duplicateProfileSchema };

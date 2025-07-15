@@ -1093,6 +1093,11 @@ async function verifyLinkedinUser(req, res) {
   }
 }
 
+async function verifyAppleUser(req,res) {
+
+  
+}
+
 async function updateUser(req, res) {
   const { userImage, firstName, lastName, phoneNumber, DOB, gender, country } =
     req.body;
@@ -1687,6 +1692,8 @@ async function resetPassword(req, res) {
   }
 }
 
+
+
 export {
   issueNewToken,
   login,
@@ -1706,4 +1713,5 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
+  verifyAppleUser
 };

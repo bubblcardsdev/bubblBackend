@@ -23,6 +23,7 @@ import {
   updateProfileName,
   createCompleteProfileBulk,
   getProfileOne,
+  DuplicateProfile,
   // getProfileByMode,
   // findAllProfilesForMobile,
   findAllProfilesForMob,
@@ -38,6 +39,7 @@ router.post("/checkProfileName", authenticateToken, getProfileName);
 
 router.post("/create", authenticateToken, createProfile);
 router.post("/create-profile",authenticateToken,createProfileLatest)
+router.post("/duplicate-profile",authenticateToken,DuplicateProfile)
 // router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
