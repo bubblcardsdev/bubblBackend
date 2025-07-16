@@ -196,6 +196,10 @@ export default function dbModel(sequelize, Sequelize) {
     foreignKey: "deviceTypeId",
   });
 
+  DevicePatternMasters.hasMany(DeviceInventories,{foreignKey: "patternId"})
+  DeviceColorMasters.hasMany(DeviceInventories,{foreignKey:"colorId"})
+  MaterialTypeMasters.hasMany(DeviceInventories,{foreignKey:"materialTypeId"})
+
   Order.hasMany(OrderBreakDown, { foreignKey: "orderId" });
 
   Cart.belongsTo(DeviceInventories, { foreignKey: "productId" });

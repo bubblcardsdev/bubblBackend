@@ -11,7 +11,6 @@ import loggers from "../config/logger.js";
 
 import { sequelize } from "../models/index.js";
 import pkg from "lodash";
-import device from "../models/device.cjs";
 
 const { isEmpty } = pkg;
 
@@ -68,7 +67,7 @@ async function getAllDevices(req, res) {
           secondaryImage: imageUrls[1] || null,
           colors: color,
           material: device.MaterialTypeMaster.name,
-          deviceTypeId:device.deviceTypeId
+          deviceTypeId: device.deviceTypeId,
         };
       })
     );
@@ -91,24 +90,22 @@ async function getAllDevices(req, res) {
 
     removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
-    const basicTypes = [1,2,3]
+    const basicTypes = [1, 2, 3];
     const finalResponse = {
       basic: [],
-      custom:[],
-      others:[]
-    }
+      custom: [],
+      others: [],
+    };
 
-    removeDuplicates.map((record)=>{
-      if(basicTypes.includes(record.deviceTypeId)){
-        finalResponse.basic.push(record)
+    removeDuplicates.map((record) => {
+      if (basicTypes.includes(record.deviceTypeId)) {
+        finalResponse.basic.push(record);
+      } else if (record.productName.includes("Custom")) {
+        finalResponse.custom.push(record);
+      } else {
+        finalResponse.others.push(record);
       }
-      else if(record.productName.includes('Custom')){
-        finalResponse.custom.push(record)
-      }
-      else{
-        finalResponse.others.push(record)
-      }
-    })
+    });
 
     return res.json({
       success: true,
@@ -262,6 +259,146 @@ async function getProductDetails(req, res) {
   }
 }
 
+// async function getProductDetailsLatest(req, res) {
+//   const { productId } = req.body;
+
+//   const { error } = getProductId.validate(req.body, {
+//     abortEarly: true,
+//   });
+
+//   if (error) {
+//     return res.status(500).json({
+//       success: false,
+//       data: {
+//         error: error.details,
+//       },
+//     });
+//   }
+
+//   const deviceType = await model.DeviceInventories.findOne({
+//     where: { productId: productId },
+//   });
+// console.log(deviceType,"/");
+
+//   const devices = await model.DeviceInventories.findAll({
+//     where: {
+//       deviceTypeId: deviceType?.deviceTypeId,
+//     },
+//     include: [
+//       {
+//         model: model.DeviceColorMasters,
+//         attributes: ['name', 'colorCode'],
+//       },
+//       {
+//         model: model.DeviceImageInventories,
+//         attributes: ['imageKey', 'deviceId'],
+//       },
+//       {
+//         model: model.DevicePatternMasters,
+//       },
+//       {
+//         model: model.MaterialTypeMasters,
+//         attributes: ['name', 'id'],
+//       },
+//     ],
+//   });
+
+//   if (!devices || devices.length === 0) {
+//     return res.status(404).json({
+//       success: false,
+//       message: 'No devices found for this type',
+//     });
+//   }
+
+//   // Find the primary device for the requested productId
+//   const primaryImage = devices.find((e) => e.productId === productId);
+
+//   if (!primaryImage) {
+//     return res.status(404).json({
+//       success: false,
+//       message: 'Primary device not found',
+//     });
+//   }
+
+//   const colors = [];
+//   const patterns = [];
+//   const material = [];
+
+//   const materialSet = new Set();
+//   const patternSet = new Set();
+
+//   await Promise.all(
+//     devices?.map(async (device) => {
+//       const productId = device?.productId;
+//       const imageKey = device?.DeviceImageInventories?.[0]?.imageKey;
+//       const imageUrl = imageKey ? await generateSignedUrl(imageKey) : null;
+
+//       // Color
+//       const colorName = device?.DeviceColorMaster?.name;
+//       const colorCode = device?.DeviceColorMaster?.colorCode;
+//       if (colorName && colorCode) {
+//         colors.push({
+//           productId,
+//           colorCode,
+//           colorName,
+//           imageUrl,
+//         });
+//       }
+
+//       // Material
+//       const materialName = device?.MaterialTypeMaster?.name;
+//       if (materialName && !materialSet.has(materialName)) {
+//         materialSet.add(materialName);
+//         material.push({
+//           productId,
+//           materialName,
+//           imageUrl,
+//         });
+//       }
+
+//       // Pattern
+//       const patternName = device?.DevicePatternMaster?.name;
+//       if (patternName && !patternSet.has(patternName)) {
+//         patternSet.add(patternName);
+//         patterns.push({
+//           productId,
+//           patternName,
+//           imageUrl,
+//         });
+//       }
+//     })
+//   );
+
+//   // Clean primary image object and add its image URL
+//   const {
+//     // DeviceColorMaster,
+//     DeviceImageInventories,
+//     // DevicePatternMaster,
+//     // MaterialTypeMaster,
+//     ...cleanedPrimaryImage
+//   } = primaryImage.toJSON();
+
+//   const primaryImageKey = DeviceImageInventories?.[0]?.imageKey;
+//   const primaryImageUrl = primaryImageKey
+//     ? await generateSignedUrl(primaryImageKey)
+//     : null;
+
+//   const discountprice = cleanedPrimaryImage?.price * cleanedPrimaryImage?.discountAmount/100
+
+//   cleanedPrimaryImage.imageUrl = primaryImageUrl;
+
+//   const data = {
+//     productDetail: cleanedPrimaryImage,
+//     color: colors,
+//     material: material,
+//     patterns: patterns,
+//   };
+
+//   return res.status(200).json({
+//     status: 200,
+//     data: data,
+//   });
+// }
 
 async function getProductDetailsLatest(req, res) {
   const { productId } = req.body;
@@ -275,133 +412,188 @@ async function getProductDetailsLatest(req, res) {
       success: false,
       data: {
         error: error.details,
+        message: "Product Id is missing",
       },
     });
   }
-
-  const deviceType = await model.DeviceInventories.findOne({
+  const patterns = [];
+  const colors = [];
+  const materials = [];
+  // getting Current Product detail
+  const getProductDetails = await model.DeviceInventories.findOne({
     where: { productId: productId },
-  });
-console.log(deviceType,"/");
-
-  const devices = await model.DeviceInventories.findAll({
-    where: {
-      deviceTypeId: deviceType?.deviceTypeId,
-    },
+    attributes: [
+      "productId",
+      "name",
+      "shortDescription",
+      "deviceDescription",
+      ["price", "originalPrice"],
+      "discountPercentage",
+      "deviceTypeId",
+      "patternId",
+      "colorId",
+      "materialTypeId",
+      "productDetails",
+      [sequelize.col("DevicePatternMaster.name"), "pattern"],
+      [sequelize.col("DeviceColorMaster.name"), "color"],
+      [sequelize.col("DeviceColorMaster.colorCode"), "colorCode"],
+      [sequelize.col("MaterialTypeMaster.name"), "material"],
+    ],
     include: [
       {
-        model: model.DeviceColorMasters,
-        attributes: ['name', 'colorCode'],
-      },
-      {
-        model: model.DeviceImageInventories,
-        attributes: ['imageKey', 'deviceId'],
+        model: model.DeviceTypeMasters,
+        attributes: [],
       },
       {
         model: model.DevicePatternMasters,
+        attributes: [],
+      },
+      {
+        model: model.DeviceColorMasters,
+        attributes: [],
       },
       {
         model: model.MaterialTypeMasters,
-        attributes: ['name', 'id'],
+        attributes: [],
+      },
+      {
+        model: model.DeviceImageInventories,
+        attributes: ["id", ["imageKey", "imageUrl"]],
+      },
+    ],
+  });
+  const productDetail = getProductDetails.get({ plain: true });
+  const imageArray = [];
+  for (const image of productDetail.DeviceImageInventories) {
+    const signedUrl = await generateSignedUrl(image.imageUrl);
+    imageArray.push({
+      ...image,
+      imageUrl: signedUrl,
+    });
+  }
+
+  productDetail["DeviceImageInventories"] = imageArray;
+
+  const getPatternDetails = await model.DevicePatternMasters.findAll({
+    attributes: [
+      ["name", "patternName"],
+      [sequelize.col("DeviceInventories.productId"), "productId"],
+      [
+        sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+        "imageUrl",
+      ],
+    ],
+    include: [
+      {
+        model: model.DeviceInventories,
+        attributes: [],
+        where: {
+          materialTypeId: getProductDetails?.materialTypeId,
+          deviceTypeId: getProductDetails?.deviceTypeId,
+        },
+        include: {
+          model: model.DeviceImageInventories,
+          attributes: [],
+        },
       },
     ],
   });
 
-  if (!devices || devices.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'No devices found for this type',
+  for (const pattern of getPatternDetails) {
+    const plainPattern = pattern.get({ plain: true });
+    const signedUrl = await generateSignedUrl(plainPattern.imageUrl);
+    patterns.push({
+      ...plainPattern,
+      imageUrl: signedUrl,
+    });
+  }
+  const getColorDetails = await model.DeviceColorMasters.findAll({
+    attributes: [
+      ["name", "colorName"],
+      "colorCode",
+      [sequelize.col("DeviceInventories.productId"), "productId"],
+      [
+        sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+        "imageUrl",
+      ],
+    ],
+    include: [
+      {
+        model: model.DeviceInventories,
+        attributes: [],
+        where: {
+          materialTypeId: getProductDetails?.materialTypeId,
+          deviceTypeId: getProductDetails?.deviceTypeId,
+        },
+        include: {
+          model: model.DeviceImageInventories,
+          attributes: [],
+        },
+      },
+    ],
+  });
+  for (const color of getColorDetails) {
+    const plainColor = color.get({ plain: true });
+    const signedUrl = await generateSignedUrl(plainColor.imageUrl);
+    colors.push({
+      ...plainColor,
+      imageUrl: signedUrl,
     });
   }
 
-  // Find the primary device for the requested productId
-  const primaryImage = devices.find((e) => e.productId === productId);
-
-  if (!primaryImage) {
-    return res.status(404).json({
-      success: false,
-      message: 'Primary device not found',
+  const getMaterialDetails = await model.MaterialTypeMasters.findAll({
+    attributes: [
+      ["name", "materialName"],
+      [sequelize.col("DeviceInventories.productId"), "productId"],
+      [
+        sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+        "imageUrl",
+      ],
+    ],
+    include: [
+      {
+        model: model.DeviceInventories,
+        attributes: [],
+        where: {
+          deviceTypeId: getProductDetails?.deviceTypeId,
+        },
+        include: {
+          model: model.DeviceImageInventories,
+          attributes: [],
+        },
+      },
+    ],
+  });
+  for (const material of getMaterialDetails) {
+    const plainMaterial = material.get({ plain: true });
+    const signedUrl = await generateSignedUrl(plainMaterial.imageUrl);
+    materials.push({
+      ...plainMaterial,
+      imageUrl: signedUrl,
     });
   }
 
-  const colors = [];
-  const patterns = [];
-  const material = [];
-
-  const materialSet = new Set();
-  const patternSet = new Set();
-
-  await Promise.all(
-    devices?.map(async (device) => {
-      const productId = device?.productId;
-      const imageKey = device?.DeviceImageInventories?.[0]?.imageKey;
-      const imageUrl = imageKey ? await generateSignedUrl(imageKey) : null;
-
-      // Color
-      const colorName = device?.DeviceColorMaster?.name;
-      const colorCode = device?.DeviceColorMaster?.colorCode;
-      if (colorName && colorCode) {
-        colors.push({
-          productId,
-          colorCode,
-          colorName,
-          imageUrl,
-        });
-      }
-
-      // Material
-      const materialName = device?.MaterialTypeMaster?.name;
-      if (materialName && !materialSet.has(materialName)) {
-        materialSet.add(materialName);
-        material.push({
-          productId,
-          materialName,
-          imageUrl,
-        });
-      }
-
-      // Pattern
-      const patternName = device?.DevicePatternMaster?.name;
-      if (patternName && !patternSet.has(patternName)) {
-        patternSet.add(patternName);
-        patterns.push({
-          productId,
-          patternName,
-          imageUrl,
-        });
-      }
-    })
-  );
-
-  // Clean primary image object and add its image URL
-  const {
-    DeviceColorMaster,
-    DeviceImageInventories,
-    DevicePatternMaster,
-    MaterialTypeMaster,
-    ...cleanedPrimaryImage
-  } = primaryImage.toJSON();
-
-  const primaryImageKey = DeviceImageInventories?.[0]?.imageKey;
-  const primaryImageUrl = primaryImageKey
-    ? await generateSignedUrl(primaryImageKey)
-    : null;
-
-  cleanedPrimaryImage.imageUrl = primaryImageUrl;
-
-  const data = {
-    productDetail: primaryImage,
-    color: colors,
-    material: material,
-    patterns: patterns,
-  };
-
-  return res.status(200).json({
-    status: 200,
-    data: data,
+  if (!getProductDetails) {
+    return res.status(404).json({
+      success: false,
+      data: {
+        message: "Product Not Found.",
+      },
+    });
+  }
+  res.json({
+    success: true,
+    data: {
+      message: "Product Details fetched successfully",
+      data: {
+        colors,
+        patterns,
+        materials,
+        productDetail: productDetail,
+      },
+    },
   });
 }
-
 
 //#region - adding to cart in one shot
 // async function addToCart(req, res) {
@@ -795,7 +987,7 @@ async function getCart(req, res) {
         productStatus: true,
       },
       attributes: [
-        ["id","cartId"],
+        ["id", "cartId"],
         "customerId",
         "quantity",
         "productId",
@@ -805,9 +997,9 @@ async function getCart(req, res) {
       include: [
         {
           model: model.DeviceInventories,
-       attributes: {
-    exclude: ['id', 'availability', 'createdAt', 'updatedAt'],
-  },
+          attributes: {
+            exclude: ["id", "availability", "createdAt", "updatedAt"],
+          },
         },
       ],
     });
@@ -825,7 +1017,6 @@ async function getCart(req, res) {
           where: {
             id: cartVal.productId,
           },
-          
         });
 
         if (product) {
@@ -1528,5 +1719,5 @@ export {
   cancelNonUserCart,
   clearCartNonuser,
   getProductDetails,
-  getProductDetailsLatest
+  getProductDetailsLatest,
 };
