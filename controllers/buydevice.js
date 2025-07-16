@@ -410,9 +410,9 @@ async function getProductDetailsLatest(req, res) {
   if (error) {
     return res.status(500).json({
       success: false,
+       message: "Product Id is missing",
       data: {
         error: error.details,
-        message: "Product Id is missing",
       },
     });
   }
@@ -576,9 +576,7 @@ async function getProductDetailsLatest(req, res) {
   if (!getProductDetails) {
     return res.status(404).json({
       success: false,
-      data: {
-        message: "Product Not Found.",
-      },
+      message: "Product Not Found.",
     });
   }
 
