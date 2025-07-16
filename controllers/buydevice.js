@@ -581,17 +581,24 @@ async function getProductDetailsLatest(req, res) {
       },
     });
   }
+
+  const originalPrice = parseFloat(productDetail?.originalPrice || 0);
+const discountPercent = parseFloat(productDetail?.discount || 0);
+
+const discountAmount = (originalPrice * discountPercent) / 100;
+const sellingPrice = originalPrice - discountAmount;
+
+productDetail.sellingPrice = sellingPrice;
   res.json({
     success: true,
+    message: "Product Details fetched successfully",
     data: {
-      message: "Product Details fetched successfully",
-      data: {
+     
         colors,
         patterns,
         materials,
         productDetail: productDetail,
       },
-    },
   });
 }
 
