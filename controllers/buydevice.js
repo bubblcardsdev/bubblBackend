@@ -282,6 +282,7 @@ async function getProductDetailsLatest(req, res) {
   const deviceType = await model.DeviceInventories.findOne({
     where: { productId: productId },
   });
+console.log(deviceType,"/");
 
   const devices = await model.DeviceInventories.findAll({
     where: {
@@ -381,7 +382,6 @@ async function getProductDetailsLatest(req, res) {
     ...cleanedPrimaryImage
   } = primaryImage.toJSON();
 
-  // ✅ Add primary image URL
   const primaryImageKey = DeviceImageInventories?.[0]?.imageKey;
   const primaryImageUrl = primaryImageKey
     ? await generateSignedUrl(primaryImageKey)
@@ -390,7 +390,7 @@ async function getProductDetailsLatest(req, res) {
   cleanedPrimaryImage.imageUrl = primaryImageUrl;
 
   const data = {
-    productDetail: cleanedPrimaryImage,
+    productDetail: primaryImage,
     color: colors,
     material: material,
     patterns: patterns,
@@ -795,7 +795,7 @@ async function getCart(req, res) {
         productStatus: true,
       },
       attributes: [
-        "id",
+        ["id","cartId"],
         "customerId",
         "quantity",
         "productId",
@@ -805,7 +805,9 @@ async function getCart(req, res) {
       include: [
         {
           model: model.DeviceInventories,
-          // attributes: [],
+       attributes: {
+    exclude: ['id', 'availability', 'createdAt', 'updatedAt'],
+  },
         },
       ],
     });
@@ -823,6 +825,7 @@ async function getCart(req, res) {
           where: {
             id: cartVal.productId,
           },
+          
         });
 
         if (product) {
