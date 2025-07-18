@@ -25,6 +25,12 @@ const verifyLinkedinUserSchema = Joi.object({
   authorizationCode: Joi.string().required(),
 });
 
+const verifyAppleUserSchema = Joi.object({
+  authorizationCode: Joi.string().required(),
+  userIdentifier:Joi.string().optional()
+});
+
+
 const updateUserSchema = Joi.object({
   userImage: Joi.string(),
   firstName: Joi.string(),
@@ -88,5 +94,6 @@ export {
   verifyEmailSchema,
   forgotPasswordSchema,
   changePasswordSchema,
-  verifyEmailOtpSchema
+  verifyEmailOtpSchema,
+  verifyAppleUserSchema
 };

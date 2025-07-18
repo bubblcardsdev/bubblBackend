@@ -17,6 +17,7 @@ import {
   verifyEmailOtp,
   resendMailOtp,
   createUserBulkController,
+  verifyAppleUser
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -28,6 +29,7 @@ router.post("/registerBulk", createUserBulkController);
 router.post("/verifygoogleuser", verifyGoogleUser);
 router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
+router.post("/verifyappleuser", verifyAppleUser);
 router.post("/addphonenumber", addPhoneNumber);
 router.post("/resendotp", resendOtp);
 router.post("/resendMailotp", resendMailOtp);

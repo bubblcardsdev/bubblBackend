@@ -26,6 +26,11 @@ const envVarsSchema = Joi.object({
   LINKEDIN_CLIENT_ID: Joi.string().required(),
   LINKEDIN_CLIENT_SECRET: Joi.string().required(),
   LINKEDIN_REDIRECT_URI: Joi.string().required(),
+  APPLE_CLIENT_ID: Joi.string().required(),
+  APPLE_TEAM_ID: Joi.string().required(),
+  APPLE_KEY_ID: Joi.string().required(),
+  APPLE_PRIVATE_KEY: Joi.string().required(),
+  APPLE_EXCHANGE_URL: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -61,6 +66,11 @@ const config = {
   linkedinRedirectUri: envVars.LINKEDIN_REDIRECT_URI,
   paymentWorkingKey: envVars.PAYMENT_WORKING_KEY,
   paymentAccessCode: envVars.PAYMENT_ACCESS_CODE,
+  appleClientId: envVars.APPLE_CLIENT_ID,
+  appleTeamId: envVars.APPLE_TEAM_ID,
+  appleKeyId: envVars.APPLE_KEY_ID,
+  applePrivateKey: envVars.APPLE_PRIVATE_KEY,
+  appleExchangeUrl: envVars.APPLE_EXCHANGE_URL,
 };
 
 export default config;
