@@ -37,4 +37,8 @@ const addToNonUserCartSchema = Joi.object({
   email: Joi.string().email().required(),
 });
 
-export { addToCartSchema,addToNonUserCartSchema };
+const productListSchema = Joi.object({
+  id: Joi.number().required(),
+});
+
+export { addToCartSchema,addToNonUserCartSchema, productListSchema };

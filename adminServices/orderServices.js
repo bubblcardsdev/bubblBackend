@@ -58,7 +58,7 @@ async function getTotalOrderServices() {
   });
   return orderId;
 }
-
+ 
 // function for getting all true shipping Orders
 async function getShippedOrderServices() {
   const orderId = await model.Order.findAll({
@@ -111,6 +111,7 @@ async function getShippedOrderServices() {
   return orderId;
 }
 
+
 // function for getting Cont for the Orders
 async function getCountServices() {
   const orderCount = model.Order.count({ 
@@ -120,8 +121,9 @@ async function getCountServices() {
   });
   return orderCount;
 }
-// function for getting count for the pendingOrders
 
+// function for getting count for the pendingOrders
+ 
 async function PendingOrderCountServices() {
   const orders = await model.Order.findAll({
     where: {
@@ -140,7 +142,6 @@ async function PendingOrderCountServices() {
   const pendingOrderCount = pendingOrders.length;
   return pendingOrderCount;
 }
- 
 
 // get orders by orderId
 // async function getOrderByIdServices(res, orderId) {
@@ -171,8 +172,8 @@ async function PendingOrderCountServices() {
 //   const cartDetails = await model.Cart.findAll();
 //   return cartDetails;
 // }
-
-async function getOrderByIdServices(res, orderId) {
+ 
+async function getOrderByIdServices(res, orderId, userId) {
   try {
     const order = await model.Order.findAll({
       where: {
@@ -365,7 +366,7 @@ async function updateOrderStatusServices(res, userId, orderId, orderStatus) {
     });
   }
 }
-
+ 
 export {
   getTotalOrderServices,
   getCountServices,

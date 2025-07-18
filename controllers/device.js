@@ -115,8 +115,10 @@ async function deviceLink(req, res) {
 }
 
 async function updateLinkDevice(req, res) {
-  const { deviceUid, profileId } = req.body;
+  const { deviceUid, profileId, isMobile, deviceNickName } = req.body;
   const userId = req.user.id;
+  console.log(userId, "tamils");
+
   try {
     const device = await model.Device.findOne({
       where: {
@@ -202,6 +204,16 @@ async function updateLinkDevice(req, res) {
           {
             where: {
               profileId: profileId,
+            },
+          }
+        );
+      }
+      if (isMobile) {
+        await model.Device.update(
+          { deviceNickName: deviceNickName },
+          {
+            where: {
+              deviceUid: deviceUid,
             },
           }
         );
@@ -415,7 +427,7 @@ async function activateDevice(req, res) {
 }
 
 async function replaceDevice(req, res) {
-  const { deviceUid, deviceId } = req.body;
+  const { deviceUid, deviceId, deviceNickName } = req.body;
   const userId = req.user.id;
   try {
     const device = await model.Device.findOne({
@@ -459,6 +471,17 @@ async function replaceDevice(req, res) {
                   },
                 }
               );
+
+            await model.Device.update(
+              {
+                deviceNickName: deviceNickName || null,
+              },
+              {
+                where: {
+                  id: device.id,
+                },
+              }
+            );
             return res.json({
               success: true,
               message: "success",
@@ -476,12 +499,27 @@ async function replaceDevice(req, res) {
                 },
               }
             );
+            await model.Device.update(
+              {
+                deviceNickName: deviceNickName || null,
+              },
+              {
+                where: {
+                  id: device.id,
+                },
+              }
+            );
             return res.json({
               success: true,
               message: "success",
               updateDeviceLink,
             });
           }
+        } else {
+          return res.json({
+            success: false,
+            message: "Check Your Device Number, Device is not linked",
+          });
         }
       } else {
         return res.json({
@@ -554,6 +592,55 @@ async function getDeviceLink(req, res) {
   }
 }
 
+async function fetchCardDetails(req, res) {
+  const { deviceUId } = req.body;
+  try {
+    const device = await model.Device.findOne({
+      where: { deviceUId: deviceUId },
+    });
+
+    if (!device) {
+      return res.status(500).json({
+        success: false,
+        data: {
+          message: "Invalid device Id",
+        },
+      });
+    }
+
+    const accountDeviceLink = await model.AccountDeviceLink.findOne({
+      where: {
+        deviceId: device.id,
+        isDeleted: false,
+      },
+    });
+
+    if (accountDeviceLink) {
+      return res.status(500).json({
+        success: false,
+        data: {
+          message: "Device is already in use",
+        },
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        deviceType: device.deviceType,
+      },
+    });
+  } catch (error) {
+    loggers.error(error + " from fetchCardDetails function");
+    return res.status(500).json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+}
+
 export {
   deviceLink,
   deactivateDevice,
@@ -562,4 +649,5 @@ export {
   activateDevice,
   replaceDevice,
   getDeviceLink,
+  fetchCardDetails,
 };

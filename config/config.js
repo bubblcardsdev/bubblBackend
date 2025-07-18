@@ -51,6 +51,7 @@ const config = {
     host: envVars.DB_URL,
   },
   frontEndUrl: envVars.FRONTEND_URL,
+  backendUrl: envVars.BACKEND_URL,
   awsRegion: envVars.AWS_REGION,
   awsS3BucketName: envVars.AWS_S3_BUCKET_NAME,
   awsS3BucketPath: envVars.AWS_S3_BUCKET_PATH,
