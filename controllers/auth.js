@@ -1,7 +1,10 @@
 import { nanoid } from "nanoid";
 import model from "../models/index.js";
+// import got from "got"
+import jwt from "jsonwebtoken"
 import {
   generateAccessToken,
+  generateAppleClientSecret,
   generateRefreshToken,
   issueToken,
 } from "../middleware/token.js";
@@ -1093,9 +1096,197 @@ async function verifyLinkedinUser(req, res) {
   }
 }
 
-async function verifyAppleUser(req,res) {
+// async function verifyAppleUser(req,res){
 
-  
+// const { authorizationCode } = req.body;
+
+//   const { error } = verifyLinkedinUserSchema.validate(req.body, {
+//     abortEarly: false,
+//   });
+
+//   if (error) {
+//     return res.json({
+//       success: false,
+//       message:error.details
+//     });
+//   }
+
+//   const clientSecret  = generateAppleClientSecret();
+//   if (!clientSecret) return res.status(400).json({success:false,message:"errror generating client secret"})
+
+//     const params = new URLSearchParams({
+//    grant_type: 'authorization_code',
+//    code: authorizationCode,
+//    client_id: config.appleClientId,
+//    client_secret: clientSecret,
+// });
+// try{
+// const response = await got.post(`${config.appleExchangeUrl}`,params,{
+//    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+//    responseType: 'json',
+// })
+
+// const idToken = response.body.id_token;
+// const { email: payloadEmail} = jwt.decode(idToken) || {}; //sub: appleUserId 
+// const checkEmail = await model.User.findOne({
+//       where: { email: payloadEmail },
+//     });
+
+//     if (checkEmail) {
+//       const user = await model.User.create({
+//         // firstName: payloadFirstName, need to add from frontend
+//         // lastName: payloadLastName,
+//         email: payloadEmail,
+//         emailVerified: true,
+//         phoneVerified: true,
+//         apple: true,
+//         signupType: "social",
+//       });
+
+//       await model.BubblPlanManagement.create({
+//         userId: user.id,
+//         planId: 1,
+//         subscriptionType: "free",
+//       });
+//       await model.ClaimLink.create({
+//         userId: user.id,
+//       });
+//     } else {
+//       await model.User.update(
+//         { apple: true, signupType: "social", emailVerified: true },
+//         { where: { email: payloadEmail } }
+//       );
+//     }
+
+//     const checkUser = await model.User.findOne({
+//       where: { email: payloadEmail },
+//     });
+
+//     const { id, firstName, lastName, email, emailVerified } = checkUser;
+//     const user = { id, firstName, lastName, email };
+
+//     const accessToken = await generateAccessToken(user);
+//     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+//     const refreshToken = await generateRefreshToken(user);
+//     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+//     return res.json({
+//       success: true,
+//       data: {
+//         message: "Apple account verified successfully",
+//         firstName,
+//         lastName,
+//         email,
+//         emailVerified,
+//         token: {
+//           accessToken,
+//           accessTokenExpiryInSeconds,
+//           refreshToken,
+//           refreshTokenExpiryInSeconds,
+//         },
+//       },
+//     });
+
+// }
+// catch(err){
+//   res.status(500).json({success:false,message:"Internal server error",error:err})
+// }
+
+
+// }
+
+async function verifyAppleUser(req,res){
+
+const { authorizationCode } = req.body;
+
+  const { error } = verifyLinkedinUserSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.json({
+      success: false,
+      message:error.details
+    });
+  }
+
+  const clientSecret  = generateAppleClientSecret();
+  if (!clientSecret) return res.status(400).json({success:false,message:"errror generating client secret"})
+
+    const params = new URLSearchParams({
+   grant_type: 'authorization_code',
+   code: authorizationCode,
+   client_id: config.appleClientId,
+   client_secret: clientSecret,
+});
+try{
+const response = await got.post(`${config.appleExchangeUrl}`,params,{
+   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+   responseType: 'json',
+})
+
+const idToken = response.body.id_token;
+if (!idToken) {
+  return res.status(400).json({ success: false, message: "Missing ID token from Apple" });
+}
+
+const { email: payloadEmail} = jwt.decode(idToken) || {};
+ //sub: appleUserId 
+ if (!payloadEmail) {
+  return res.status(400).json({ success: false, message: "Email not available in Apple token" });
+}
+const validUser = await model.User.findOne({
+      where: { email: payloadEmail},
+    });
+   
+    if (validUser) { // user exist
+      if(!validUser?.apple){
+     const [rowsUpdated] = await model.User.update(
+  { apple: true, google: false, facebook: false, linkedin: false, local: false },
+  { where: { email } }
+);
+
+if (rowsUpdated === 0) {
+  console.warn("No user was updated");
+}  
+
+      }
+const { id, firstName, lastName, email,emailVerified } = validUser;
+const user = { id, firstName, lastName, email };
+    const accessToken = await generateAccessToken(user);
+    const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+    const refreshToken = await generateRefreshToken(user);
+    const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+    return res.json({
+      success: true,
+      data: {
+        message: "Apple account verified successfully",
+        firstName,
+        lastName,
+        email,
+        emailVerified,
+        token: {
+          accessToken,
+          accessTokenExpiryInSeconds,
+          refreshToken,
+          refreshTokenExpiryInSeconds,
+        },
+      },
+    });
+     
+    }
+    else{
+      return res.status(400).json({ success: false, message: "User does not exist" });
+    }
+
+}
+catch(err){
+  return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err?.message || err,
+    });
+}
+
 }
 
 async function updateUser(req, res) {
@@ -1155,7 +1346,6 @@ async function updateUser(req, res) {
     });
   }
 }
-
 async function addPhoneNumber(req, res) {
   const { email, countryCode, phoneNumber } = req.body;
 
@@ -1701,6 +1891,7 @@ export {
   verifyGoogleUser,
   verifyFacebookUser,
   verifyLinkedinUser,
+  verifyAppleUser,
   updateUser,
   addPhoneNumber,
   resendOtp,
