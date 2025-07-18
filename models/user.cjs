@@ -115,6 +115,11 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+       apple: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       signupType: {
         type: Sequelize.STRING,
         allowNull: false,

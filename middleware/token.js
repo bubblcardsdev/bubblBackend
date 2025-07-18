@@ -123,9 +123,27 @@ const authenticateCheckoutToken = (req, res, next) => {
   }
 };
 
+const generateAppleClientSecret = () =>{
+  const alg = {
+     algorithm: 'ES256',
+    keyid:config.appleKeyId,
+  }
+
+  const token = jwt.sign({
+    iss:config.appleTeamId,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600 * 24 * 180,
+    aud: 'https://appleid.apple.com',
+    sub:config.appleClientId
+  },config.applePrivateKey)
+
+  return token;
+}
+
 export {
   generateAccessToken,
   generateRefreshToken,
+  generateAppleClientSecret,
   issueToken,
   authenticateToken,
   authenticateCheckoutToken,
