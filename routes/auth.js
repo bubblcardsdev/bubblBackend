@@ -19,10 +19,7 @@ import {
   resendMailOtp,
   createUserMobile,
   verifyAppleUser,
-  createUserBulkController,
-  verifyAppleUser,
-  createUserMobile, 
-
+  createUserBulkController
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 import {SSE, verifyMail, sendEmail, emailVerified, sendForgetPassword} from "../helper/socket_server.js";

@@ -1904,5 +1904,4 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
-  verifyAppleUser
 };
