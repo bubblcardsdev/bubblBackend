@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import model from "../models/index.js";
-// import got from "got"
+import got from "got"
 import jwt from "jsonwebtoken"
 import {
   generateAccessToken,
