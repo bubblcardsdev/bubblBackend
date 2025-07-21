@@ -1216,6 +1216,7 @@ async function verifyAppleUser(req,res){
   getAppleSigningKey,
   {
     algorithms: ['RS256'],
+    audience:config.appleClientId,
     issuer: 'https://appleid.apple.com',
   },
 async (err, payload) => {
