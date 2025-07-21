@@ -52,8 +52,8 @@ const verifyLinkedinUserSchemaMobile = Joi.object({
 
 
 const verifyAppleUserSchema = Joi.object({
-  authorizationCode: Joi.string().required(),
-  userIdentifier:Joi.string().optional()
+  identityToken: Joi.string().required(),
+
 });
 
 
