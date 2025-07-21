@@ -1238,6 +1238,7 @@ async (err, payload) => {
         return res.status(404).json({
           success: false,
           message: 'User not found',
+          email:payload.email
         });
       }
 
