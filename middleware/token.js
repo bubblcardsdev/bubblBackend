@@ -2,6 +2,8 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import model from "../models/index.js";
+import jwksClient from 'jwks-rsa';
+
 
 const generateToken = function (user, secret, expiration) {
   return jwt.sign(user, secret, {
@@ -123,22 +125,46 @@ const authenticateCheckoutToken = (req, res, next) => {
   }
 };
 
-const generateAppleClientSecret = () =>{
-  const alg = {
-     algorithm: 'ES256',
-    keyid:config.appleKeyId,
-  }
+const generateAppleClientSecret = () => {
+  const now = Math.floor(Date.now() / 1000);
 
-  const token = jwt.sign({
-    iss:config.appleTeamId,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 3600 * 24 * 180,
+  const payload = {
+    iss: config.appleTeamId,              
+    iat: now,
+    exp: now + 3600 * 24 * 180,            
     aud: 'https://appleid.apple.com',
-    sub:config.appleClientId
-  },config.applePrivateKey)
+    sub: config.appleClientId,          
+  };
+
+  const privateKey = config.applePrivateKey.replace(/\\n/g, '\n');
+
+  const token = jwt.sign(payload, privateKey, {
+    algorithm: 'ES256',
+    keyid: config.appleKeyId,
+    header: {
+      alg: 'ES256',
+      kid: config.appleKeyId,
+    },
+  });
 
   return token;
+};
+
+
+// 1. Setup JWK client
+const client = jwksClient({
+  jwksUri: 'https://appleid.apple.com/auth/keys',
+});
+
+// 2. Function to get the correct signing key
+function getAppleSigningKey(header, callback) {
+  client.getSigningKey(header.kid, function (err, key) {
+    if (err) return callback(err);
+    const signingKey = key.getPublicKey(); // PEM format
+    callback(null, signingKey);
+  });
 }
+
 
 export {
   generateAccessToken,
@@ -147,4 +173,5 @@ export {
   issueToken,
   authenticateToken,
   authenticateCheckoutToken,
+  getAppleSigningKey
 };
