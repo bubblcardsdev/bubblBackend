@@ -1,8 +1,10 @@
 import { nanoid } from "nanoid";
 import model from "../models/index.js";
+import jwt from "jsonwebtoken"
 import {
   generateAccessToken,
   generateRefreshToken,
+  getAppleSigningKey,
   issueToken,
 } from "../middleware/token.js";
 import { sendMail } from "../middleware/email.js";
@@ -24,6 +26,7 @@ import {
   resendMailOtpSchema,
   createMobileUserSchema,
   verifyLinkedinUserSchemaMobile,
+  verifyAppleUserSchema,
 } from "../validations/auth.js";
 // import { createProfile } from "../controllers/profile.js";
 import config from "../config/config.js";
@@ -1092,7 +1095,113 @@ async function verifyLinkedinUser(req, res) {
     });
   }
 }
+async function verifyAppleUser(req,res){
+  const { identityToken } = req.body;
 
+  const { error } = verifyAppleUserSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.json({
+      success: false,
+      message:error.details
+    });
+  }
+
+  // const decoded  = jwt.decode(identityToken,{complete:true})
+
+ jwt.verify(
+  identityToken,
+  getAppleSigningKey,
+  {
+    algorithms: ['RS256'],
+    audience:config.appleClientId,
+    issuer: 'https://appleid.apple.com',
+  },
+async (err, payload) => {
+  if (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token verification failed',
+      error: err.message,
+    });
+  }
+
+  if (payload.email && payload.email_verified) {
+    try {
+      const userExist = await model.User.findOne({
+        where: { email: payload.email },
+      });
+
+      if (!userExist) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+          email:payload.email
+        });
+      }
+
+      if (!userExist.emailVerified) {
+        return res.status(403).json({
+          success: false,
+          message: 'Email is not verified',
+        });
+      }
+      
+//   if(!userExist?.apple){
+//      const [rowsUpdated] = await model.User.update(
+//   { apple: true, google: false, facebook: false, linkedin: false, local: false },
+//   { where: { email } }
+// );
+
+// if (rowsUpdated === 0) {
+//   console.warn("No user was updated");
+// }  
+//   }
+      const { id, firstName, lastName, email, emailVerified } = userExist;
+      const user = { id, firstName, lastName, email };
+
+      const accessToken = await generateAccessToken(user);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(user);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+      return res.json({
+        success: true,
+        data: {
+          message: 'Apple account verified successfully',
+          firstName,
+          lastName,
+          email,
+          emailVerified,
+          token: {
+            accessToken,
+            accessTokenExpiryInSeconds,
+            refreshToken,
+            refreshTokenExpiryInSeconds,
+          },
+        },
+      });
+    } 
+    catch (error) {
+      console.error("Apple login error:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during Apple login',
+        error: error.message,
+      });
+    }
+  } else {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is missing or not verified in token',
+    });
+  }
+}
+);
+
+}
 async function updateUser(req, res) {
   const { userImage, firstName, lastName, phoneNumber, DOB, gender, country } =
     req.body;
@@ -1706,4 +1815,5 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
+  verifyAppleUser
 };

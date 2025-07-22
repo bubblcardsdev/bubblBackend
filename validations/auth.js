@@ -43,6 +43,11 @@ const verifyLinkedinUserSchema = Joi.object({
   authorizationCode: Joi.string().required(),
   isMobile: Joi.boolean()
 });
+
+const verifyAppleUserSchema = Joi.object({
+  identityToken: Joi.string().required(),
+
+});
 const verifyLinkedinUserSchemaMobile = Joi.object({
   family_name: Joi.string().required(),
   given_name: Joi.string().required(),
@@ -127,5 +132,6 @@ export {
   createMobileUserSchema,
   verifyLinkedinUserSchemaMobile,
   sendMailSchema,
-  freeCardDesignSchema
+  freeCardDesignSchema,
+  verifyAppleUserSchema
 };
