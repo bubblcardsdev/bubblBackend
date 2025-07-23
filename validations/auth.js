@@ -18,7 +18,7 @@ const createMobileUserSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().allow(""),
   email: Joi.string().email().required(),
-  password: Joi.string().required(),
+  password: Joi.string().optional(),
   deviceID: Joi.string().default(""),
   templateId: Joi.number().required(),
   modeId: Joi.number().required(),

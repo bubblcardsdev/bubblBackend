@@ -513,7 +513,11 @@ async function createUserMobile(req, res) {
         email: emailParse,
       },
     });
-    const hashedPassword = await hashPassword(password);
+    var hashedPassword = ""
+   if(password){
+     hashedPassword = await hashPassword(password);
+
+   }
     // For new user logic
     if (!checkUser) {
       const user = await model.User.create({
