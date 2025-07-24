@@ -9,7 +9,6 @@ import {
   getNonUserCart,
   cancelNonUserCart,
   clearCartNonuser,
-  getProductDetails,
   getProductDetailsLatest
 } from "../controllers/buydevice.js";
 import { authenticateToken } from "../middleware/token.js";
@@ -17,7 +16,6 @@ import { authenticateToken } from "../middleware/token.js";
 const router = express.Router();
 
 router.get("/alldevices", getAllDevices); //changed
-// router.post("/productDetails", getProductDetails); //changed
 router.post("/productDetails", getProductDetailsLatest); //changed
 
 

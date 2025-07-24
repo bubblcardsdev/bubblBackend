@@ -23,5 +23,9 @@ module.exports = {
      * Example:
      * await queryInterface.dropTable('users');
      */
+        await queryInterface.changeColumn("Carts", "orderId", {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+    });
   },
 };
