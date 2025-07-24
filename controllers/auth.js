@@ -491,10 +491,14 @@ async function createUserMobile(req, res) {
     companyName,
     templateId,
     designation,
+    google,
+    apple,
+    linkedin,
+    local
   } = req.body;
   const { error } = createMobileUserSchema.validate(req.body, {
     abortEarly: false,
-  });
+    });
 
   if (error) {
     console.log(error);
@@ -528,6 +532,10 @@ async function createUserMobile(req, res) {
         local: true,
         phoneVerified: true,
         emailVerified: true,
+        google,
+        linkedin,
+        apple,
+        local
       });
       let createProfileMobile;
       if (user) {
