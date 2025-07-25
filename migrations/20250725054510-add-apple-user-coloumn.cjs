@@ -18,7 +18,7 @@ module.exports = {
   async down(queryInterface, Sequelize) {
     const table = await queryInterface.describeTable("Users");
 
-    if (table["colorCode"]) {
+    if (table["apple"]) {
       await queryInterface.removeColumn("Users", "apple");
     }
   },
