@@ -28,6 +28,7 @@ import {
   createMobileUserSchema,
   verifyLinkedinUserSchemaMobile,
   verifyAppleUserSchema,
+  createMobileUserSchemaIOS,
 } from "../validations/auth.js";
 // import { createProfile } from "../controllers/profile.js";
 import config from "../config/config.js";
@@ -698,7 +699,7 @@ async function createUserMobileIOS(req, res) {
     linkedin,
     local
   } = req.body;
-  const { error } = createMobileUserSchema.validate(req.body, {
+  const { error } = createMobileUserSchemaIOS.validate(req.body, {
     abortEarly: false,
     });
 
