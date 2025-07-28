@@ -14,8 +14,21 @@ const createUserSchema = Joi.object({
   deviceID: Joi.string().default(""),
 });
 
-
 const createMobileUserSchema = Joi.object({
+  firstName: Joi.string().required(),
+  lastName: Joi.string().allow(""),
+  email: Joi.string().email().required(),
+  password: Joi.string().optional(), 
+  deviceID: Joi.string().default(""),
+  templateId: Joi.number().required(),
+  modeId: Joi.number().required(),
+  companyName: Joi.string().required().allow(""),
+  phoneNumber: Joi.string().required(),
+  countryCode: Joi.string().required(),
+  profileName: Joi.string().required(),
+  designation: Joi.string().required().allow(""),
+})
+const createMobileUserSchemaIOS = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().allow(""),
   email: Joi.string().email().required(),
@@ -160,5 +173,6 @@ export {
   createMobileUserSchema,
   verifyLinkedinUserSchemaMobile,
   sendMailSchema,
-  freeCardDesignSchema
+  freeCardDesignSchema,
+  createMobileUserSchemaIOS
 };
