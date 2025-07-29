@@ -1,6 +1,8 @@
 /* eslint-disable no-useless-catch */
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
+import jwksClient from 'jwks-rsa';
+
 
 const generateToken = function (user, secret, expiration) {
   return jwt.sign(user, secret, {
@@ -74,9 +76,23 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+const client = jwksClient({
+  jwksUri: 'https://appleid.apple.com/auth/keys',
+});
+
+// 2. Function to get the correct signing key
+function getAppleSigningKey(header, callback) {
+  client.getSigningKey(header.kid, function (err, key) {
+    if (err) return callback(err);
+    const signingKey = key.getPublicKey(); // PEM format
+    callback(null, signingKey);
+  });
+}
+
 export {
   generateAccessToken,
   generateRefreshToken,
   issueToken,
   authenticateToken,
+  getAppleSigningKey
 };

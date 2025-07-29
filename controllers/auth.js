@@ -1,8 +1,10 @@
 import { nanoid } from "nanoid";
 import model from "../models/index.js";
+import jwt from "jsonwebtoken"
 import {
   generateAccessToken,
   generateRefreshToken,
+  getAppleSigningKey,
   issueToken,
 } from "../middleware/token.js";
 import { sendMail } from "../middleware/email.js";
@@ -24,6 +26,8 @@ import {
   resendMailOtpSchema,
   createMobileUserSchema,
   verifyLinkedinUserSchemaMobile,
+  verifyAppleUserSchema,
+  createMobileUserSchemaIOS,
 } from "../validations/auth.js";
 // import { createProfile } from "../controllers/profile.js";
 import config from "../config/config.js";
@@ -677,6 +681,221 @@ async function createUserMobile(req, res) {
   }
 }
 
+async function createUserMobileIOS(req, res) {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    profileName,
+    phoneNumber,
+    countryCode,
+    companyName,
+    templateId,
+    designation,
+    google,
+    apple,
+    linkedin,
+    local
+  } = req.body;
+  const { error } = createMobileUserSchemaIOS.validate(req.body, {
+    abortEarly: false,
+    });
+
+  if (error) {
+    console.log(error);
+    return res.json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+  const emailParse = email.toLowerCase();
+
+  try {
+    const checkUser = await model.User.findOne({
+      where: {
+        email: emailParse,
+      },
+    });
+    var hashedPassword = ""
+   if(password){
+     hashedPassword = await hashPassword(password);
+
+   }
+    // For new user logic
+    if (!checkUser) {
+      const user = await model.User.create({
+        firstName: firstName,
+        lastName: lastName,
+        email: emailParse,
+        password: hashedPassword,
+        local: true,
+        phoneVerified: true,
+        emailVerified: true,
+        google,
+        linkedin,
+        apple,
+        local
+      });
+      let createProfileMobile;
+      if (user) {
+        await model.BubblPlanManagement.create({
+          userId: user.id,
+          planId: 1,
+          subscriptionType: "free",
+          isValid: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        await model.ClaimLink.create({
+          userId: user.id,
+        });
+        await model.UniqueNameDeviceLink.create({
+          userId: user.id,
+        });
+        const userId = user.id;
+        createProfileMobile = await MobileOnboardingProfileCreate(
+          firstName,
+          lastName,
+          email,
+          profileName,
+          phoneNumber,
+          countryCode,
+          companyName,
+          templateId,
+          designation,
+          userId
+        );
+      }
+
+      const userInfo = {
+        id: user.id,
+        firstName,
+        lastName,
+        email,
+      };
+
+      const accessToken = await generateAccessToken(userInfo);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(userInfo);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+      return res.json({
+        success: true,
+        data: {
+          message: "User and Profile created successfully",
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phoneVerified: user.phoneVerified,
+          emailVerified: user.emailVerified,
+          local: user.local,
+          signupType: user.signupType,
+          profileId: createProfileMobile && createProfileMobile.id,
+          verifying: true,
+          accessToken: accessToken,
+          accessTokenExpiryInSeconds: accessTokenExpiryInSeconds,
+          refreshToken: refreshToken,
+          refreshTokenExpiryInSeconds: refreshTokenExpiryInSeconds,
+        },
+      });
+    }
+    // For existing user logics
+    else {
+      // check profile available for the existing user
+      const checkProfile = await model.Profile.findOne({
+        where: { userId: checkUser.id },
+      });
+
+      // throw error if user and the profile is already exist
+      if (checkProfile) {
+        return res.json({
+          success: false,
+          data: {
+            message: "Email and profile already exists",
+            phoneVerified: checkUser.phoneVerified,
+            emailVerified: checkUser.emailVerified,
+          },
+        });
+      }
+
+      // update user details and create profile
+      const userId = checkUser.id;
+      await model.User.update(
+        {
+          password: hashedPassword,
+        },
+        { where: { id: userId } }
+      );
+      const createProfileMobile = await MobileOnboardingProfileCreate(
+        firstName,
+        lastName,
+        email,
+        profileName,
+        phoneNumber,
+        countryCode,
+        companyName,
+        templateId,
+        designation,
+        userId
+      );
+
+      const userInfo = {
+        id: checkUser.id,
+        firstName,
+        lastName,
+        email,
+      };
+
+      const accessToken = await generateAccessToken(userInfo);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(userInfo);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+      return res.json({
+        success: true,
+        data: {
+          message:
+            "Profile created successfully and User password updated successfully",
+          firstName: createProfileMobile.firstName,
+          lastName: createProfileMobile.lastName,
+          email: checkUser.email,
+          phoneVerified: checkUser.phoneVerified,
+          emailVerified: checkUser.emailVerified,
+          local: checkUser.local,
+          signupType: checkUser.signupType,
+          profileId: createProfileMobile.id,
+          verifying: false,
+          accessToken: accessToken,
+          accessTokenExpiryInSeconds: accessTokenExpiryInSeconds,
+          refreshToken: refreshToken,
+          refreshTokenExpiryInSeconds: refreshTokenExpiryInSeconds,
+        },
+      });
+    }
+  } catch (error) {
+    loggers.error(error + "from createUser function");
+    if (error instanceof UniqueConstraintError) {
+      await model.User.findOne({ where: { email } });
+      return res.json({
+        success: false,
+        data: {
+          message: `${error.errors[0].path} already exists`,
+        },
+      });
+    }
+    return res.json({
+      success: false,
+      data: {
+        error,
+      },
+    });
+  }
+}
+
+
 async function verifyGoogleUser(req, res) {
   const { credential, isMobile } = req.body;
 
@@ -1092,7 +1311,113 @@ async function verifyLinkedinUser(req, res) {
     });
   }
 }
+async function verifyAppleUser(req,res){
+  const { identityToken } = req.body;
 
+  const { error } = verifyAppleUserSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.json({
+      success: false,
+      message:error.details
+    });
+  }
+
+  // const decoded  = jwt.decode(identityToken,{complete:true})
+
+ jwt.verify(
+  identityToken,
+  getAppleSigningKey,
+  {
+    algorithms: ['RS256'],
+    audience:config.appleClientId,
+    issuer: 'https://appleid.apple.com',
+  },
+async (err, payload) => {
+  if (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token verification failed',
+      error: err.message,
+    });
+  }
+
+  if (payload.email && payload.email_verified) {
+    try {
+      const userExist = await model.User.findOne({
+        where: { email: payload.email },
+      });
+
+      if (!userExist) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+          email:payload.email
+        });
+      }
+
+      if (!userExist.emailVerified) {
+        return res.status(403).json({
+          success: false,
+          message: 'Email is not verified',
+        });
+      }
+      
+//   if(!userExist?.apple){
+//      const [rowsUpdated] = await model.User.update(
+//   { apple: true, google: false, facebook: false, linkedin: false, local: false },
+//   { where: { email } }
+// );
+
+// if (rowsUpdated === 0) {
+//   console.warn("No user was updated");
+// }  
+//   }
+      const { id, firstName, lastName, email, emailVerified } = userExist;
+      const user = { id, firstName, lastName, email };
+
+      const accessToken = await generateAccessToken(user);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(user);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+      return res.json({
+        success: true,
+        data: {
+          message: 'Apple account verified successfully',
+          firstName,
+          lastName,
+          email,
+          emailVerified,
+          token: {
+            accessToken,
+            accessTokenExpiryInSeconds,
+            refreshToken,
+            refreshTokenExpiryInSeconds,
+          },
+        },
+      });
+    } 
+    catch (error) {
+      console.error("Apple login error:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during Apple login',
+        error: error.message,
+      });
+    }
+  } else {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is missing or not verified in token',
+    });
+  }
+}
+);
+
+}
 async function updateUser(req, res) {
   const { userImage, firstName, lastName, phoneNumber, DOB, gender, country } =
     req.body;
@@ -1706,4 +2031,6 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
+  verifyAppleUser,
+  createUserMobileIOS
 };

@@ -18,6 +18,8 @@ import {
   verifyEmailOtp,
   resendMailOtp,
   createUserMobile, 
+  verifyAppleUser,
+  createUserMobileIOS
 
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
@@ -33,9 +35,11 @@ router.get("/email-verified",emailVerified);
 router.post("/token", issueNewToken);
 router.post("/register", createUser);
 router.post("/registerMobile", createUserMobile);
+router.post("/registerMobileIos", createUserMobileIOS);
 router.post("/verifygoogleuser", verifyGoogleUser);
 router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
+router.post("/verifyappleuser", verifyAppleUser);
 router.post("/addphonenumber", addPhoneNumber);
 router.post("/resendotp", resendOtp);
 router.post("/resendMailotp", resendMailOtp);
