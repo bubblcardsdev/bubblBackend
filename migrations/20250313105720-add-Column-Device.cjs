@@ -11,7 +11,7 @@ module.exports = {
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
     const table = await queryInterface.describeTable("Devices");
-    if(table["deviceNickName"]){
+    if(!table["deviceNickName"]){
       queryInterface.addColumn("Devices", "deviceNickName", {
       type: Sequelize.STRING
     });
