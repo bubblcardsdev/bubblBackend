@@ -8,7 +8,7 @@ const loginSchema = Joi.object({
 
 const createUserSchema = Joi.object({
   firstName: Joi.string().required(),
-  lastName: Joi.string(),
+  lastName: Joi.string().allow(""),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   deviceID: Joi.string().default(""),
@@ -37,7 +37,7 @@ const createMobileUserSchemaIOS = Joi.object({
   templateId: Joi.number().required(),
   modeId: Joi.number().required(),
   companyName: Joi.string().required().allow(""),
-  phoneNumber: Joi.string().required(),
+  phoneNumber: Joi.string().optional(),
   countryCode: Joi.string().required(),
   profileName: Joi.string().required(),
   designation: Joi.string().required().allow(""),
