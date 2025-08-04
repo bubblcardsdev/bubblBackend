@@ -12,6 +12,11 @@ const createUserSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   deviceID: Joi.string().default(""),
+   companyName:Joi.string().optional(),
+  phoneNumber:Joi.string().optional(),
+  templateId:Joi.number().required(),
+  role:Joi.string().optional(),
+  profileName:Joi.string().optional(),
 });
 
 const createMobileUserSchema = Joi.object({
