@@ -259,7 +259,7 @@ async function login(req, res) {
 }
 
 async function createUser(req, res) {
-  const { firstName, lastName, email, password, deviceID } = req.body;
+  const { firstName, lastName, email, password, deviceID,profileName,role,templateId,phoneNumber,companyName } = req.body;
   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
 
   if (error) {
@@ -291,7 +291,7 @@ async function createUser(req, res) {
       });
     }
     const hashedPassword = await hashPassword(password);
-
+var userId =null
     const user = await model.User.create({
       firstName: firstName,
       lastName: lastName,
@@ -301,7 +301,9 @@ async function createUser(req, res) {
       local: true,
       phoneVerified: true,
     });
+
     if (user) {
+      userId =user.id
       await model.BubblPlanManagement.create({
         userId: user.id,
         planId: 1,
@@ -357,11 +359,54 @@ async function createUser(req, res) {
 
     <p>The Bubbl.cards Team</p>`;
 
+    const profile = await model.Profile.findOne({
+    where: {
+      profileName,
+      userId,
+    },
+  });
+
+  if (profile) {
+    return res.status(400).json({
+    success: false,
+    data: { message: "Profile name already exists" },
+  });
+  }
+
+  const create = await model.Profile.create({
+    userId: userId,
+    profileName: profileName,
+    firstName: firstName,
+    lastName: lastName,
+    designation: role,
+    companyName: companyName,
+    templateId: templateId,
+  });
+
+  if (create) {
+    await model.ProfilePhoneNumber.create({
+      profileId: create.id,
+      phoneNumber: phoneNumber,
+      phoneNumberType: "",
+      countryCode: "+91",
+      checkBoxStatus: true,
+      activeStatus: true,
+    });
+    await model.ProfileEmail.create({
+      profileId: create.id,
+      emailId: email,
+      emailType: profileName,
+      checkBoxStatus: true,
+      activeStatus: true,
+    });
+  }
+    // return create;
     await sendMail(emailParse, subject, emailMessage);
+
     return res.json({
       success: true,
       data: {
-        message: "User created successfully",
+        message: "User and profile created successfully",
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
