@@ -257,13 +257,12 @@ async function login(req, res) {
     });
   }
 }
-
 async function createUser(req, res) {
-  const { firstName, lastName, email, password, deviceID,profileName,role,templateId,phoneNumber,companyName } = req.body;
+  const { firstName, lastName, email, password, deviceID } = req.body;
   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
 
   if (error) {
-    return res.status(400).json({
+    return res.json({
       success: false,
       data: {
         error: error.details,
@@ -281,7 +280,7 @@ async function createUser(req, res) {
     });
 
     if (checkUser) {
-      return res.status(400).json({
+      return res.json({
         success: false,
         data: {
           message: "Email already exists",
@@ -291,7 +290,7 @@ async function createUser(req, res) {
       });
     }
     const hashedPassword = await hashPassword(password);
-var userId =null
+
     const user = await model.User.create({
       firstName: firstName,
       lastName: lastName,
@@ -301,9 +300,7 @@ var userId =null
       local: true,
       phoneVerified: true,
     });
-
     if (user) {
-      userId =user.id
       await model.BubblPlanManagement.create({
         userId: user.id,
         planId: 1,
@@ -322,24 +319,6 @@ var userId =null
     const otp = generateOtp();
 
     await model.User.update({ otp }, { where: { email } });
-
-    //aws issue removed email content
-    //<p>To verify your Bubbl registration email please click this <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}">link</a>.</p>
-
-    // const subject = "Bubbl Registration";
-    // const emailMessage = `
-
-    // <h2>Dear <strong>${firstName}</strong>,</h2>
-
-    // <p>Thank you for registering with Bubbl.cards! We are thrilled to have you on board and can't wait for you to experience the ease and convenience of our touch-enabled tech essentials.</p>
-
-    // <p>Please use the link given below to verify your account and start exploring our range of cutting-edge products.</p>
-
-    // <p>Verification Link: <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}?deviceID=${deviceID}">link</a>.</p>
-
-    // <p>Best regards,</p>
-
-    // <p>The Bubbl.cards team.</p>`;
     const subject = `Welcome to Bubbl.cards – Let’s Get Started!`;
     const emailMessage = `
 
@@ -359,54 +338,11 @@ var userId =null
 
     <p>The Bubbl.cards Team</p>`;
 
-    const profile = await model.Profile.findOne({
-    where: {
-      profileName,
-      userId,
-    },
-  });
-
-  if (profile) {
-    return res.status(400).json({
-    success: false,
-    data: { message: "Profile name already exists" },
-  });
-  }
-
-  const create = await model.Profile.create({
-    userId: userId,
-    profileName: profileName,
-    firstName: firstName,
-    lastName: lastName,
-    designation: role,
-    companyName: companyName,
-    templateId: templateId,
-  });
-
-  if (create) {
-    await model.ProfilePhoneNumber.create({
-      profileId: create.id,
-      phoneNumber: phoneNumber,
-      phoneNumberType: "",
-      countryCode: "+91",
-      checkBoxStatus: true,
-      activeStatus: true,
-    });
-    await model.ProfileEmail.create({
-      profileId: create.id,
-      emailId: email,
-      emailType: profileName,
-      checkBoxStatus: true,
-      activeStatus: true,
-    });
-  }
-    // return create;
     await sendMail(emailParse, subject, emailMessage);
-
     return res.json({
       success: true,
       data: {
-        message: "User and profile created successfully",
+        message: "User created successfully",
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -421,14 +357,14 @@ var userId =null
     loggers.error(error + "from createUser function");
     if (error instanceof UniqueConstraintError) {
       await model.User.findOne({ where: { email } });
-      return res.status(500).json({
+      return res.json({
         success: false,
         data: {
           message: `${error.errors[0].path} already exists`,
         },
       });
     }
-    return res.status(400).json({
+    return res.json({
       success: false,
       data: {
         error,
@@ -436,6 +372,184 @@ var userId =null
     });
   }
 }
+// async function createUser(req, res) {   
+//   const { firstName, lastName, email, password, deviceID,profileName,role,templateId,phoneNumber,companyName } = req.body;
+//   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
+
+//   if (error) {
+//     return res.status(400).json({
+//       success: false,
+//       data: {
+//         error: error.details,
+//       },
+//     });
+//   }
+//   const emailParse = email.toLowerCase();
+//   const emailVerificationId = nanoid();
+
+//   try {
+//     const checkUser = await model.User.findOne({
+//       where: {
+//         email: emailParse,
+//       },
+//     });
+
+//     if (checkUser) {
+//       return res.status(400).json({
+//         success: false,
+//         data: {
+//           message: "Email already exists",
+//           phoneVerified: checkUser.phoneVerified,
+//           emailVerified: checkUser.emailVerified,
+//         },
+//       });
+//     }
+//     const hashedPassword = await hashPassword(password);
+// var userId =null
+//     const user = await model.User.create({
+//       firstName: firstName,
+//       lastName: lastName,
+//       email: emailParse,
+//       password: hashedPassword,
+//       emailVerificationId: emailVerificationId,
+//       local: true,
+//       phoneVerified: true,
+//     });
+
+//     if (user) {
+//       userId =user.id
+//       await model.BubblPlanManagement.create({
+//         userId: user.id,
+//         planId: 1,
+//         subscriptionType: "free",
+//         isValid: false,
+//         createdAt: new Date(),
+//         updatedAt: new Date(),
+//       });
+//       await model.ClaimLink.create({
+//         userId: user.id,
+//       });
+//       await model.UniqueNameDeviceLink.create({
+//         userId: user.id,
+//       });
+//     }
+//     const otp = generateOtp();
+
+//     await model.User.update({ otp }, { where: { email } });
+
+//     //aws issue removed email content
+//     //<p>To verify your Bubbl registration email please click this <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}">link</a>.</p>
+
+//     // const subject = "Bubbl Registration";
+//     // const emailMessage = `
+
+//     // <h2>Dear <strong>${firstName}</strong>,</h2>
+
+//     // <p>Thank you for registering with Bubbl.cards! We are thrilled to have you on board and can't wait for you to experience the ease and convenience of our touch-enabled tech essentials.</p>
+
+//     // <p>Please use the link given below to verify your account and start exploring our range of cutting-edge products.</p>
+
+//     // <p>Verification Link: <a target="_blank" href="${config.frontEndUrl}/verify/${emailVerificationId}?deviceID=${deviceID}">link</a>.</p>
+
+//     // <p>Best regards,</p>
+
+//     // <p>The Bubbl.cards team.</p>`;
+//     const subject = `Welcome to Bubbl.cards – Let’s Get Started!`;
+//     const emailMessage = `
+
+//     <h2>Hello <strong>${firstName}</strong>,</h2>
+
+//     <p>Welcome to Bubbl.cards! We’re thrilled to have you with us and can’t wait for you to experience the future of networking with our innovative digital business cards.</p>
+
+//     <p>To finish your account setup simply enter the verification OTP below.  <strong>${otp}</strong></p>
+
+//     <p>Once verified, you can complete your profile setup!</p>
+
+//     <p>Check out our range of bubbl products and discover how we can streamline and enhance your professional connections today!</p>
+
+//     <p>Should you have any questions or need support, our team is here for you. Welcome to the future of Networking!</p>
+
+//     <p>Best wishes,</p>
+
+//     <p>The Bubbl.cards Team</p>`;
+
+//     const profile = await model.Profile.findOne({
+//     where: {
+//       profileName,
+//       userId,
+//     },
+//   });
+
+//   if (profile) {
+//     return res.status(400).json({
+//     success: false,
+//     data: { message: "Profile name already exists" },
+//   });
+//   }
+
+//   const create = await model.Profile.create({
+//     userId: userId,
+//     profileName: profileName,
+//     firstName: firstName,
+//     lastName: lastName,
+//     designation: role,
+//     companyName: companyName,
+//     templateId: templateId,
+//   });
+
+//   if (create) {
+//     await model.ProfilePhoneNumber.create({
+//       profileId: create.id,
+//       phoneNumber: phoneNumber,
+//       phoneNumberType: "",
+//       countryCode: "+91", // cc should be come from frontend
+//       checkBoxStatus: true,
+//       activeStatus: true,
+//     });
+//     await model.ProfileEmail.create({
+//       profileId: create.id,
+//       emailId: email,
+//       emailType: profileName,
+//       checkBoxStatus: true,
+//       activeStatus: true,
+//     });
+//   }
+//     // return create;
+//     await sendMail(emailParse, subject, emailMessage);
+
+//     return res.json({
+//       success: true,
+//       data: {
+//         message: "User and profile created successfully",
+//         firstName: user.firstName,
+//         lastName: user.lastName,
+//         email: user.email,
+//         phoneVerified: user.phoneVerified,
+//         emailVerified: user.emailVerified,
+//         local: user.local,
+//         signupType: user.signupType,
+//       },
+//     });
+//   } catch (error) {
+//     console.log(error.message, "ee");
+//     loggers.error(error + "from createUser function");
+//     if (error instanceof UniqueConstraintError) {
+//       await model.User.findOne({ where: { email } });
+//       return res.status(500).json({
+//         success: false,
+//         data: {
+//           message: `${error.errors[0].path} already exists`,
+//         },
+//       });
+//     }
+//     return res.status(400).json({
+//       success: false,
+//       data: {
+//         error,
+//       },
+//     });
+//   }
+// }
 
 async function createUser2(firstName, lastName, email, password) {
   try {
