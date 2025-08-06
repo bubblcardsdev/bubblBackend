@@ -28,7 +28,8 @@ import {
   // findAllProfilesForMobile,
   findAllProfilesForMob,
   createProfileLatest,
-  updateProfileLatest
+  updateProfileLatest,
+  getProfileByUid
 } from "../controllers/profile.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -37,7 +38,7 @@ const router = express.Router();
 
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
-router.post("/create", authenticateToken, createProfile);
+// router.post("/create", authenticateToken, createProfile);
 router.post("/create-profile",authenticateToken,createProfileLatest)
 router.post("/duplicate-profile",authenticateToken,DuplicateProfile)
 // router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
@@ -52,6 +53,8 @@ router.put("/update-profile", authenticateToken, updateProfileLatest);
 
 router.post("/find", authenticateToken, getProfile);
 router.post("/findOne", authenticateToken, getProfileOne);
+router.post("/getProfileByUid", authenticateToken, getProfileByUid);
+
 // router.get("/one", authenticateToken, getProfileOne);
 router.put("/changeProfile", authenticateToken, changeProfile);
 router.put("/deletephone", authenticateToken, phoneNumberDelete);

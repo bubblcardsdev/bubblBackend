@@ -92,14 +92,14 @@ async function deviceLink(req, res) {
             });
           }
         } else {
-          return res.json({
+          return res.status(400).json({
             success: false,
             message: "device is already linked to another user",
           });
         }
       }
     } else {
-      return res.json({
+      return res.status(404).json({
         success: false,
         message: "Device not found",
       });
@@ -107,7 +107,7 @@ async function deviceLink(req, res) {
   } catch (error) {
     console.log(error);
     loggers.error(error + "from deviceLink function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error,
     });
@@ -132,7 +132,7 @@ async function updateLinkDevice(req, res) {
       },
     });
     if (profile === null) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: "Profile not exists",
       });
@@ -226,7 +226,7 @@ async function updateLinkDevice(req, res) {
   } catch (error) {
     console.log(error);
     loggers.error(error + "from updateLinkDevice function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error,
     });
@@ -263,18 +263,18 @@ async function deactivateDevice(req, res) {
           message: "Device Deactivated",
         });
       } else {
-        return res.json({
+        return res.status(400).json({
           success: false,
           message: "Device is not active",
         });
       }
     } else {
-      return res.json({ success: false, message: "Profile mismatch" });
+      return res.status(400).json({ success: false, message: "Profile mismatch" });
     }
   } catch (error) {
     console.log(error);
     loggers.error(error + "from deactivateDevice function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error,
     });
@@ -357,13 +357,13 @@ async function deleteDevice(req, res) {
           });
         }
       } else {
-        return res.json({
+        return res.status(404).json({
           success: false,
           message: "Device not found",
         });
       }
     } else {
-      return res.json({
+      return res.status(404).json({
         success: false,
         message: "Device not found",
       });
@@ -371,7 +371,7 @@ async function deleteDevice(req, res) {
   } catch (error) {
     console.log(error);
     loggers.error(error + "from deleteDevice function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: error,
     });

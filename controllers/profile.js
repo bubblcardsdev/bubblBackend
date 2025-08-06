@@ -1629,6 +1629,7 @@ async function findAllProfiles(req, res) {
         "designation",
         "companyName",
         "address",
+        "profileUid"
       ],
       include: [
         {
@@ -2483,6 +2484,177 @@ async function getProfileOne(req, res) {
     });
   }
 }
+
+async function getProfileByUid(req, res) {
+  const { profileUid, deviceLinkId } = req.body;
+  const userId = req.user.id;
+
+  try {
+    // Fetch the profile using profileUid and userId
+    const profile = await model.Profile.findOne({
+      where: {
+        profileUid: profileUid,
+        userId: userId,
+      },
+      include: [
+        {
+          model: model.DeviceLink,
+          where: deviceLinkId ? { id: deviceLinkId } : undefined,
+          required: false,
+          include: [
+            {
+              model: model.Template,
+              attributes: { exclude: ["createdAt", "updatedAt"] },
+            },
+            {
+              model: model.Mode,
+              attributes: { exclude: ["createdAt", "updatedAt"] },
+            },
+          ],
+        },
+        {
+          model: model.Template,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.Mode,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.ProfilePhoneNumber,
+          as: "profilePhoneNumbers",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.ProfileEmail,
+          as: "profileEmails",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.ProfileWebsite,
+          as: "profileWebsites",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.ProfileSocialMediaLink,
+          as: "profileSocialMediaLinks",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.ProfileDigitalPaymentLink,
+          as: "profileDigitalPaymentLinks",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+      ],
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        data: {
+          message: "Unable to find profile",
+        },
+      });
+    }
+
+    // Sign branding image
+    const brandImgPath = profile.dataValues.brandingLogo;
+    if (brandImgPath !== "") {
+      const SignedImage = await generateSignedUrl(brandImgPath);
+      profile.dataValues.brandingLogo = SignedImage;
+    }
+
+    // Deduplicate and reverse links
+    profile.profileSocialMediaLinks.reverse();
+    profile.profileDigitalPaymentLinks.reverse();
+
+    const uniqueSocialLinks = [];
+    const uniquePaymentLinks = [];
+
+    if (profile?.profileSocialMediaLinks?.length) {
+      for (const link of profile.profileSocialMediaLinks) {
+        if (
+          !uniqueSocialLinks.some(
+            (a) => a.profileSocialMediaId === link.profileSocialMediaId
+          )
+        ) {
+          uniqueSocialLinks.push(link);
+        }
+      }
+    }
+
+    if (profile?.profileDigitalPaymentLinks?.length) {
+      for (const link of profile.profileDigitalPaymentLinks) {
+        if (
+          !uniquePaymentLinks.some(
+            (a) => a.profileDigitalPaymentsId === link.profileDigitalPaymentsId
+          )
+        ) {
+          uniquePaymentLinks.push(link);
+        }
+      }
+    }
+
+    profile.setDataValue("profileSocialMediaLinks", uniqueSocialLinks);
+    profile.setDataValue("profileDigitalPaymentLinks", uniquePaymentLinks);
+
+    // Fetch device branding
+    const deviceBranding = await model.DeviceBranding.findAll({
+      where: {
+        profileId: profile.id,
+        ...(deviceLinkId && { deviceLinkId }),
+        brandingBackGroundColor: { [Op.ne]: "" },
+      },
+    });
+
+    // Fetch profile images
+    const profileImgs = await model.ProfileImages.findAll({
+      where: { profileId: profile.id },
+    });
+
+    // Get deviceUid if possible
+    let deviceUid;
+    const checkDeviceLinkId = await model.DeviceLink.findOne({
+      where: {
+        profileId: profile.id,
+        ...(deviceLinkId && { id: deviceLinkId }),
+      },
+    });
+
+    if (checkDeviceLinkId) {
+      const checkAccountId = await model.AccountDeviceLink.findOne({
+        where: { id: checkDeviceLinkId.accountDeviceLinkId },
+      });
+
+      if (checkAccountId) {
+        deviceUid = await model.Device.findOne({
+          where: { id: checkAccountId.deviceId },
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        message: "Profile found",
+        profile,
+        profileImgs,
+        deviceBranding,
+        deviceUid,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    loggers.error(error + " from getProfileByUid");
+    return res.status(500).json({
+      success: false,
+      data: {
+        message: error.message,
+      },
+    });
+  }
+}
+
 
 async function changeProfile(req, res) {
   const userId = req.user.id;
@@ -3709,5 +3881,6 @@ export {
   getProfileOne,
   findAllProfilesForMob,
   createProfileLatest,
-  DuplicateProfile
+  DuplicateProfile,
+  getProfileByUid
 };
