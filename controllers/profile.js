@@ -208,16 +208,32 @@ async function createProfileLatest(req, res) {
     }
 
     const planId = bubblPlan.planId;
-    const limit = planId === 1 ? 2 : 5;
 
-    const profileCount = await model.Profile.count({ where: { userId } });
+let limit = 5;
+let customMessage = "You've reached your profile limit.";
 
-    if (profileCount >= limit) {
-      return res.status(400).json({
-        success: false,
-        message: "You have already reached your profile limit",
-      });
-    }
+// Free plan logic
+if (planId === 1) {
+  const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
+
+  if (isDeviceLinked < 1) {
+    limit = 1;
+    customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
+  } else {
+    limit = 2;
+    customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
+  }
+}
+
+const profileCount = await model.Profile.count({ where: { userId } });
+
+if (profileCount >= limit) {
+  return res.status(400).json({
+    success: false,
+    message: customMessage,
+  });
+}
+
 
     // 4. Create Profile
     const newProfile = await model.Profile.create(profileDetails);
