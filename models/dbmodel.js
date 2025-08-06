@@ -50,6 +50,7 @@ import _deviceTypeMasters from "./devicetypemaster.cjs";
 import _orderStatusMasters from "./orderstatusmaster.cjs";
 import _orderBreakDown from "./orderbreakdown.cjs";
 import _fontMaster from "./customfontmaster.cjs";
+import _supportForm from "./supportForm.cjs"
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -85,6 +86,7 @@ export default function dbModel(sequelize, Sequelize) {
   const ClaimLink = _claimlink(sequelize, Sequelize);
   const ContactUs = _contact(sequelize, Sequelize);
   const NewsLetter = _news(sequelize, Sequelize);
+  const SupportForm = _supportForm(sequelize,Sequelize)
   const Analytics = _analytis(sequelize, Sequelize);
   const ShippingCharge = _shippingcharge(sequelize, Sequelize);
   const Admin = _admin(sequelize, Sequelize);
@@ -237,6 +239,7 @@ export default function dbModel(sequelize, Sequelize) {
     ClaimLink,
     ContactUs,
     NewsLetter,
+    SupportForm,
     Analytics,
     ShippingCharge,
     Admin,

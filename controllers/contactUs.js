@@ -1,6 +1,7 @@
 import loggers from "../config/logger.js";
 import { sendMail } from "../middleware/email.js";
 import model from "../models/index.js";
+import {supportFormSchema} from "../validations/supportForms.js"
 
 async function contactUs(req, res) {
   const { name, emailId, phoneNumber, question, message, isRead } = req.body;
@@ -71,4 +72,65 @@ async function NewsLetter(req, res) {
   }
 }
 
-export { contactUs, NewsLetter };
+async function supportForm(req, res) {
+
+   const { error } = supportFormSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      data: {
+        error: error.details,
+      },
+    });
+  }
+  const { firstName,lastName, emailId, phoneNumber, message} = req.body;
+
+
+  try {
+    const createContactUs = await model.SupportForm.create({
+      firstName,
+      lastName,
+      emailId,
+      phoneNumber,
+      message,
+    });
+    if(createContactUs) {
+      const subject = "Bubbl Contact Us - En-query";
+      const emailMessage = `
+  
+      <h2>Hey</strong>,</h2>
+  
+      <p> We have received a new query from ${firstName} ${lastName}</p>
+  
+      <p>Regarding ${message} </p>
+  
+      <p>Contact details: </p>
+      <p>Name ${firstName}</p>
+      <p>Contact email: ${emailId}</p>
+      <p>Best regards,</p>
+      <p>Bubbl Team</p>`;
+
+      const mail = ["support@bubbl.cards", "sahil@bubbl.cards", "shashank@bubbl.cards", "admin@bubbl.cards"];
+    
+
+       await sendMail(mail, subject, emailMessage);
+        return res.json({
+        success: true,
+        message: "Entered Successfully",
+        createContactUs,
+      });
+    }
+    
+  } catch (error) {
+    loggers.error(error+"from contactUs function");
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
+export { contactUs, NewsLetter,supportForm };
