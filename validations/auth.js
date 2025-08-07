@@ -6,14 +6,26 @@ const loginSchema = Joi.object({
   isMobile: Joi.boolean()
 });
 
+// const createUserSchema = Joi.object({
+//   firstName: Joi.string().required(),
+//   lastName: Joi.string().allow(""),
+//   email: Joi.string().email().required(),
+//   password: Joi.string().required(),
+//   deviceID: Joi.string().default(""),
+// });
+
 const createUserSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().allow(""),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   deviceID: Joi.string().default(""),
+  profileName:Joi.string().required(),
+  role:Joi.string().optional(),
+  templateId:Joi.number().required(),
+  phoneNumber:Joi.string().required(),
+  companyName:Joi.string().optional()
 });
-
 const createMobileUserSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().allow(""),
@@ -38,7 +50,7 @@ const createMobileUserSchemaIOS = Joi.object({
   modeId: Joi.number().required(),
   companyName: Joi.string().required().allow(""),
   phoneNumber: Joi.string().optional(),
-  countryCode: Joi.string().required(),
+  countryCode: Joi.string().optional(),
   profileName: Joi.string().required(),
   designation: Joi.string().required().allow(""),
   google: Joi.boolean().required(),
