@@ -353,7 +353,7 @@ async function DuplicateProfile(req, res) {
   try {
 
      const ExistingProfile = await model.Profile.findOne({
-  where: { id: profileId },
+  where: { id: profileId ,userId:userId},
   include: [
     { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
     { model: model.ProfileEmail, as: "profileEmails" },
@@ -384,6 +384,7 @@ delete profileDetails.id;           // avoid primary key conflict
 delete profileDetails.UserId;       // avoid userId duplication
 delete profileDetails.TemplateId;   // avoid templateId duplication
 delete profileDetails.ModeId;       // avoid modeId duplication
+delete profileDetails?.profileUid
 
     // 3. Check user plan
     const bubblPlan = await model.BubblPlanManagement.findOne({ where: { userId } });
