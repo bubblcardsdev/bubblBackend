@@ -331,6 +331,98 @@ const data={
   }
 }
 
+async function deleteProfile(req, res) {
+  const userId = req.user.id;
+  const { profileId } = req.query; 
+
+  if (!profileId) {
+    return res.status(400).json({
+      success: false,
+      message: "Profile ID is required",
+    });
+  }
+
+  try {
+    // 1. Check if profile belongs to the user
+    const profile = await model.Profile.findOne({
+      where: { id: profileId, userId },
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found or does not belong to this user",
+      });
+    }
+
+    // 2. Delete children first (reverse FK order)
+    await model.ProfilePhoneNumber.destroy({ where: { profileId } });
+    await model.ProfileEmail.destroy({ where: { profileId } });
+    await model.ProfileWebsite.destroy({ where: { profileId } });
+    await model.ProfileSocialMediaLink.destroy({ where: { profileId } });
+    await model.ProfileDigitalPaymentLink.destroy({ where: { profileId } });
+    await model.DeviceBranding.destroy({ where: { profileId } });
+
+    // 3. Delete parent profile
+    await model.Profile.destroy({ where: { id: profileId } });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile deleted successfully",
+    });
+
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " from deleteProfile function");
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while deleting the profile.",
+    });
+  }
+}
+
+
+async function getUniqueProfileName(userId, baseName) {
+  // Find all matching names (original + duplicates)
+  const profiles = await model.Profile.findAll({
+    where: {
+      userId,
+      [Op.or]: [
+        { profileName: baseName },
+        { profileName: { [Op.like]: `${baseName} (duplicate-%` } }
+      ]
+    },
+    attributes: ['profileName'],
+    raw: true, // plain JS objects
+    hooks: false
+  });
+
+  const existingNames = profiles.map(p => p.profileName);
+
+  // If baseName doesn't exist, return it directly
+  if (!existingNames.includes(baseName)) {
+    return baseName;
+  }
+
+  // Extract duplicate numbers that already exist
+  const duplicateNumbers = existingNames
+    .map(name => {
+      const match = name.match(/\(duplicate-(\d+)\)$/);
+      return match ? parseInt(match[1], 10) : null;
+    })
+    .filter(n => n !== null);
+
+  // Find the next available number
+  let counter = 1;
+  while (duplicateNumbers.includes(counter)) {
+    counter++;
+  }
+
+  return `${baseName} (duplicate-${counter})`;
+}
+
+
 
 async function DuplicateProfile(req, res) {
   const userId = req.user.id;
@@ -338,166 +430,189 @@ async function DuplicateProfile(req, res) {
   const { error } = duplicateProfileSchema.validate(req.body, {
     abortEarly: false,
   });
-
   if (error) {
     return res.status(400).json({
       success: false,
-      data: {
-        error: error.details,
-      },
+      data: { error: error.details },
     });
   }
-      const profileId = req.body.profileId
 
+  const profileId = req.body.profileId;
 
   try {
+    // 1. Fetch existing profile + all related records
+    const ExistingProfile = await model.Profile.findOne({
+      where: { id: profileId, userId },
+      include: [
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+        { model: model.ProfileEmail, as: "profileEmails" },
+        { model: model.ProfileWebsite, as: "profileWebsites" },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+        { model: model.DeviceBranding, as: "DeviceBranding" },
+      ],
+    });
 
-     const ExistingProfile = await model.Profile.findOne({
-  where: { id: profileId ,userId:userId},
-  include: [
-    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-    { model: model.ProfileEmail, as: "profileEmails" },
-    { model: model.ProfileWebsite, as: "profileWebsites" },
-    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
-    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
-    {model:model.DeviceBranding, as: "DeviceBranding" }
-  ]
-});
+    if (!ExistingProfile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
 
-if (!ExistingProfile) {
-  return res.status(404).json({ message: "Profile not found" });
-}
+    const existingPlain = ExistingProfile.get({ plain: true });
 
- const existingPlain = ExistingProfile.get({ plain: true });
+    const {
+      DeviceBranding,
+      profilePhoneNumbers,
+      profileEmails,
+      profileWebsites,
+      profileSocialMediaLinks,
+      profileDigitalPaymentLinks,
+      ...profileDetails
+    } = existingPlain;
 
-const {
-  DeviceBranding,
-  profilePhoneNumbers,
-  profileEmails,
-  profileWebsites,
-  profileSocialMediaLinks,
-  profileDigitalPaymentLinks,
-  ...profileDetails
-} = existingPlain;
+    // Remove fields that shouldn't be duplicated
+    delete profileDetails.id;
+    delete profileDetails.UserId;
+    delete profileDetails.TemplateId;
+    delete profileDetails.ModeId;
+    delete profileDetails.profileUid;
 
-delete profileDetails.id;           // avoid primary key conflict
-delete profileDetails.UserId;       // avoid userId duplication
-delete profileDetails.TemplateId;   // avoid templateId duplication
-delete profileDetails.ModeId;       // avoid modeId duplication
-delete profileDetails?.profileUid
-
-    // 3. Check user plan
+    // 2. Check user plan limits
     const bubblPlan = await model.BubblPlanManagement.findOne({ where: { userId } });
-
     if (!bubblPlan) {
       return res.status(400).json({
         success: false,
         message: "No subscription plan found",
       });
     }
+     const planId = bubblPlan.planId;
 
-    const planId = bubblPlan.planId;
-    const limit = planId === 1 ? 2 : 5;
+let limit = 5;
+let customMessage = "You've reached your profile limit.";
 
-    const profileCount = await model.Profile.count({ where: { userId } });
+// Free plan logic
+if (planId === 1) {
+  const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
 
-    if (profileCount >= limit) {
-      return res.status(400).json({
-        success: false,
-        message: "You have already reached your profile limit",
-      });
-    }
-
-    // 4. Create Profile
-    const newProfile = await model.Profile.create(profileDetails);
-    // const profileId = newProfile.id;
-
-
-   if (newProfile?.id) {
-  try {
-    const brandingData = {
-      profileId: newProfile?.id,
-      darkMode:DeviceBranding?.darkMode,
-      brandingFontColor:DeviceBranding?.brandingFontColor,
-      brandingBackGroundColor:DeviceBranding?.brandingBackGroundColor,
-      brandingAccentColor:DeviceBranding?.brandingAccentColor,
-    };
-
-    // Remove any fields with null or undefined
-    const cleanedData = Object.fromEntries(
-      Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
-    );
-
-    await model.DeviceBranding.create(cleanedData);
-  } catch (err) {
-    console.error(err);
-    loggers.error(err + " while inserting in the device brandings.");
-
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while inserting in the device brandings.",
-      error:err
-    });
+  if (isDeviceLinked < 1) {
+    limit = 1;
+    customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
+  } else {
+    limit = 2;
+    customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
   }
 }
-else{
- return res.status(500).json({
-      success: false,
-      message: "No profileId is found",
-    });
+
+const profileCount = await model.Profile.count({ where: { userId } });
+
+if (profileCount >= limit) {
+  return res.status(400).json({
+    success: false,
+    message: customMessage,
+  });
 }
 
-      const insertMany = async (arr, modelRef, key) => {
+profileDetails.profileName = await getUniqueProfileName(userId, profileDetails.profileName)
+    // 3. Create the new profile
+    const newProfile = await model.Profile.create(profileDetails);
+
+    // 4. Clone device branding
+    if (newProfile?.id && DeviceBranding) {
+      const brandingData = {
+        profileId: newProfile.id,
+        darkMode: DeviceBranding?.darkMode,
+        brandingFontColor: DeviceBranding?.brandingFontColor,
+        brandingBackGroundColor: DeviceBranding?.brandingBackGroundColor,
+        brandingAccentColor: DeviceBranding?.brandingAccentColor,
+      };
+
+      const cleanedData = Object.fromEntries(
+        Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
+      );
+
+      await model.DeviceBranding.create(cleanedData);
+    }
+
+    // 5. Helper to insert related rows
+    const insertMany = async (arr, modelRef, mapper) => {
       if (!Array.isArray(arr) || arr.length === 0) return;
-
-      const cleaned = arr
-        .filter(item => item !== undefined && item !== null && item !== '')
-        .map(item => ({
-          profileId,
-          [key]: item,
-        }));
-
+      const cleaned = arr.map(item => {
+        const { id, profileId, createdAt, updatedAt, ProfileId, ...rest } = item;
+        return {
+          profileId: newProfile.id,
+          ...mapper(rest),
+        };
+      });
       if (cleaned.length > 0) {
         await modelRef.bulkCreate(cleaned);
       }
     };
 
-    // 6. Insert mapping tables
-    await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, 'phoneNumber');
-    await insertMany(profileEmails, model.ProfileEmail, 'email');
-    await insertMany(profileSocialMediaLinks, model.ProfileDigitalPaymentLink, 'link');
-    await insertMany(profileWebsites, model.ProfileWebsite, 'url');
-    await insertMany(profileSocialMediaLinks, model.ProfileSocialMediaLink, 'socialMedia');
+    // 6. Clone all related tables
+     await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, item => ({
+      phoneNumberType: item.phoneNumberType,
+      countryCode: item.countryCode,
+      phoneNumber: item.phoneNumber,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus,
+    }));
 
-const createdProfile = await model.Profile.findOne({
-  where: { id: newProfile?.id },
-  include: [
-    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-    { model: model.ProfileEmail, as: "profileEmails" },
-    { model: model.ProfileWebsite, as: "profileWebsites" },
-    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
-    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
-    {model:model.DeviceBranding, as: "DeviceBranding" }
-  ]
-});
+    await insertMany(profileEmails, model.ProfileEmail, item => ({
+      emailId: item.emailId, // DB column
+      email: item.email, // DB column
+      emailType: item.emailType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus,
+    }));
+
+    await insertMany(profileWebsites, model.ProfileWebsite, item => ({
+      website: item.website,
+      websiteType: item.websiteType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus,
+    }));
+
+    await insertMany(profileSocialMediaLinks, model.ProfileSocialMediaLink, item => ({
+      profileSocialMediaId: item.profileSocialMediaId,
+      socialMediaName: item.socialMediaName,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus,
+    }));
+
+    await insertMany(profileDigitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
+      profileDigitalPaymentsId: item.profileDigitalPaymentsId,
+      digitalPaymentLink: item.digitalPaymentLink,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus,
+    }));
+    // 7. Return the full duplicated profile
+    const createdProfile = await model.Profile.findOne({
+      where: { id: newProfile.id },
+      include: [
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+        { model: model.ProfileEmail, as: "profileEmails" },
+        { model: model.ProfileWebsite, as: "profileWebsites" },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+        { model: model.DeviceBranding, as: "DeviceBranding" },
+      ],
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Profile created successfully",
+      message: "Profile duplicated successfully",
       profile: createdProfile,
     });
-
   } catch (err) {
     console.error(err);
-    loggers.error(err + " from createProfileLatest function");
-
+    loggers.error(err + " from DuplicateProfile function");
     return res.status(500).json({
       success: false,
-      message: "Something went wrong while creating the profile.",
-      error:err
+      message: "Something went wrong while duplicating the profile.",
+      error: err,
     });
   }
 }
+
 
 async function updateProfileLatest(req, res) {
   const userId = req.user.id;
@@ -3899,5 +4014,6 @@ export {
   findAllProfilesForMob,
   createProfileLatest,
   DuplicateProfile,
-  getProfileByUid
+  getProfileByUid,
+  deleteProfile
 };
