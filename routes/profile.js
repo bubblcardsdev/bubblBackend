@@ -29,7 +29,8 @@ import {
   findAllProfilesForMob,
   createProfileLatest,
   updateProfileLatest,
-  getProfileByUid
+  getProfileByUid,
+  deleteProfile
 } from "../controllers/profile.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -39,8 +40,9 @@ const router = express.Router();
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
 // router.post("/create", authenticateToken, createProfile);
-router.post("/create-profile",authenticateToken,createProfileLatest)
-router.post("/duplicate-profile",authenticateToken,DuplicateProfile)
+ router.post("/create-profile",authenticateToken,createProfileLatest)
+ router.post("/duplicate-profile",authenticateToken,DuplicateProfile)
+ router.delete("/delete-profile",authenticateToken,deleteProfile)
 // router.post("/createCompleteProfileBulk", createCompleteProfileBulk);
 
 router.get("/all", authenticateToken, findAllProfiles);
