@@ -30,7 +30,7 @@ const createMobileUserSchema = Joi.object({
 });
 
 const createMobileUserSchemaIOS = Joi.object({
-  firstName: Joi.string().required(),
+  firstName: Joi.string().allow(""),
   lastName: Joi.string().allow(""),
   email: Joi.string().email().required(),
   password: Joi.string().optional(), 
@@ -38,8 +38,8 @@ const createMobileUserSchemaIOS = Joi.object({
   templateId: Joi.number().required(),
   modeId: Joi.number().required(),
   companyName: Joi.string().required().allow(""),
-  phoneNumber: Joi.string().required(),
-  countryCode: Joi.string().required(),
+  phoneNumber: Joi.string().allow(""),
+  countryCode: Joi.string().allow(""),
   profileName: Joi.string().required(),
   designation: Joi.string().required().allow(""),
   google: Joi.boolean().required(),
