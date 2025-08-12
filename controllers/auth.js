@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import model from "../models/index.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 import {
   generateAccessToken,
   generateAppleClientSecret,
@@ -42,6 +42,7 @@ import { verifyFacebookAccount } from "../middleware/facebook.js";
 import { verifyLinkedinAccount } from "../middleware/linkedin.js";
 import loggers from "../config/logger.js";
 import MobileOnboardingProfileCreate from "../helper/mobileOnboard.js";
+import { access } from "fs";
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000);
@@ -372,8 +373,19 @@ async function login(req, res) {
 //     });
 //   }
 // }
-async function createUser(req, res) {   
-  const { firstName, lastName, email, password, deviceID,profileName,role,templateId,phoneNumber,companyName } = req.body;
+async function createUser(req, res) {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    deviceID,
+    profileName,
+    role,
+    templateId,
+    phoneNumber,
+    companyName,
+  } = req.body;
   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
 
   if (error) {
@@ -405,7 +417,7 @@ async function createUser(req, res) {
       });
     }
     const hashedPassword = await hashPassword(password);
-var userId =null
+    var userId = null;
     const user = await model.User.create({
       firstName: firstName,
       lastName: lastName,
@@ -417,7 +429,7 @@ var userId =null
     });
 
     if (user) {
-      userId =user.id
+      userId = user.id;
       await model.BubblPlanManagement.create({
         userId: user.id,
         planId: 1,
@@ -474,46 +486,46 @@ var userId =null
     <p>The Bubbl.cards Team</p>`;
 
     const profile = await model.Profile.findOne({
-    where: {
-      profileName,
-      userId,
-    },
-  });
-
-  if (profile) {
-    return res.status(400).json({
-    success: false,
-    data: { message: "Profile name already exists" },
-  });
-  }
-
-  const create = await model.Profile.create({
-    userId: userId,
-    profileName: profileName,
-    firstName: firstName,
-    lastName: lastName,
-    designation: role,
-    companyName: companyName,
-    templateId: templateId,
-  });
-
-  if (create) {
-    await model.ProfilePhoneNumber.create({
-      profileId: create.id,
-      phoneNumber: phoneNumber,
-      phoneNumberType: "",
-      countryCode: "+91", // cc should be come from frontend
-      checkBoxStatus: true,
-      activeStatus: true,
+      where: {
+        profileName,
+        userId,
+      },
     });
-    await model.ProfileEmail.create({
-      profileId: create.id,
-      emailId: email,
-      emailType: profileName,
-      checkBoxStatus: true,
-      activeStatus: true,
+
+    if (profile) {
+      return res.status(400).json({
+        success: false,
+        data: { message: "Profile name already exists" },
+      });
+    }
+
+    const create = await model.Profile.create({
+      userId: userId,
+      profileName: profileName,
+      firstName: firstName,
+      lastName: lastName,
+      designation: role,
+      companyName: companyName,
+      templateId: templateId,
     });
-  }
+
+    if (create) {
+      await model.ProfilePhoneNumber.create({
+        profileId: create.id,
+        phoneNumber: phoneNumber,
+        phoneNumberType: "",
+        countryCode: "+91", // cc should be come from frontend
+        checkBoxStatus: true,
+        activeStatus: true,
+      });
+      await model.ProfileEmail.create({
+        profileId: create.id,
+        emailId: email,
+        emailType: profileName,
+        checkBoxStatus: true,
+        activeStatus: true,
+      });
+    }
     // return create;
     await sendMail(emailParse, subject, emailMessage);
 
@@ -856,11 +868,11 @@ async function createUserMobileIOS(req, res) {
     google,
     apple,
     linkedin,
-    local
+    local,
   } = req.body;
   const { error } = createMobileUserSchemaIOS.validate(req.body, {
     abortEarly: false,
-    });
+  });
 
   if (error) {
     console.log(error);
@@ -879,11 +891,10 @@ async function createUserMobileIOS(req, res) {
         email: emailParse,
       },
     });
-    var hashedPassword = ""
-   if(password){
-     hashedPassword = await hashPassword(password);
-
-   }
+    var hashedPassword = "";
+    if (password) {
+      hashedPassword = await hashPassword(password);
+    }
     // For new user logic
     if (!checkUser) {
       const user = await model.User.create({
@@ -897,7 +908,7 @@ async function createUserMobileIOS(req, res) {
         google,
         linkedin,
         apple,
-        local
+        local,
       });
       let createProfileMobile;
       if (user) {
@@ -1502,7 +1513,7 @@ async function verifyLinkedinUser(req, res) {
 // })
 
 // const idToken = response.body.id_token;
-// const { email: payloadEmail} = jwt.decode(idToken) || {}; //sub: appleUserId 
+// const { email: payloadEmail} = jwt.decode(idToken) || {}; //sub: appleUserId
 // const checkEmail = await model.User.findOne({
 //       where: { email: payloadEmail },
 //     });
@@ -1566,10 +1577,9 @@ async function verifyLinkedinUser(req, res) {
 //   res.status(500).json({success:false,message:"Internal server error",error:err})
 // }
 
-
 // }
 
-async function verifyAppleUser(req,res){
+async function verifyAppleUser(req, res) {
   const { identityToken } = req.body;
 
   const { error } = verifyAppleUserSchema.validate(req.body, {
@@ -1579,102 +1589,100 @@ async function verifyAppleUser(req,res){
   if (error) {
     return res.json({
       success: false,
-      message:error.details
+      message: error.details,
     });
   }
 
   // const decoded  = jwt.decode(identityToken,{complete:true})
 
- jwt.verify(
-  identityToken,
-  getAppleSigningKey,
-  {
-    algorithms: ['RS256'],
-    audience:config.appleClientId,
-    issuer: 'https://appleid.apple.com',
-  },
-async (err, payload) => {
-  if (err) {
-    return res.status(401).json({
-      success: false,
-      message: 'Token verification failed',
-      error: err.message,
-    });
-  }
-
-  if (payload.email && payload.email_verified) {
-    try {
-      const userExist = await model.User.findOne({
-        where: { email: payload.email },
-      });
-
-      if (!userExist) {
-        return res.status(404).json({
+  jwt.verify(
+    identityToken,
+    getAppleSigningKey,
+    {
+      algorithms: ["RS256"],
+      audience: config.appleClientId,
+      issuer: "https://appleid.apple.com",
+    },
+    async (err, payload) => {
+      if (err) {
+        return res.status(401).json({
           success: false,
-          message: 'User not found',
-          email:payload.email
+          message: "Token verification failed",
+          error: err.message,
         });
       }
 
-      if (!userExist.emailVerified) {
-        return res.status(403).json({
+      if (payload.email && payload.email_verified) {
+        try {
+          const userExist = await model.User.findOne({
+            where: { email: payload.email },
+          });
+
+          if (!userExist) {
+            return res.status(404).json({
+              success: false,
+              message: "User not found",
+              email: payload.email,
+            });
+          }
+
+          if (!userExist.emailVerified) {
+            return res.status(403).json({
+              success: false,
+              message: "Email is not verified",
+            });
+          }
+
+          //   if(!userExist?.apple){
+          //      const [rowsUpdated] = await model.User.update(
+          //   { apple: true, google: false, facebook: false, linkedin: false, local: false },
+          //   { where: { email } }
+          // );
+
+          // if (rowsUpdated === 0) {
+          //   console.warn("No user was updated");
+          // }
+          //   }
+          const { id, firstName, lastName, email, emailVerified } = userExist;
+          const user = { id, firstName, lastName, email };
+
+          const accessToken = await generateAccessToken(user);
+          const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+          const refreshToken = await generateRefreshToken(user);
+          const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+          return res.json({
+            success: true,
+            data: {
+              message: "Apple account verified successfully",
+              firstName,
+              lastName,
+              email,
+              emailVerified,
+              token: {
+                accessToken,
+                accessTokenExpiryInSeconds,
+                refreshToken,
+                refreshTokenExpiryInSeconds,
+              },
+            },
+          });
+        } catch (error) {
+          console.error("Apple login error:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Internal server error during Apple login",
+            error: error.message,
+          });
+        }
+      } else {
+        return res.status(400).json({
           success: false,
-          message: 'Email is not verified',
+          message: "Email is missing or not verified in token",
         });
       }
-      
-//   if(!userExist?.apple){
-//      const [rowsUpdated] = await model.User.update(
-//   { apple: true, google: false, facebook: false, linkedin: false, local: false },
-//   { where: { email } }
-// );
-
-// if (rowsUpdated === 0) {
-//   console.warn("No user was updated");
-// }  
-//   }
-      const { id, firstName, lastName, email, emailVerified } = userExist;
-      const user = { id, firstName, lastName, email };
-
-      const accessToken = await generateAccessToken(user);
-      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
-      const refreshToken = await generateRefreshToken(user);
-      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
-
-      return res.json({
-        success: true,
-        data: {
-          message: 'Apple account verified successfully',
-          firstName,
-          lastName,
-          email,
-          emailVerified,
-          token: {
-            accessToken,
-            accessTokenExpiryInSeconds,
-            refreshToken,
-            refreshTokenExpiryInSeconds,
-          },
-        },
-      });
-    } 
-    catch (error) {
-      console.error("Apple login error:", error);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error during Apple login',
-        error: error.message,
-      });
     }
-  } else {
-    return res.status(400).json({
-      success: false,
-      message: 'Email is missing or not verified in token',
-    });
-  }
-}
-);
-
+  );
 }
 
 // async function verifyAppleUser(req,res){
@@ -1716,14 +1724,14 @@ async (err, payload) => {
 // }
 
 // const { email: payloadEmail} = jwt.decode(responseBody.body.id_token) || {};
-//  //sub: appleUserId 
+//  //sub: appleUserId
 //  if (!payloadEmail) {
 //   return res.status(400).json({ success: false, message: "Email not available in Apple token" });
 // }
 // const validUser = await model.User.findOne({
 //       where: { email: payloadEmail},
 //     });
-   
+
 //     if (validUser) { // user exist
 //       if(!validUser?.apple){
 //      const [rowsUpdated] = await model.User.update(
@@ -1733,7 +1741,7 @@ async (err, payload) => {
 
 // if (rowsUpdated === 0) {
 //   console.warn("No user was updated");
-// }  
+// }
 
 //       }
 // const { id, firstName, lastName, email,emailVerified } = validUser;
@@ -1758,7 +1766,7 @@ async (err, payload) => {
 //         },
 //       },
 //     });
-     
+
 //     }
 //     else{
 //       return res.status(400).json({ success: false, message: "User does not exist" });
@@ -2381,7 +2389,52 @@ async function resetPassword(req, res) {
   }
 }
 
+async function refreshToken(req, res) {
+  const refToken = req.body.refreshToken;
 
+  if (!refToken) {
+    return res.status(400).json({
+      success: false,
+      message: "The refresh token is not present",
+    });
+  }
+
+  try {
+    const decodedPayload = jwt.verify(refToken, config.refreshSecret);
+
+    const { email, id, firstName, lastName } = decodedPayload;
+
+    const user = { email, id, firstName, lastName };
+    const accessToken = await generateAccessToken(user);
+    const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+    const refreshToken = await generateRefreshToken(user);
+    const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    return res.status(200).json({
+      success: true,
+      message: "Token has been refreshed successfully",
+      token: {
+        accessToken,
+        accessTokenExpiryInSeconds,
+        refreshToken,
+        refreshTokenExpiryInSeconds,
+      },
+    });
+  } catch (err) {
+  if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired refresh token',
+    });
+  }
+  return res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: err.message,
+  });
+}
+
+}
 
 export {
   issueNewToken,
@@ -2403,5 +2456,6 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
-  createUserMobileIOS
+  createUserMobileIOS,
+  refreshToken,
 };

@@ -20,7 +20,8 @@ import {
   createUserMobile,
   verifyAppleUser,
   createUserBulkController,
-  createUserMobileIOS
+  createUserMobileIOS,
+  refreshToken
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 import {SSE, verifyMail, sendEmail, emailVerified, sendForgetPassword} from "../helper/socket_server.js";
@@ -51,6 +52,7 @@ router.post("/forgotpassword", forgotPassword);
 router.post("/changepassword", changePassword);
 router.put("/updateuser", authenticateToken, updateUser);
 router.put("/reset", authenticateToken, resetPassword);
+router.post("/refresh/token",refreshToken)
 
 
 
