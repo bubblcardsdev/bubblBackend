@@ -187,16 +187,30 @@ async function createProfileLatest(req, res) {
     websites,
     socialMediaNames,
     digitalPaymentLinks,
-     brandingFontColor, // nned to  insert it later if needed 
-      brandingBackGroundColor,
-      brandingAccentColor,
-      darkMode,
+    brandingFontColor,
+    brandingBackGroundColor,
+    brandingAccentColor,
+    darkMode,
+    profileName,
     ...profileDetails
   } = req.body;
 
   profileDetails.userId = userId;
+  profileDetails.profileName = profileName;
 
   try {
+    // 🔹 2. Check if profileName already exists for this user
+    const existingProfile = await model.Profile.findOne({
+      where: { profileName, userId }
+    });
+
+    if (existingProfile) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile name already exists. Please choose another."
+      });
+    }
+
     // 3. Check user plan
     const bubblPlan = await model.BubblPlanManagement.findOne({ where: { userId } });
 
@@ -209,111 +223,129 @@ async function createProfileLatest(req, res) {
 
     const planId = bubblPlan.planId;
 
-let limit = 5;
-let customMessage = "You've reached your profile limit.";
+    let limit = 5;
+    let customMessage = "You've reached your profile limit.";
 
-// Free plan logic
-if (planId === 1) {
-  const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
+    // Free plan logic
+    if (planId === 1) {
+      const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
 
-  if (isDeviceLinked < 1) {
-    limit = 1;
-    customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
-  } else {
-    limit = 2;
-    customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
-  }
-}
+      if (isDeviceLinked < 1) {
+        limit = 10;
+        customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
+      } else {
+        limit = 20;
+        customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
+      }
+    }
 
-const profileCount = await model.Profile.count({ where: { userId } });
+    const profileCount = await model.Profile.count({ where: { userId } });
 
-if (profileCount >= limit) {
-  return res.status(400).json({
-    success: false,
-    message: customMessage,
-  });
-}
-
+    if (profileCount >= limit) {
+      return res.status(400).json({
+        success: false,
+        message: customMessage,
+      });
+    }
 
     // 4. Create Profile
     const newProfile = await model.Profile.create(profileDetails);
     const profileId = newProfile.id;
 
+    if (newProfile?.id) {
+      try {
+        const brandingData = {
+          profileId: newProfile.id,
+          darkMode,
+          brandingFontColor,
+          brandingBackGroundColor,
+          brandingAccentColor,
+        };
 
-   if (newProfile?.id) {
-  try {
-    const brandingData = {
-      profileId: newProfile.id,
-      darkMode,
-      brandingFontColor,
-      brandingBackGroundColor,
-      brandingAccentColor,
-    };
+        const cleanedData = Object.fromEntries(
+          Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
+        );
 
-    // Remove any fields with null or undefined
-    const cleanedData = Object.fromEntries(
-      Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
-    );
+        await model.DeviceBranding.create(cleanedData);
+      } catch (err) {
+        console.error(err);
+        loggers.error(err + " while inserting in the device brandings.");
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong while inserting in the device brandings.",
+        });
+      }
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "No profileId is found",
+      });
+    }
 
-    await model.DeviceBranding.create(cleanedData);
-  } catch (err) {
-    console.error(err);
-    loggers.error(err + " while inserting in the device brandings.");
-
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while inserting in the device brandings.",
-    });
-  }
-}
-else{
- return res.status(500).json({
-      success: false,
-      message: "No profileId is found",
-    });
-}
-
-      const insertMany = async (arr, modelRef, key) => {
+    const insertMany = async (arr, modelRef, mapperFn) => {
       if (!Array.isArray(arr) || arr.length === 0) return;
-
       const cleaned = arr
-        .filter(item => item !== undefined && item !== null && item !== '')
-        .map(item => ({
-          profileId,
-          [key]: item,
-        }));
-
+        .filter(item => item && Object.keys(item).length > 0)
+        .map(mapperFn);
       if (cleaned.length > 0) {
         await modelRef.bulkCreate(cleaned);
       }
     };
 
     // 6. Insert mapping tables
-    await insertMany(phoneNumbers, model.ProfilePhoneNumber, 'phoneNumber');
-    await insertMany(emailIds, model.ProfileEmail, 'email');
-    await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, 'link');
-    await insertMany(websites, model.ProfileWebsite, 'url');
-    await insertMany(socialMediaNames, model.ProfileSocialMediaLink, 'socialMedia');
+    await insertMany(phoneNumbers, model.ProfilePhoneNumber, item => ({
+      profileId,
+      countryCode: item.countryCode,
+      phoneNumber: item.phoneNumber,
+      phoneNumberType: item.phoneNumberType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus
+    }));
 
-const createdProfile = await model.Profile.findOne({
-  where: { id: newProfile?.id },
-  include: [
-    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-    { model: model.ProfileEmail, as: "profileEmails" },
-    { model: model.ProfileWebsite, as: "profileWebsites" },
-    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
-    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
-    {model:model.DeviceBranding, as: "DeviceBranding" }
-  ]
-});
+    await insertMany(emailIds, model.ProfileEmail, item => ({
+      profileId,
+      email: item.emailId,
+      emailType: item.emailType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus
+    }));
 
+    await insertMany(websites, model.ProfileWebsite, item => ({
+      profileId,
+      url: item.website,
+      websiteType: item.websiteType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus
+    }));
 
+    await insertMany(socialMediaNames, model.ProfileSocialMediaLink, item => ({
+      profileId,
+      profileSocialMediaId: item.profileSocialMediaId,
+      socialMedia: item.socialMediaName,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus
+    }));
 
-const data={
-  createdProfile:createdProfile,
-  // deviceBrandings:
-}
-    // 7. Done
+    await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
+      profileId,
+      profileDigitalPaymentsId: item.profileDigitalPaymentsId,
+      link: item.digitalPaymentLink,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus
+    }));
+
+    const createdProfile = await model.Profile.findOne({
+      where: { id: newProfile?.id },
+      include: [
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+        { model: model.ProfileEmail, as: "profileEmails" },
+        { model: model.ProfileWebsite, as: "profileWebsites" },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+        { model: model.DeviceBranding, as: "DeviceBranding" }
+      ]
+    });
+
     return res.status(200).json({
       success: true,
       message: "Profile created successfully",
@@ -327,9 +359,11 @@ const data={
     return res.status(500).json({
       success: false,
       message: "Something went wrong while creating the profile.",
+      error:err
     });
   }
 }
+
 
 async function deleteProfile(req, res) {
   const userId = req.user.id;
@@ -617,247 +651,183 @@ profileDetails.profileName = await getUniqueProfileName(userId, profileDetails.p
 async function updateProfileLatest(req, res) {
   const userId = req.user.id;
 
-  // Destructure excluded fields and keep the rest in profileDetails
-  const {
-    profileId,
-    deviceLinkId,
-    phoneNumbers,
-    emailIds,
-    websites,
-    socialMediaNames,
-    digitalPaymentLinks,
-    brandingFontColor, // you want to insert this later
-    brandingBackGroundColor,
-    brandingAccentColor,
-    ...profileDetails
-  } = req.body;
+  try {
+    // Validate request body
+    const { error } = updateProfileSchemaLatest.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
 
-  const { error } = updateProfileSchemaLatest.validate(req.body, {
-    abortEarly: false,
-  });
+    // Extract body data
+    const {
+      profileId,
+      deviceLinkId,
+      phoneNumbers,
+      emailIds,
+      websites,
+      socialMediaNames,
+      digitalPaymentLinks,
+      brandingFontColor,
+      brandingBackGroundColor,
+      brandingAccentColor,
+      ...profileDetails
+    } = req.body;
 
-  if (error) {
-    return res.status(400).json({
+    // Check if profile exists
+    const profileExist = await model.Profile.findOne({ where: { id: profileId, userId } });
+    if (!profileExist) {
+      return res.status(400).json({
+        success: false,
+        data: { error: "Profile does not exist" },
+      });
+    }
+
+    // 🔍 Check if profileName already exists for this user (excluding current profileId)
+    if (
+      profileDetails.profileName &&
+      profileDetails.profileName !== profileExist.profileName
+    ) {
+      const duplicate = await model.Profile.findOne({
+        where: { profileName: profileDetails.profileName, userId },
+      });
+      if (duplicate) {
+        return res.status(400).json({
+          success: false,
+          data: { error: "Profile name already exists" },
+        });
+      }
+    }
+
+    // Prepare update data
+    const updateData = {};
+    const brandingData = {};
+
+    const allowedProfileFields = [
+      "profileName", "templateId", "darkMode", "firstName", "lastName",
+      "designation", "companyName", "companyAddress", "shortDescription",
+      "address", "city", "zipCode", "state", "country", "brandingFont",
+      "phoneNumberEnable", "emailEnable", "websiteEnable",
+      "socialMediaEnable", "digitalMediaEnable"
+    ];
+
+    allowedProfileFields.forEach(field => {
+      if (profileDetails[field] !== undefined && profileDetails[field] !== null) {
+        updateData[field] = profileDetails[field];
+      }
+    });
+
+    if (brandingBackGroundColor !== undefined && brandingBackGroundColor !== null)
+      brandingData.brandingBackGroundColor = brandingBackGroundColor;
+    if (brandingFontColor !== undefined && brandingFontColor !== null)
+      brandingData.brandingFontColor = brandingFontColor;
+    if (brandingAccentColor !== undefined && brandingAccentColor !== null)
+      brandingData.brandingAccentColor = brandingAccentColor;
+
+    // Update profile
+    if (!isEmpty(updateData)) {
+      await model.Profile.update(updateData, { where: { id: profileId } });
+    }
+
+    // Social Media (only one)
+    if (socialMediaNames?.length > 0) {
+      const { profileSocialMediaLinkId, ...social } = socialMediaNames[0];
+      const data = { ...social, profileId };
+      if (profileSocialMediaLinkId) {
+        await model.ProfileSocialMediaLink.update(data, { where: { id: profileSocialMediaLinkId } });
+      } else {
+        await model.ProfileSocialMediaLink.create(data);
+      }
+    }
+
+    // Phone Numbers (2 allowed)
+    if (phoneNumbers?.length > 0) {
+      await Promise.all(
+        phoneNumbers.map(async phone => {
+          const { phoneNumbersId, ...rest } = phone;
+          const data = { ...rest, profileId };
+          if (phoneNumbersId) {
+            await model.ProfilePhoneNumber.update(data, { where: { id: phoneNumbersId } });
+          } else {
+            await model.ProfilePhoneNumber.create(data);
+          }
+        })
+      );
+    }
+
+    // Email IDs (2 allowed)
+    if (emailIds?.length > 0) {
+      await Promise.all(
+        emailIds.map(async email => {
+          const { emailIdNumber, ...rest } = email;
+          const data = { ...rest, profileId };
+          if (emailIdNumber) {
+            await model.ProfileEmail.update(data, { where: { id: emailIdNumber } });
+          } else {
+            await model.ProfileEmail.create(data);
+          }
+        })
+      );
+    }
+
+    // Digital Payment Link (only one)
+    if (digitalPaymentLinks?.length > 0) {
+      const { profileDigitalPaymentLinkId, ...payment } = digitalPaymentLinks[0];
+      const data = { ...payment, profileId };
+      if (profileDigitalPaymentLinkId) {
+        await model.ProfileDigitalPaymentLink.update(data, { where: { id: profileDigitalPaymentLinkId } });
+      } else {
+        await model.ProfileDigitalPaymentLink.create(data);
+      }
+    }
+
+    // Website (only one)
+    if (websites?.length > 0) {
+      const { websiteId, ...website } = websites[0];
+      const data = { ...website, profileId };
+      if (websiteId) {
+        await model.ProfileWebsite.update(data, { where: { id: websiteId } });
+      } else {
+        await model.ProfileWebsite.create(data);
+      }
+    }
+
+    // Branding data update
+    if (!isEmpty(brandingData)) {
+      brandingData.profileId = profileId;
+      brandingData.deviceLinkId = deviceLinkId;
+      await model.DeviceBranding.update(brandingData, { where: { profileId } });
+    }
+
+    // Fetch updated profile
+    const updatedProfile = await model.Profile.findOne({
+      where: { id: profileId },
+      include: [
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+        { model: model.ProfileEmail, as: "profileEmails" },
+        { model: model.ProfileWebsite, as: "profileWebsites" },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+        { model: model.DeviceBranding, as: "DeviceBranding" }
+      ]
+    });
+
+    return res.status(200).json({
+      success: true,
+      updatedData: updatedProfile,
+      data: { message: "Profile updated successfully" },
+    });
+
+  } catch (err) {
+    console.error("Error in updateProfileLatest:", err);
+    return res.status(500).json({
       success: false,
-      data: {
-        error: error.details,
-      },
+      error:err,
+      message: "Something went wrong while updating the profile" ,
     });
   }
-
-  const profileExist = await model.Profile.findOne({  
-    where: { id: profileId },
-  });
-
-  if (!profileExist) {
-    return res.status(400).json({
-      success: false,
-      data: { error: "Profile does not exist" },
-    });
-  }
-
-  const updateData = {};
-   const brandingData ={}
-   
-
-  if (profileDetails.profileName !== undefined && profileDetails.profileName !== null)
-    updateData.profileName = profileDetails.profileName;
-
-  if (profileDetails.templateId !== undefined && profileDetails.templateId !== null)
-    updateData.templateId = profileDetails.templateId;
-
-  if (profileDetails.darkMode !== undefined && profileDetails.darkMode !== null)
-    updateData.darkMode = profileDetails.darkMode;
-
-  if (profileDetails.firstName !== undefined && profileDetails.firstName !== null)
-    updateData.firstName = profileDetails.firstName;
-
-  if (profileDetails.lastName !== undefined && profileDetails.lastName !== null)
-    updateData.lastName = profileDetails.lastName;
-
-  if (profileDetails.designation !== undefined && profileDetails.designation !== null)
-    updateData.designation = profileDetails.designation;
-
-  if (profileDetails.companyName !== undefined && profileDetails.companyName !== null)
-    updateData.companyName = profileDetails.companyName;
-
-  if (profileDetails.companyAddress !== undefined && profileDetails.companyAddress !== null)
-    updateData.companyAddress = profileDetails.companyAddress;
-
-  if (profileDetails.shortDescription !== undefined && profileDetails.shortDescription !== null)
-    updateData.shortDescription = profileDetails.shortDescription;
-
-  if (profileDetails.address !== undefined && profileDetails.address !== null)
-    updateData.address = profileDetails.address;
-
-  if (profileDetails.city !== undefined && profileDetails.city !== null)
-    updateData.city = profileDetails.city;
-
-  if (profileDetails.zipCode !== undefined && profileDetails.zipCode !== null)
-    updateData.zipCode = profileDetails.zipCode;
-
-  if (profileDetails.state !== undefined && profileDetails.state !== null)
-    updateData.state = profileDetails.state;
-
-  if (profileDetails.country !== undefined && profileDetails.country !== null)
-    updateData.country = profileDetails.country;
-
-
-  if (profileDetails.brandingFont !== undefined && profileDetails.brandingFont !== null)
-    updateData.brandingFont = profileDetails.brandingFont;
-
-  if (profileDetails.phoneNumberEnable !== undefined && profileDetails.phoneNumberEnable !== null)
-    updateData.phoneNumberEnable = profileDetails.phoneNumberEnable;
-
-  if (profileDetails.emailEnable !== undefined && profileDetails.emailEnable !== null)
-    updateData.emailEnable = profileDetails.emailEnable;
-
-  if (profileDetails.websiteEnable !== undefined && profileDetails.websiteEnable !== null)
-    updateData.websiteEnable = profileDetails.websiteEnable;
-
-  if (profileDetails.socialMediaEnable !== undefined && profileDetails.socialMediaEnable !== null)
-    updateData.socialMediaEnable = profileDetails.socialMediaEnable;
-
-  if (profileDetails.digitalMediaEnable !== undefined && profileDetails.digitalMediaEnable !== null)
-    updateData.digitalMediaEnable = profileDetails.digitalMediaEnable;
-
-  if (brandingBackGroundColor !== undefined && brandingBackGroundColor !== null)
-    brandingData.brandingBackGroundColor = brandingBackGroundColor;
-
-  if (brandingFontColor !== undefined && brandingFontColor !== null)
-    brandingData.brandingFontColor = brandingFontColor;
-
-  if (brandingAccentColor !== undefined && brandingAccentColor !== null)
-    brandingData.brandingAccentColor = brandingAccentColor;
-
-  if(!isEmpty(updateData)){
-await model.Profile.update(updateData, {
-    where: { id: profileId },
-  });
-  }
-// 1. Social Media (only one allowed)
-if (socialMediaNames?.length > 0) {
-  try {
-    const { profileSocialMediaLinkId, ...social } = socialMediaNames[0];
-    const data = { ...social, profileId };
-
-    if (profileSocialMediaLinkId) {
-      await model.ProfileSocialMediaLink.update(data, {
-        where: { id: profileSocialMediaLinkId },
-      });
-    } else {
-      await model.ProfileSocialMediaLink.create(data);
-    }
-  } catch (err) {
-    console.error("Error upserting social media link:", err);
-  }
-}
-
-// 2. Phone Numbers (2 allowed)
-if (phoneNumbers?.length > 0) {
-  try {
-    await Promise.all(
-      phoneNumbers.map(async phone => {
-        const { phoneNumbersId, ...rest } = phone;
-        const data = { ...rest, profileId };
-
-        if (phoneNumbersId) {
-          await model.ProfilePhoneNumber.update(data, { where: { id:phoneNumbersId } });
-        } else {
-          await model.ProfilePhoneNumber.create(data);
-        }
-      })
-    );
-  } catch (err) {
-    console.error("Error upserting phone numbers:", err);
-  }
-}
-
-// 3. Email IDs (2 allowed)
-if (emailIds?.length > 0) {
-  try {
-    await Promise.all(
-      emailIds.map(async email => {
-        const { emailIdNumber, ...rest } = email;
-        const data = { ...rest, profileId };
-
-        if (emailIdNumber) {
-          await model.ProfileEmail.update(data, { where: { id:emailIdNumber } });
-        } else {
-          await model.ProfileEmail.create(data);
-        }
-      })
-    );
-  } catch (err) {
-    console.error("Error upserting email IDs:", err);
-  }
-}
-
-// 4. Digital Payment Link (only one allowed)
-if (digitalPaymentLinks?.length > 0) {
-  try {
-    const { profileDigitalPaymentLinkId, ...payment } = digitalPaymentLinks[0];
-    const data = { ...payment, profileId };
-
-    if (profileDigitalPaymentLinkId) {
-      await model.ProfileDigitalPaymentLink.update(data, {
-        where: { id:profileDigitalPaymentLinkId },
-      });
-    } else {
-      await model.ProfileDigitalPaymentLink.create(data);
-    }
-  } catch (err) {
-    console.error("Error upserting digital payment link:", err);
-  }
-}
-
-// 5. Website (only one allowed)
-if (websites?.length > 0) {
-  try {
-    const { websiteId, ...website } = websites[0];
-    const data = { ...website, profileId };
-
-    if (websiteId) {
-      await model.ProfileWebsite.update(data, {
-        where: { id: websiteId },
-      });
-    } else {
-      await model.ProfileWebsite.create(data);
-    }
-  } catch (err) {
-    console.error("Error upserting website:", err);
-  }
-}
-
-
-  if(!isEmpty(brandingData)){
-    brandingData.profileId = profileId;
-    brandingData.deviceLinkId = deviceLinkId;
-    await model.DeviceBranding.update(brandingData, {
-    where: { id: profileId },
-  });
-  }
-
-
-  const updatedProfile = await model.Profile.findOne({
-  where: { id: profileId },
-  include: [
-    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-    { model: model.ProfileEmail, as: "profileEmails" },
-    { model: model.ProfileWebsite, as: "profileWebsites" },
-    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
-    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
-    {model:model.DeviceBranding, as: "DeviceBranding" }
-
-  ]
-});
-  
-
-  return res.status(200).json({
-    success: true,
-    updatedData:updatedProfile,
-    data: { message: "Profile updated successfully" },
-  });
 }
 
 
