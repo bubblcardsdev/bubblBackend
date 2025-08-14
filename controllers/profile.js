@@ -187,16 +187,30 @@ async function createProfileLatest(req, res) {
     websites,
     socialMediaNames,
     digitalPaymentLinks,
-     brandingFontColor, // nned to  insert it later if needed 
-      brandingBackGroundColor,
-      brandingAccentColor,
-      darkMode,
+    brandingFontColor,
+    brandingBackGroundColor,
+    brandingAccentColor,
+    darkMode,
+    profileName,
     ...profileDetails
   } = req.body;
 
   profileDetails.userId = userId;
+  profileDetails.profileName = profileName;
 
   try {
+    // 🔹 2. Check if profileName already exists for this user
+    const existingProfile = await model.Profile.findOne({
+      where: { profileName, userId }
+    });
+
+    if (existingProfile) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile name already exists. Please choose another."
+      });
+    }
+
     // 3. Check user plan
     const bubblPlan = await model.BubblPlanManagement.findOne({ where: { userId } });
 
@@ -209,111 +223,129 @@ async function createProfileLatest(req, res) {
 
     const planId = bubblPlan.planId;
 
-let limit = 5;
-let customMessage = "You've reached your profile limit.";
+    let limit = 5;
+    let customMessage = "You've reached your profile limit.";
 
-// Free plan logic
-if (planId === 1) {
-  const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
+    // Free plan logic
+    if (planId === 1) {
+      const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
 
-  if (isDeviceLinked < 1) {
-    limit = 1;
-    customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
-  } else {
-    limit = 2;
-    customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
-  }
-}
+      if (isDeviceLinked < 1) {
+        limit = 10;
+        customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
+      } else {
+        limit = 20;
+        customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
+      }
+    }
 
-const profileCount = await model.Profile.count({ where: { userId } });
+    const profileCount = await model.Profile.count({ where: { userId } });
 
-if (profileCount >= limit) {
-  return res.status(400).json({
-    success: false,
-    message: customMessage,
-  });
-}
-
+    if (profileCount >= limit) {
+      return res.status(400).json({
+        success: false,
+        message: customMessage,
+      });
+    }
 
     // 4. Create Profile
     const newProfile = await model.Profile.create(profileDetails);
     const profileId = newProfile.id;
 
+    if (newProfile?.id) {
+      try {
+        const brandingData = {
+          profileId: newProfile.id,
+          darkMode,
+          brandingFontColor,
+          brandingBackGroundColor,
+          brandingAccentColor,
+        };
 
-   if (newProfile?.id) {
-  try {
-    const brandingData = {
-      profileId: newProfile.id,
-      darkMode,
-      brandingFontColor,
-      brandingBackGroundColor,
-      brandingAccentColor,
-    };
+        const cleanedData = Object.fromEntries(
+          Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
+        );
 
-    // Remove any fields with null or undefined
-    const cleanedData = Object.fromEntries(
-      Object.entries(brandingData).filter(([_, v]) => v !== null && v !== undefined)
-    );
+        await model.DeviceBranding.create(cleanedData);
+      } catch (err) {
+        console.error(err);
+        loggers.error(err + " while inserting in the device brandings.");
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong while inserting in the device brandings.",
+        });
+      }
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "No profileId is found",
+      });
+    }
 
-    await model.DeviceBranding.create(cleanedData);
-  } catch (err) {
-    console.error(err);
-    loggers.error(err + " while inserting in the device brandings.");
-
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while inserting in the device brandings.",
-    });
-  }
-}
-else{
- return res.status(500).json({
-      success: false,
-      message: "No profileId is found",
-    });
-}
-
-      const insertMany = async (arr, modelRef, key) => {
+    const insertMany = async (arr, modelRef, mapperFn) => {
       if (!Array.isArray(arr) || arr.length === 0) return;
-
       const cleaned = arr
-        .filter(item => item !== undefined && item !== null && item !== '')
-        .map(item => ({
-          profileId,
-          [key]: item,
-        }));
-
+        .filter(item => item && Object.keys(item).length > 0)
+        .map(mapperFn);
       if (cleaned.length > 0) {
         await modelRef.bulkCreate(cleaned);
       }
     };
 
     // 6. Insert mapping tables
-    await insertMany(phoneNumbers, model.ProfilePhoneNumber, 'phoneNumber');
-    await insertMany(emailIds, model.ProfileEmail, 'email');
-    await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, 'link');
-    await insertMany(websites, model.ProfileWebsite, 'url');
-    await insertMany(socialMediaNames, model.ProfileSocialMediaLink, 'socialMedia');
+    await insertMany(phoneNumbers, model.ProfilePhoneNumber, item => ({
+      profileId,
+      countryCode: item.countryCode,
+      phoneNumber: item.phoneNumber,
+      phoneNumberType: item.phoneNumberType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus
+    }));
 
-const createdProfile = await model.Profile.findOne({
-  where: { id: newProfile?.id },
-  include: [
-    { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-    { model: model.ProfileEmail, as: "profileEmails" },
-    { model: model.ProfileWebsite, as: "profileWebsites" },
-    { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
-    { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
-    {model:model.DeviceBranding, as: "DeviceBranding" }
-  ]
-});
+    await insertMany(emailIds, model.ProfileEmail, item => ({
+      profileId,
+      email: item.emailId,
+      emailType: item.emailType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus
+    }));
 
+    await insertMany(websites, model.ProfileWebsite, item => ({
+      profileId,
+      url: item.website,
+      websiteType: item.websiteType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus
+    }));
 
+    await insertMany(socialMediaNames, model.ProfileSocialMediaLink, item => ({
+      profileId,
+      profileSocialMediaId: item.profileSocialMediaId,
+      socialMedia: item.socialMediaName,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus
+    }));
 
-const data={
-  createdProfile:createdProfile,
-  // deviceBrandings:
-}
-    // 7. Done
+    await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
+      profileId,
+      profileDigitalPaymentsId: item.profileDigitalPaymentsId,
+      link: item.digitalPaymentLink,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus
+    }));
+
+    const createdProfile = await model.Profile.findOne({
+      where: { id: newProfile?.id },
+      include: [
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
+        { model: model.ProfileEmail, as: "profileEmails" },
+        { model: model.ProfileWebsite, as: "profileWebsites" },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+        { model: model.DeviceBranding, as: "DeviceBranding" }
+      ]
+    });
+
     return res.status(200).json({
       success: true,
       message: "Profile created successfully",
@@ -330,6 +362,7 @@ const data={
     });
   }
 }
+
 
 async function deleteProfile(req, res) {
   const userId = req.user.id;
