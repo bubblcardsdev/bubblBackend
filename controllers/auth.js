@@ -29,6 +29,9 @@ import {
   verifyLinkedinUserSchemaMobile,
   verifyAppleUserSchema,
   createMobileUserSchemaIOS,
+  verifyGoogleUserSchemaLatest,
+  verifyFacebookUserSchemaLatest,
+  verifyLinkedinUserSchemaLatest,
 } from "../validations/auth.js";
 // import { createProfile } from "../controllers/profile.js";
 import config from "../config/config.js";
@@ -385,6 +388,11 @@ async function createUser(req, res) {
     templateId,
     phoneNumber,
     companyName,
+     local,
+      google,
+      facebook,
+      apple,
+      linkedin,
   } = req.body;
   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
 
@@ -416,7 +424,11 @@ async function createUser(req, res) {
         },
       });
     }
-    const hashedPassword = await hashPassword(password);
+    const isOauthLogin = google || facebook || apple || linkedin
+     var hashedPassword = "";
+    if (password) {
+      hashedPassword = await hashPassword(password);
+    }
     var userId = null;
     const user = await model.User.create({
       firstName: firstName,
@@ -424,8 +436,13 @@ async function createUser(req, res) {
       email: emailParse,
       password: hashedPassword,
       emailVerificationId: emailVerificationId,
-      local: true,
+      local,
+      google,
+      facebook,
+      apple,
+      linkedin,
       phoneVerified: true,
+      emailVerified:isOauthLogin
     });
 
     if (user) {
@@ -1202,6 +1219,159 @@ async function verifyGoogleUser(req, res) {
   }
 }
 
+async function verifyGoogleUserLatest(req, res) {
+  const { credential } = req.body;
+
+  const { error } = verifyGoogleUserSchemaLatest.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.details,
+    });
+  }
+
+  try {
+    const payload = await verifyGoogleAccount(credential);
+
+    const payloadEmail = payload.email;
+    const payloadFirstName = payload.given_name;
+    const payloadLastName = payload.family_name;
+
+    const checkEmail = await model.User.findOne({
+      where: { email: payloadEmail, google: true },
+    });
+
+    if (!checkEmail) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: {
+          email: payloadEmail,
+          firstName: payloadFirstName,
+          lastName: payloadLastName,  // fixed typo here
+        },
+      });
+    }
+     if (!checkEmail.emailVerified) {
+            return res.status(403).json({
+              success: false,
+              message: "Email is not verified",
+            });
+          }
+
+    const userInfo = {
+      id: checkEmail.id,
+      firstName: checkEmail.firstName,
+      lastName: checkEmail.lastName,
+      email: checkEmail.email,  // safer to take from DB user
+    };
+
+    const accessToken = await generateAccessToken(userInfo);
+    const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+    const refreshToken = await generateRefreshToken(userInfo);
+    const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    return res.status(200).json({
+      success: true,
+      message: "User exists",
+      user: userInfo,
+      token: {
+        accessToken,
+        accessTokenExpiryInSeconds,
+        refreshToken,
+        refreshTokenExpiryInSeconds,
+      },
+    });
+  } catch (err) {
+    console.error("Error verifying Google user:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message || err,
+    });
+  }
+}
+
+async function verifyFacebookUserLatest(req, res) {
+  const { accesstoken } = req.body;
+
+  const { error } = verifyFacebookUserSchemaLatest.validate(req.body, { abortEarly: false });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.details,
+    });
+  }
+
+  try {
+    const payload = await verifyFacebookAccount(accesstoken);
+
+    const payloadEmail = payload.email;
+    const payloadFirstName = payload.first_name;
+    const payloadLastName = payload.last_name;
+
+    const checkEmail = await model.User.findOne({
+      where: { email: payloadEmail, facebook: true },
+    });
+
+    if (!checkEmail) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: {
+          email: payloadEmail,
+          firstName: payloadFirstName,
+          lastName: payloadLastName,
+        },
+      });
+    }
+
+    if (!checkEmail.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Email is not verified",
+      });
+    }
+
+    const userInfo = {
+      id: checkEmail.id,
+      firstName: checkEmail.firstName,
+      lastName: checkEmail.lastName,
+      email: checkEmail.email,
+    };
+
+    const accessToken = await generateAccessToken(userInfo);
+    const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+    const refreshToken = await generateRefreshToken(userInfo);
+    const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    return res.status(200).json({
+      success: true,
+      message: "User exists",
+      user: userInfo,
+      token: {
+        accessToken,
+        accessTokenExpiryInSeconds,
+        refreshToken,
+        refreshTokenExpiryInSeconds,
+      },
+    });
+  } catch (err) {
+    console.error("Error verifying Facebook user:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message || err,
+    });
+  }
+}
+
+
 async function verifyFacebookUser(req, res) {
   const { accesstoken, isMobile } = req.body;
 
@@ -1335,6 +1505,84 @@ async function verifyFacebookUser(req, res) {
       data: {
         message: "Check the Credentials",
       },
+    });
+  }
+}
+
+async function verifyLinkedinUserLatest(req, res) {
+  const { authorizationCode } = req.body;
+
+  const { error } = verifyLinkedinUserSchemaLatest.validate(req.body, { abortEarly: false });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.details,
+    });
+  }
+
+  try {
+    // Fetch user payload from LinkedIn using the authorization code
+    const payload = await verifyLinkedinAccount(authorizationCode);
+
+    const payloadEmail = payload.email;
+    const payloadFirstName = payload.given_name;
+    const payloadLastName = payload.family_name;
+
+    // Check existing LinkedIn user
+    const checkEmail = await model.User.findOne({
+      where: { email: payloadEmail, linkedin: true },
+    });
+
+    if (!checkEmail) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: {
+          email: payloadEmail,
+          firstName: payloadFirstName,
+          lastName: payloadLastName,
+        },
+      });
+    }
+
+    if (!checkEmail.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Email is not verified",
+      });
+    }
+
+    const userInfo = {
+      id: checkEmail.id,
+      firstName: checkEmail.firstName,
+      lastName: checkEmail.lastName,
+      email: checkEmail.email,
+    };
+
+    const accessToken = await generateAccessToken(userInfo);
+    const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+    const refreshToken = await generateRefreshToken(userInfo);
+    const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
+    
+    return res.status(200).json({
+      success: true,
+      message: "LinkedIn account verified successfully",
+      user: userInfo,
+      token: {
+        accessToken,
+        accessTokenExpiryInSeconds,
+        refreshToken,
+        refreshTokenExpiryInSeconds,
+      },
+    });
+  } catch (err) {
+    console.error("Error verifying LinkedIn user:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message || err,
     });
   }
 }
@@ -2421,19 +2669,12 @@ async function refreshToken(req, res) {
       },
     });
   } catch (err) {
-  if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
+    return res.status(500).json({
       success: false,
-      message: 'Invalid or expired refresh token',
+      message: "Internal server error",
+      error: err,
     });
   }
-  return res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: err.message,
-  });
-}
-
 }
 
 export {
@@ -2458,4 +2699,7 @@ export {
   createUserMobile,
   createUserMobileIOS,
   refreshToken,
+  verifyGoogleUserLatest,
+  verifyLinkedinUserLatest,
+  verifyFacebookUserLatest
 };

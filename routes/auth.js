@@ -21,7 +21,10 @@ import {
   verifyAppleUser,
   createUserBulkController,
   createUserMobileIOS,
-  refreshToken
+  refreshToken,
+  verifyGoogleUserLatest,
+  verifyFacebookUserLatest,
+  verifyLinkedinUserLatest
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 import {SSE, verifyMail, sendEmail, emailVerified, sendForgetPassword} from "../helper/socket_server.js";
@@ -38,6 +41,9 @@ router.post("/register", createUser);
 router.post("/registerMobile", createUserMobile);
 router.post("/registerMobileIos", createUserMobileIOS);
 router.post("/verifygoogleuser", verifyGoogleUser);
+router.post("/verifygoogleuserlatest", verifyGoogleUserLatest);
+router.post("/verifyfacebookuser", verifyFacebookUserLatest);
+router.post("/verifylinkedinuserLatest", verifyLinkedinUserLatest);
 router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
 router.post("/verifyappleuser", verifyAppleUser);

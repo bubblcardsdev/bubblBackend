@@ -172,7 +172,7 @@ const createProfileSchemaLatest = Joi.object({
   websites: Joi.array()
     .items(
       Joi.object({
-        websiteId: Joi.number().allow(null),
+        websiteId: Joi.number().optional(),
         website: Joi.string().allow(""),
         websiteType: Joi.string().allow(""),
         checkBoxStatus: Joi.bool(),
@@ -189,7 +189,7 @@ const createProfileSchemaLatest = Joi.object({
   socialMediaNames: Joi.array()
     .items(
       Joi.object({
-        profileSocialMediaLinkId: Joi.number().allow(null),
+        profileSocialMediaLinkId: Joi.number().optional(),
         profileSocialMediaId: Joi.number().required(),
         socialMediaName: Joi.string().required().min(1),
         enableStatus: Joi.bool(),
@@ -200,7 +200,7 @@ const createProfileSchemaLatest = Joi.object({
   digitalPaymentLinks: Joi.array()
     .items(
       Joi.object({
-        profileDigitalPaymentLinkId: Joi.number().allow(null),
+        profileDigitalPaymentLinkId: Joi.number().optional(),
         profileDigitalPaymentsId: Joi.number().allow(""),
         digitalPaymentLink: Joi.string().allow(""), // need to implement upi id check
         enableStatus: Joi.bool(),

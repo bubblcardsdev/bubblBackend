@@ -18,13 +18,36 @@ const createUserSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().allow(""),
   email: Joi.string().email().required(),
-  password: Joi.string().required(),
+  password: Joi.string().optional() ,
   deviceID: Joi.string().default(""),
   profileName:Joi.string().required(),
   role:Joi.string().optional(),
   templateId:Joi.number().required(),
   phoneNumber:Joi.string().required(),
-  companyName:Joi.string().optional()
+  companyName:Joi.string().optional(),
+  google: Joi.boolean().required(),
+  apple: Joi.boolean().required(),
+  linkedin: Joi.boolean().required(),
+  local: Joi.boolean().required(),
+  facebook: Joi.boolean().required(),
+}).custom((value, helpers) => {
+  const { google, apple, linkedin, local, password,facebook } = value;
+
+  const trueCount = [google, apple, linkedin, local,facebook].filter(Boolean).length;
+
+  if (trueCount !== 1) {
+    return helpers.error("any.custom", {
+      message: "Exactly one login method must be true (google, apple, linkedin, or local)",
+    });
+  }
+
+  if (local && (!password || typeof password !== "string" || password.trim() === "")) {
+    return helpers.error("any.custom", {
+      message: "Password is required when local login is selected",
+    });
+  }
+
+  return value;
 });
 const createMobileUserSchema = Joi.object({
   firstName: Joi.string().required(),
@@ -83,6 +106,15 @@ const createMobileUserSchemaIOS = Joi.object({
 const verifyGoogleUserSchema = Joi.object({
   credential: Joi.string().required(),
   isMobile: Joi.boolean()
+});
+const verifyGoogleUserSchemaLatest = Joi.object({
+  credential: Joi.string().required(),
+});
+const verifyFacebookUserSchemaLatest = Joi.object({
+  accesstoken: Joi.string().required(),
+});
+const verifyLinkedinUserSchemaLatest = Joi.object({
+  authorizationCode: Joi.string().required(),
 });
 
 const verifyFacebookUserSchema = Joi.object({
@@ -186,5 +218,8 @@ export {
   verifyLinkedinUserSchemaMobile,
   sendMailSchema,
   freeCardDesignSchema,
-  createMobileUserSchemaIOS
+  createMobileUserSchemaIOS,
+  verifyGoogleUserSchemaLatest,
+  verifyLinkedinUserSchemaLatest,
+  verifyFacebookUserSchemaLatest
 };
