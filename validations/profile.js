@@ -177,13 +177,7 @@ const createProfileSchemaLatest = Joi.object({
         websiteType: Joi.string().allow(""),
         checkBoxStatus: Joi.bool(),
         activeStatus: Joi.bool(),
-      }).and(
-        "websiteId",
-        "website",
-        "websiteType",
-        "checkBoxStatus",
-        "activeStatus"
-      )
+      })
     ).max(1)
     ,
   socialMediaNames: Joi.array()
