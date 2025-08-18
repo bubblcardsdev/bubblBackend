@@ -39,7 +39,7 @@ const router = express.Router();
 
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
-// router.post("/create", authenticateToken, createProfile);
+router.post("/create", authenticateToken, createProfile);
  router.post("/create-profile",authenticateToken,createProfileLatest)
  router.post("/duplicate-profile",authenticateToken,DuplicateProfile)
  router.delete("/delete-profile",authenticateToken,deleteProfile)
