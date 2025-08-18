@@ -302,9 +302,11 @@ async function createProfileLatest(req, res) {
       activeStatus: item.activeStatus
     }));
 
+    console.log(emailIds);
+    
     await insertMany(emailIds, model.ProfileEmail, item => ({
       profileId,
-      email: item.emailId,
+      emailId: item.emailId,
       emailType: item.emailType,
       checkBoxStatus: item.checkBoxStatus,
       activeStatus: item.activeStatus
@@ -312,7 +314,7 @@ async function createProfileLatest(req, res) {
 
     await insertMany(websites, model.ProfileWebsite, item => ({
       profileId,
-      url: item.website,
+      website: item.website,
       websiteType: item.websiteType,
       checkBoxStatus: item.checkBoxStatus,
       activeStatus: item.activeStatus
@@ -321,7 +323,7 @@ async function createProfileLatest(req, res) {
     await insertMany(socialMediaNames, model.ProfileSocialMediaLink, item => ({
       profileId,
       profileSocialMediaId: item.profileSocialMediaId,
-      socialMedia: item.socialMediaName,
+      socialMediaName: item.socialMediaName,
       enableStatus: item.enableStatus,
       activeStatus: item.activeStatus
     }));
@@ -329,7 +331,7 @@ async function createProfileLatest(req, res) {
     await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
       profileId,
       profileDigitalPaymentsId: item.profileDigitalPaymentsId,
-      link: item.digitalPaymentLink,
+      digitalPaymentLink: item.digitalPaymentLink,
       enableStatus: item.enableStatus,
       activeStatus: item.activeStatus
     }));
@@ -582,42 +584,49 @@ profileDetails.profileName = await getUniqueProfileName(userId, profileDetails.p
     };
 
     // 6. Clone all related tables
-     await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, item => ({
-      phoneNumberType: item.phoneNumberType,
+    await insertMany(phoneNumbers, model.ProfilePhoneNumber, item => ({
+      profileId,
       countryCode: item.countryCode,
       phoneNumber: item.phoneNumber,
+      phoneNumberType: item.phoneNumberType,
       checkBoxStatus: item.checkBoxStatus,
-      activeStatus: item.activeStatus,
+      activeStatus: item.activeStatus
     }));
 
-    await insertMany(profileEmails, model.ProfileEmail, item => ({
-      emailId: item.emailId, // DB column
-      email: item.email, // DB column
+    console.log(emailIds);
+    
+    await insertMany(emailIds, model.ProfileEmail, item => ({
+      profileId,
+      emailId: item.emailId,
       emailType: item.emailType,
       checkBoxStatus: item.checkBoxStatus,
-      activeStatus: item.activeStatus,
+      activeStatus: item.activeStatus
     }));
 
-    await insertMany(profileWebsites, model.ProfileWebsite, item => ({
+    await insertMany(websites, model.ProfileWebsite, item => ({
+      profileId,
       website: item.website,
       websiteType: item.websiteType,
       checkBoxStatus: item.checkBoxStatus,
-      activeStatus: item.activeStatus,
+      activeStatus: item.activeStatus
     }));
 
-    await insertMany(profileSocialMediaLinks, model.ProfileSocialMediaLink, item => ({
+    await insertMany(socialMediaNames, model.ProfileSocialMediaLink, item => ({
+      profileId,
       profileSocialMediaId: item.profileSocialMediaId,
       socialMediaName: item.socialMediaName,
       enableStatus: item.enableStatus,
-      activeStatus: item.activeStatus,
+      activeStatus: item.activeStatus
     }));
 
-    await insertMany(profileDigitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
+    await insertMany(digitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
+      profileId,
       profileDigitalPaymentsId: item.profileDigitalPaymentsId,
       digitalPaymentLink: item.digitalPaymentLink,
       enableStatus: item.enableStatus,
-      activeStatus: item.activeStatus,
+      activeStatus: item.activeStatus
     }));
+
     // 7. Return the full duplicated profile
     const createdProfile = await model.Profile.findOne({
       where: { id: newProfile.id },
