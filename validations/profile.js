@@ -189,7 +189,7 @@ const createProfileSchemaLatest = Joi.object({
         enableStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
-    ).max(1)
+    )
     ,
   digitalPaymentLinks: Joi.array()
     .items(
@@ -280,7 +280,7 @@ const updateProfileSchemaLatest = Joi.object({
         enableStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
-    ).max(1)
+    )
     ,
   digitalPaymentLinks: Joi.array()
     .items(
