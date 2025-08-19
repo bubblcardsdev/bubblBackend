@@ -30,7 +30,8 @@ import {
   createProfileLatest,
   updateProfileLatest,
   getProfileByUid,
-  deleteProfile
+  deleteProfile,
+  getBase64ImageFromUrlLatest
 } from "../controllers/profile.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -67,11 +68,11 @@ router.put("/deletedigitalpayment", authenticateToken, deleteDigitalPayment);
 router.get("/allsocial", authenticateToken, findSocialMediaId);
 router.post("/getProfileImage", getProfileImage);
 router.post("/getProfileImageForLeadGen", getProfileImageForLeadGen);
-router.put("/getBase64Image", getBase64ImageFromUrl);
+router.put("/getBase64Image", getBase64ImageFromUrlLatest);
 
-router.put("/deletebradingimage", deleteBrandingImage);
+router.put("/deletebradingimage",authenticateToken, deleteBrandingImage);
 router.put("/deleteqrimage", deleteQrImage);
-router.put("/deleteProfileImage", deleteProfileImage);
+router.put("/deleteProfileImage",authenticateToken, deleteProfileImage);
 router.get("/getUserDetails", authenticateToken, getUserDetails);
 router.put("/updateProfileName", authenticateToken, updateProfileName);
 export default router;
