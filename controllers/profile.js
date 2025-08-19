@@ -2171,52 +2171,61 @@ async function getProfile(req, res) {
           ],
         },
         {
-          model: model.Template,
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
-        {
-          model: model.Mode,
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
-        {
-          model: model.ProfilePhoneNumber,
-          as: "profilePhoneNumbers",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
-        {
-          model: model.ProfileEmail,
-          as: "profileEmails",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
-        {
-          model: model.ProfileWebsite,
-          as: "profileWebsites",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
-        {
-          model: model.ProfileSocialMediaLink,
-          as: "profileSocialMediaLinks",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
-        {
-          model: model.ProfileDigitalPaymentLink,
-          as: "profileDigitalPaymentLinks",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
-        },
+      model: model.ProfilePhoneNumber,
+      as: "profilePhoneNumbers",
+      attributes: [
+        ["id", "phoneNumberId"],   // alias id → phoneNumberId
+        "countryCode",
+        "phoneNumber",
+        ["phoneNumberType", "phoneNumberType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+       {
+  model: model.ProfileEmail,
+  as: "profileEmails",
+  attributes: [
+    ["id", "emailIdNumber"],   
+    ["emailId", "emailId"],    
+    ["emailType", "emailType"],
+    ["checkBoxStatus", "checkBoxStatus"],
+    ["activeStatus", "activeStatus"],
+  ],
+},
+{
+  model: model.ProfileWebsite,
+  as: "profileWebsites",
+  attributes: [
+    ["id", "websiteId"],      
+    ["website", "website"],
+    ["websiteType", "websiteType"],
+    ["checkBoxStatus", "checkBoxStatus"],
+    ["activeStatus", "activeStatus"],
+  ],
+},
+{
+  model: model.ProfileSocialMediaLink,
+  as: "profileSocialMediaLinks",
+  attributes: [
+    ["id", "profileSocialMediaLinkId"], 
+    ["profileSocialMediaId", "profileSocialMediaId"],
+    ["socialMediaName", "socialMediaName"],
+    ["enableStatus", "enableStatus"],
+    ["activeStatus", "activeStatus"],
+  ],
+},
+{
+  model: model.ProfileDigitalPaymentLink,
+  as: "profileDigitalPaymentLinks",
+  attributes: [
+    ["id", "profileDigitalPaymentLinkId"],   
+    ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
+    ["digitalPaymentLink", "digitalPaymentLink"],
+    ["enableStatus", "enableStatus"],
+    ["activeStatus", "activeStatus"],
+  ],
+},
       ],
       required: false,
     });
@@ -3126,13 +3135,77 @@ async function getBase64ImageFromUrl(req, res) {
     });
   }
 }
+async function getBase64ImageFromUrlLatest(req, res) {
+  try {
+    const { profileId } = req.body;
+    if (!profileId) {
+      return res.json({ success: false, message: "profileId is required" });
+    }
+
+    // 🔹 Step 1: Check if any device is associated with this profile
+    const checkDeviceLink = await model.DeviceLink.findOne({
+      where: { profileId },
+    });
+
+    if (!checkDeviceLink) {
+      return res.json({
+        success: false,
+        message: "No device associated with this profile",
+      });
+    }
+
+    // // (Optional) if you still need the device info
+    // const checkAccountDeviceLink = await model.AccountDeviceLink.findOne({
+    //   where: { id: checkDeviceLink.accountDeviceLinkId },
+    // });
+
+    // const checkDevice = checkAccountDeviceLink
+    //   ? await model.Device.findOne({ where: { id: checkAccountDeviceLink.deviceId } })
+    //   : null;
+
+    // 🔹 Step 2: Fetch all profile images
+    const profileImages = await model.ProfileImages.findAll({
+      where: { profileId },
+      order: [["createdAt", "ASC"]], // ensure ordering
+    });
+
+    if (!profileImages || profileImages.length === 0) {
+      return res.json({
+        success: false,
+        message: "No profile images found",
+      });
+    }
+
+    // 🔹 Step 3: Pick latest image (not second-to-last)
+    const lastImage = profileImages[profileImages.length - 1];
+console.log(lastImage.image);
+
+    // 🔹 Step 4: Download image and convert to base64
+    const resp = await axios.get(lastImage.image, { responseType: "arraybuffer" });
+    const baseUrl = Buffer.from(resp.data, "binary").toString("base64");
+
+    // 🔹 Step 5: Return success
+    return res.json({
+      success: true,
+      baseUrl,
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.json({ success: false, message: e.message });
+  }
+}
+
 
 async function deleteBrandingImage(req, res) {
   const { profileId } = req.body;
+    const userId = req.user.id;
+
   try {
     const checkProfileId = await model.Profile.findOne({
       where: {
         id: profileId,
+        userId:userId
       },
     });
     if (checkProfileId) {
@@ -3201,10 +3274,12 @@ async function deleteQrImage(req, res) {
 
 async function deleteProfileImage(req, res) {
   const { profileId } = req.body;
+    const userId = req.user.id;
   try {
     const checkProfileId = await model.ProfileImages.findAll({
       where: {
         profileId: profileId,
+        userId:userId
       },
     });
     if (checkProfileId) {
@@ -3994,5 +4069,6 @@ export {
   createProfileLatest,
   DuplicateProfile,
   getProfileByUid,
-  deleteProfile
+  deleteProfile,
+  getBase64ImageFromUrlLatest
 };

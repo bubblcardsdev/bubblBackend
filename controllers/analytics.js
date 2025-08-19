@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+import { Op } from "sequelize";
 import loggers from "../config/logger.js";
 import model from "../models/index.js";
 import {
@@ -14,7 +15,7 @@ import {
 } from "../services/analyticsService.js";
 
 //TODO: Chnage name to create tap details
-async function getTapDetails(req, res) {
+async function createTapDetails(req, res) {
   const remoteIp = req.ip;
   const webHeaders = req.headers;
   const webHeaderString = JSON.stringify(webHeaders);
@@ -272,8 +273,103 @@ async function getDeviceTypes(req, res) {
   }
 }
 
+async function getOverView(req, res) {
+  const userId = req.user.id;
+console.log(userId);
+
+  try {
+    // --- Profiles & Devices ---
+    const totalProfiles = await model.Profile.count({ where: { userId } });
+    const totalDevices = await model.DeviceLink.count({ where: { userId } });
+
+    // --- Date Ranges ---
+    const now = new Date();
+    const last7Days = new Date(now - 7 * 24 * 60 * 60 * 1000);   // last 7 days
+    const prev7Days = new Date(now - 14 * 24 * 60 * 60 * 1000);  // 7–14 days ago
+
+    // --- Leads (Current & Previous 7 days) ---
+    const currentLeads = await model.LeadGen.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: last7Days,
+          [Op.lte]: now,
+        },
+      },
+    });
+
+    const previousLeads = await model.LeadGen.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: prev7Days,
+          [Op.lt]: last7Days,
+        },
+      },
+    });
+
+    let leadGenerationIncrementPercentage = 0;
+    if (previousLeads > 0) {
+      leadGenerationIncrementPercentage =
+        ((currentLeads - previousLeads) / previousLeads) * 100;
+    } else if (currentLeads > 0) {
+      leadGenerationIncrementPercentage = 100;
+    }
+
+    // --- Taps (from Analytics table, Current & Previous 7 days) ---
+    const currentTaps = await model.Analytics.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: last7Days,
+          [Op.lte]: now,
+        },
+      },
+    });
+
+    const previousTaps = await model.Analytics.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: prev7Days,
+          [Op.lt]: last7Days,
+        },
+      },
+    });
+
+    let totalTapIncrementPercentage = 0;
+    if (previousTaps > 0) {
+      totalTapIncrementPercentage =
+        ((currentTaps - previousTaps) / previousTaps) * 100;
+    } else if (currentTaps > 0) {
+      totalTapIncrementPercentage = 100;
+    }
+
+    // --- Response ---
+    return res.json({
+      success: true,
+      message: "Account overview fetched successfully",
+      data: {
+        totalProfiles,
+        totalDevices,
+        leadGenerationCountLast7days: currentLeads,
+        leadGenerationIncrementPercentage,
+        totalTapCountLast7days: currentTaps,
+        totalTapIncrementPercentage,
+      },
+    });
+  } catch (err) {
+    console.error("Error in getOverView:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch account overview",
+      error: err.message,
+      
+    });
+  }
+}
+
 export {
-  getTapDetails,
   getLeadsDetails,
   getAnalyticsDetails,
   getTapsDataByDevice,
@@ -284,4 +380,6 @@ export {
   getLeadGenDataByDeviceId,
   getUserDevices,
   getDeviceTypes,
+  getOverView,
+  createTapDetails
 };
