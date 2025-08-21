@@ -13,20 +13,20 @@ module.exports = {
      * }], {});
      */
 
-    await queryInterface.bulkInsert(
-      "ShippingCharges",
-      [
-        {
-          country: "india",
-          amount: "100",
-        },
-        {
-          country: "others",
-          amount: "500",
-        },
-      ],
-      { fields: ["country"], ignoreDuplicates: true }
-    );
+    // await queryInterface.bulkInsert(
+    //   "ShippingCharges",
+    //   [
+    //     {
+    //       country: "india",
+    //       amount: "100",
+    //     },
+    //     {
+    //       country: "others",
+    //       amount: "500",
+    //     },
+    //   ],
+    //   { fields: ["country"], ignoreDuplicates: true }
+    // );
   },
 
   async down(queryInterface, Sequelize) {

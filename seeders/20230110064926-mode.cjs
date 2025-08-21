@@ -12,23 +12,23 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
      */
-    await queryInterface.bulkInsert(
-      "Modes",
-      [
-        {
-          mode: "Contact Card",
-        },
-        {
-          mode: "Bubbl Profile",
-        },
-        {
-          mode: "Direct URL",
-        },
-        {
-          mode: "Lead Form",
-        },
-      ],
-      { fields: ["mode"], ignoreDuplicates: true }
-    );
+    // await queryInterface.bulkInsert(
+    //   "Modes",
+    //   [
+    //     {
+    //       mode: "Contact Card",
+    //     },
+    //     {
+    //       mode: "Bubbl Profile",
+    //     },
+    //     {
+    //       mode: "Direct URL",
+    //     },
+    //     {
+    //       mode: "Lead Form",
+    //     },
+    //   ],
+    //   { fields: ["mode"], ignoreDuplicates: true }
+    // );
   },
 };
