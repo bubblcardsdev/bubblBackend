@@ -238,7 +238,7 @@ const updateProfileSchemaLatest = Joi.object({
   phoneNumbers: Joi.array()
   .items(
     Joi.object({
-      phoneNumberId: Joi.number(),
+      phoneNumberId: Joi.number().optional(),
       countryCode: Joi.string().required(),
       phoneNumber: Joi.string().required(),
       phoneNumberType: Joi.string().optional(),
@@ -251,7 +251,7 @@ const updateProfileSchemaLatest = Joi.object({
   emailIds: Joi.array()
   .items(
     Joi.object({
-      emailIdNumber: Joi.number(),
+      emailIdNumber: Joi.number().optional(),
       emailId: Joi.string().email().required(),
       emailType: Joi.string().optional(),
       checkBoxStatus: Joi.boolean().optional(),
@@ -263,7 +263,7 @@ const updateProfileSchemaLatest = Joi.object({
   websites: Joi.array()
     .items(
       Joi.object({
-        websiteId: Joi.number(),
+        websiteId: Joi.number().optional(),
         website: Joi.string().allow(""),
         websiteType: Joi.string().allow(""),
         checkBoxStatus: Joi.bool(),
@@ -274,18 +274,18 @@ const updateProfileSchemaLatest = Joi.object({
   socialMediaNames: Joi.array()
     .items(
       Joi.object({
-        profileSocialMediaLinkId: Joi.number(),
+        profileSocialMediaLinkId: Joi.number().optional(),
         profileSocialMediaId: Joi.number().required(),
         socialMediaName: Joi.string().required().min(1),
         enableStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
-    )
+    ).unique("profileSocialMediaId")
     ,
   digitalPaymentLinks: Joi.array()
     .items(
       Joi.object({
-        profileDigitalPaymentLinkId: Joi.number(),
+        profileDigitalPaymentLinkId: Joi.number().optional(),
         profileDigitalPaymentsId: Joi.number().allow(""),
         digitalPaymentLink: Joi.string().allow(""), // need to implement upi id check
         enableStatus: Joi.bool(),

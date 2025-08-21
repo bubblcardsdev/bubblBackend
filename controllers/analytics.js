@@ -132,6 +132,26 @@ async function getLeadsDetails(req, res) {
   }
 }
 
+async function getSupportFormLeads(req,res){
+
+  try{
+const leads = await model.SupportForm.findAll({
+  order:[['createdAt','DESC']]
+})
+return res.status(200).json({
+  success:true,
+  data:leads
+})
+  }
+  catch(err){
+loggers.error(err + "from getSupportFormLeads function");
+return res.status(400).json({
+  success:false,
+  error:err
+})
+  }
+}
+
 async function getAnalyticsDetails(req, res) {
   const deviceId = req.body;
   try {
@@ -381,5 +401,6 @@ export {
   getUserDevices,
   getDeviceTypes,
   getOverView,
-  createTapDetails
+  createTapDetails,
+  getSupportFormLeads
 };

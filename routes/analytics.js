@@ -12,6 +12,7 @@ import {
   getDeviceTypes,
   getOverView,
   createTapDetails,
+  getSupportFormLeads,
 } from "../controllers/analytics.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -19,6 +20,7 @@ const router = express.Router();
 
 router.post("/tapDetails", createTapDetails);
 router.get("/getLeads", authenticateToken, getLeadsDetails);
+router.get("/getSupportFormLeads", authenticateToken, getSupportFormLeads);
 router.put("/getAnalytics", authenticateToken, getAnalyticsDetails);
 router.put("/getTapsData", authenticateToken, getTapsDataByDevice);
 router.put("/getModeUsage", authenticateToken, getModeUsageByDevice);

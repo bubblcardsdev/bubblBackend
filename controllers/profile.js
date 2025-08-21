@@ -661,7 +661,7 @@ async function updateProfileLatest(req, res) {
   const userId = req.user.id;
 
   try {
-    // Validate request body
+    // ✅ Validate request body
     const { error } = updateProfileSchemaLatest.validate(req.body, { abortEarly: false });
     if (error) {
       return res.status(400).json({
@@ -670,7 +670,7 @@ async function updateProfileLatest(req, res) {
       });
     }
 
-    // Extract body data
+    // ✅ Extract body data
     const {
       profileId,
       deviceLinkId,
@@ -685,7 +685,7 @@ async function updateProfileLatest(req, res) {
       ...profileDetails
     } = req.body;
 
-    // Check if profile exists
+    // ✅ Check if profile exists
     const profileExist = await model.Profile.findOne({ where: { id: profileId, userId } });
     if (!profileExist) {
       return res.status(400).json({
@@ -694,7 +694,7 @@ async function updateProfileLatest(req, res) {
       });
     }
 
-    // 🔍 Check if profileName already exists for this user (excluding current profileId)
+    // ✅ Check for duplicate profileName
     if (
       profileDetails.profileName &&
       profileDetails.profileName !== profileExist.profileName
@@ -710,7 +710,7 @@ async function updateProfileLatest(req, res) {
       }
     }
 
-    // Prepare update data
+    // ✅ Prepare update data
     const updateData = {};
     const brandingData = {};
 
@@ -735,82 +735,109 @@ async function updateProfileLatest(req, res) {
     if (brandingAccentColor !== undefined && brandingAccentColor !== null)
       brandingData.brandingAccentColor = brandingAccentColor;
 
-    // Update profile
+    // ✅ Update profile
     if (!isEmpty(updateData)) {
       await model.Profile.update(updateData, { where: { id: profileId } });
     }
 
-    // Social Media (only one)
+    // ✅ Social Media (multiple, delete if inactive)
     if (socialMediaNames?.length > 0) {
-      const { profileSocialMediaLinkId, ...social } = socialMediaNames[0];
-      const data = { ...social, profileId };
-      if (profileSocialMediaLinkId) {
-        await model.ProfileSocialMediaLink.update(data, { where: { id: profileSocialMediaLinkId } });
-      } else {
-        await model.ProfileSocialMediaLink.create(data);
-      }
+      await Promise.all(
+        socialMediaNames.map(async social => {
+          const { profileSocialMediaLinkId, activeStatus, ...rest } = social;
+          const data = { ...rest, profileId };
+
+          if (activeStatus === false && profileSocialMediaLinkId) {
+            await model.ProfileSocialMediaLink.destroy({ where: { id: profileSocialMediaLinkId } });
+          } else if (profileSocialMediaLinkId) {
+            await model.ProfileSocialMediaLink.update(data, { where: { id: profileSocialMediaLinkId } });
+          } else if (activeStatus !== false) {
+            await model.ProfileSocialMediaLink.create(data);
+          }
+        })
+      );
     }
 
-    // Phone Numbers (2 allowed)
+    // ✅ Phone Numbers (max 2, delete if inactive)
     if (phoneNumbers?.length > 0) {
       await Promise.all(
         phoneNumbers.map(async phone => {
-          const { phoneNumbersId, ...rest } = phone;
+          const { phoneNumberId, activeStatus, ...rest } = phone;
           const data = { ...rest, profileId };
-          if (phoneNumbersId) {
-            await model.ProfilePhoneNumber.update(data, { where: { id: phoneNumbersId } });
-          } else {
+
+          if (activeStatus === false && phoneNumberId) {
+            await model.ProfilePhoneNumber.destroy({ where: { id: phoneNumberId } });
+          } else if (phoneNumberId) {
+            await model.ProfilePhoneNumber.update(data, { where: { id: phoneNumberId } });
+          } else if (activeStatus !== false) {
             await model.ProfilePhoneNumber.create(data);
           }
         })
       );
     }
 
-    // Email IDs (2 allowed)
+    // ✅ Email IDs (max 2, delete if inactive)
     if (emailIds?.length > 0) {
       await Promise.all(
         emailIds.map(async email => {
-          const { emailIdNumber, ...rest } = email;
+          const { emailIdNumber, activeStatus, ...rest } = email;
           const data = { ...rest, profileId };
-          if (emailIdNumber) {
+
+          if (activeStatus === false && emailIdNumber) {
+            await model.ProfileEmail.destroy({ where: { id: emailIdNumber } });
+          } else if (emailIdNumber) {
             await model.ProfileEmail.update(data, { where: { id: emailIdNumber } });
-          } else {
+          } else if (activeStatus !== false) {
             await model.ProfileEmail.create(data);
           }
         })
       );
     }
 
-    // Digital Payment Link (only one)
+    // ✅ Digital Payment Links (max 1, delete if inactive)
     if (digitalPaymentLinks?.length > 0) {
-      const { profileDigitalPaymentLinkId, ...payment } = digitalPaymentLinks[0];
-      const data = { ...payment, profileId };
-      if (profileDigitalPaymentLinkId) {
-        await model.ProfileDigitalPaymentLink.update(data, { where: { id: profileDigitalPaymentLinkId } });
-      } else {
-        await model.ProfileDigitalPaymentLink.create(data);
-      }
+      await Promise.all(
+        digitalPaymentLinks.map(async payment => {
+          const { profileDigitalPaymentLinkId, activeStatus, ...rest } = payment;
+          const data = { ...rest, profileId };
+
+          if (activeStatus === false && profileDigitalPaymentLinkId) {
+            await model.ProfileDigitalPaymentLink.destroy({ where: { id: profileDigitalPaymentLinkId } });
+          } else if (profileDigitalPaymentLinkId) {
+            await model.ProfileDigitalPaymentLink.update(data, { where: { id: profileDigitalPaymentLinkId } });
+          } else if (activeStatus !== false) {
+            await model.ProfileDigitalPaymentLink.create(data);
+          }
+        })
+      );
     }
 
-    // Website (only one)
+    // ✅ Websites (max 1, delete if inactive)
     if (websites?.length > 0) {
-      const { websiteId, ...website } = websites[0];
-      const data = { ...website, profileId };
-      if (websiteId) {
-        await model.ProfileWebsite.update(data, { where: { id: websiteId } });
-      } else {
-        await model.ProfileWebsite.create(data);
-      }
+      await Promise.all(
+        websites.map(async website => {
+          const { websiteId, activeStatus, ...rest } = website;
+          const data = { ...rest, profileId };
+
+          if (activeStatus === false && websiteId) {
+            await model.ProfileWebsite.destroy({ where: { id: websiteId } });
+          } else if (websiteId) {
+            await model.ProfileWebsite.update(data, { where: { id: websiteId } });
+          } else if (activeStatus !== false) {
+            await model.ProfileWebsite.create(data);
+          }
+        })
+      );
     }
 
-    // Branding data update
+    // ✅ Branding data update
     if (!isEmpty(brandingData)) {
       brandingData.profileId = profileId;
       brandingData.deviceLinkId = deviceLinkId;
       await model.DeviceBranding.update(brandingData, { where: { profileId } });
     }
 
-    // Fetch updated profile
+    // ✅ Fetch updated profile with associations
     const updatedProfile = await model.Profile.findOne({
       where: { id: profileId },
       include: [
@@ -833,8 +860,8 @@ async function updateProfileLatest(req, res) {
     console.error("Error in updateProfileLatest:", err);
     return res.status(500).json({
       success: false,
-      error:err,
-      message: "Something went wrong while updating the profile" ,
+      error: err,
+      message: "Something went wrong while updating the profile",
     });
   }
 }
