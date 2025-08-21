@@ -12,31 +12,31 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
      */
-    await queryInterface.bulkInsert(
-      "ProfileSocialMedia",
-      [
-        {
-          socialMediaIcon: "icon",
-          socialMediaLabel: "instagram",
-        },
-        {
-          socialMediaIcon: "icon",
-          socialMediaLabel: "facebook",
-        },
-        {
-          socialMediaIcon: "icon",
-          socialMediaLabel: "twitter",
-        },
-        {
-          socialMediaIcon: "icon",
-          socialMediaLabel: "youtube",
-        },
-        {
-          socialMediaIcon: "icon",
-          socialMediaLabel: "linkedin",
-        },
-      ],
-      { fields: ["socialMediaLabel"], ignoreDuplicates: true }
-    );
+    // await queryInterface.bulkInsert(
+    //   "ProfileSocialMedia",
+    //   [
+    //     {
+    //       socialMediaIcon: "icon",
+    //       socialMediaLabel: "instagram",
+    //     },
+    //     {
+    //       socialMediaIcon: "icon",
+    //       socialMediaLabel: "facebook",
+    //     },
+    //     {
+    //       socialMediaIcon: "icon",
+    //       socialMediaLabel: "twitter",
+    //     },
+    //     {
+    //       socialMediaIcon: "icon",
+    //       socialMediaLabel: "youtube",
+    //     },
+    //     {
+    //       socialMediaIcon: "icon",
+    //       socialMediaLabel: "linkedin",
+    //     },
+    //   ],
+    //   { fields: ["socialMediaLabel"], ignoreDuplicates: true }
+    // );
   },
 };

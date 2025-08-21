@@ -13,23 +13,23 @@ module.exports = {
      * }], {});
      */
 
-    await queryInterface.bulkInsert(
-      "ProfileDigitalPayments",
-      [
-        {
-          digitalPaymentIcon: "payment icon",
-          digitalPaymentLabel: "google pay",
-        },
-        {
-          digitalPaymentIcon: "payment icon",
-          digitalPaymentLabel: "phonepe",
-        },
-        {
-          digitalPaymentIcon: "payment icon",
-          digitalPaymentLabel: "paytm",
-        },
-      ],
-      { fields: ["digitalPaymentLabel"], ignoreDuplicates: true }
-    );
+    // await queryInterface.bulkInsert(
+    //   "ProfileDigitalPayments",
+    //   [
+    //     {
+    //       digitalPaymentIcon: "payment icon",
+    //       digitalPaymentLabel: "google pay",
+    //     },
+    //     {
+    //       digitalPaymentIcon: "payment icon",
+    //       digitalPaymentLabel: "phonepe",
+    //     },
+    //     {
+    //       digitalPaymentIcon: "payment icon",
+    //       digitalPaymentLabel: "paytm",
+    //     },
+    //   ],
+    //   { fields: ["digitalPaymentLabel"], ignoreDuplicates: true }
+    // );
   },
 };
