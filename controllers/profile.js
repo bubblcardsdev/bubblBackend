@@ -398,7 +398,8 @@ async function deleteProfile(req, res) {
     await model.ProfileSocialMediaLink.destroy({ where: { profileId } });
     await model.ProfileDigitalPaymentLink.destroy({ where: { profileId } });
     await model.DeviceBranding.destroy({ where: { profileId } });
-
+    await model.ProfileImages.destroy({ where: { profileId } });
+    await model.DeviceLink.destroy({where: { profileId } })
     // 3. Delete parent profile
     await model.Profile.destroy({ where: { id: profileId } });
 
@@ -412,6 +413,7 @@ async function deleteProfile(req, res) {
     loggers.error(err + " from deleteProfile function");
 
     return res.status(500).json({
+      error:err,
       success: false,
       message: "Something went wrong while deleting the profile.",
     });
