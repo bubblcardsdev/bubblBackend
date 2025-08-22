@@ -311,7 +311,7 @@ async function qrCodeImageUpload(req, res) {
     }
   } catch (error) {
     loggers.error(error + "from qrCodeImageUpload function");
-    return res.json({
+    return res.status(500).json({
       success: false,
       data: {
         error,
