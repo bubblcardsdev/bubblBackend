@@ -245,8 +245,7 @@ const updateProfileSchemaLatest = Joi.object({
       checkBoxStatus: Joi.boolean().optional(),
       activeStatus: Joi.boolean().required(),
     })
-  )
-  .max(2)       // Maximum 2 phone number objects
+  )       // Maximum 2 phone number objects
   .optional(),
   emailIds: Joi.array()
   .items(
@@ -258,7 +257,6 @@ const updateProfileSchemaLatest = Joi.object({
       activeStatus: Joi.boolean().required(),
     })
   )
-  .max(2)
   .optional(),
   websites: Joi.array()
     .items(
@@ -269,7 +267,7 @@ const updateProfileSchemaLatest = Joi.object({
         checkBoxStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
-    ).max(1)
+    )
     ,
   socialMediaNames: Joi.array()
     .items(
