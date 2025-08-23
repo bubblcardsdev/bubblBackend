@@ -3276,41 +3276,45 @@ async function deleteQrImage(req, res) {
 }
 
 async function deleteProfileImage(req, res) {
-  const { profileId } = req.body;
-    const userId = req.user.id;
-  try {
-    const checkProfileId = await model.ProfileImages.findAll({
+const { profileId } = req.body;
+const userId = req.user.id;
+
+try {
+  const checkProfileId = await model.Profile.findOne({
+    where: {
+      id: profileId,
+      userId: userId
+    },
+  });
+
+  if (checkProfileId) {
+    const deleteImg = await model.ProfileImages.destroy({
       where: {
         profileId: profileId,
-        userId:userId
       },
     });
-    if (checkProfileId) {
-      const deleteImg = await model.ProfileImages.destroy({
-        where: {
-          profileId: profileId,
-        },
+
+    if (deleteImg) {
+      return res.json({
+        success: true,
+        message: "Delete Successfully",
       });
-      if (deleteImg) {
-        return res.json({
-          success: true,
-          message: "Delete Successfully",
-        });
-      } else {
-        return res.json({
-          success: false,
-          message: "Something went wrong",
-        });
-      }
     } else {
       return res.json({
         success: false,
-        message: "Profile Not Found",
+        message: "Something went wrong", 
       });
     }
-  } catch (e) {
-    console.log(e);
+  } else {
+    return res.json({
+      success: false,
+      message: "Profile Not Found",
+    });
   }
+} catch (e) {
+  console.log(e);
+  return res.status(500).json({ success: false, message: "Internal Server Error",error:e });
+}
 }
 
 async function getUserDetails(req, res) {
