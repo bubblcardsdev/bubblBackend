@@ -132,11 +132,14 @@ export default function dbModel(sequelize, Sequelize) {
   Profile.hasMany(ProfileDigitalPaymentLink, {
     as: "profileDigitalPaymentLinks",
   });
+  Profile.hasMany(ProfileImages, { as: "profileImages" });  
    Profile.hasOne(DeviceBranding, {
     foreignKey: 'profileId',
     as: 'DeviceBranding',
   });
   Profile.hasMany(ProfileSocialMediaLink, { as: "profileSocialMediaLinks" });
+  ProfileImages.belongsTo(Profile, { as: "profile", foreignKey: "profileId" });
+
   AccountDeviceLink.hasOne(DeviceLink);
   DeviceLink.belongsTo(AccountDeviceLink);
   AccountDeviceLink.belongsTo(Device);

@@ -1756,11 +1756,10 @@ async function getProfileImageForLeadGen(req, res) {
 
 async function findAllProfiles(req, res) {
   const userId = req.user.id;
+
   try {
-    const profiles = await model.Profile.findAll({
-      where: {
-        userId: userId,
-      },
+    let profiles = await model.Profile.findAll({
+      where: { userId },
       attributes: [
         "id",
         "profileName",
@@ -1769,78 +1768,86 @@ async function findAllProfiles(req, res) {
         "designation",
         "companyName",
         "address",
-        "profileUid"
+        "profileUid",
+        "profileImage" // stores S3 key
       ],
       include: [
         {
           model: model.DeviceLink,
           include: [
-            {
-              model: model.Template,
-            },
-            {
-              model: model.Mode,
-            },
-            {
-              model: model.DeviceBranding,
-            },
-            {
-              model: model.UniqueNameDeviceLink,
-            },
+            { model: model.Template },
+            { model: model.Mode },
+            { model: model.DeviceBranding },
+            { model: model.UniqueNameDeviceLink },
             {
               model: model.AccountDeviceLink,
-              where: {
-                isDeleted: false,
-              },
-              include: [
-                {
-                  model: model.Device,
-                },
-              ],
+              where: { isDeleted: false },
+              include: [{ model: model.Device }],
             },
           ],
         },
         {
           model: model.ProfilePhoneNumber,
           as: "profilePhoneNumbers",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileEmail,
           as: "profileEmails",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileWebsite,
           as: "profileWebsites",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileSocialMediaLink,
           as: "profileSocialMediaLinks",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileDigitalPaymentLink,
           as: "profileDigitalPaymentLinks",
-          attributes: {
-            exclude: ["createdAt", "updatedAt"],
-          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+        {
+          model: model.ProfileImages,
+          as: "profileImages",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
-
       hooks: false,
     });
 
+   profiles = await Promise.all(
+  profiles.map(async (profile) => {
+    const p = profile.toJSON();
+
+    // main profile image (single)
+    if (p.profileImage) {
+      p.profileImage = await generateSignedUrl(p.profileImage);
+    }
+
+    // multiple profile images
+    if (p.profileImages && p.profileImages.length > 0) {
+      p.profileImages = await Promise.all(
+        p.profileImages.map(async (img) => {
+          if (img.image) { // 👈 correct column name
+            img.image = await generateSignedUrl(img.image);
+          }
+          return img;
+        })
+      );
+    }
+
+    return p;
+  })
+);
+
+
     const devices = await model.AccountDeviceLink.findAll({
+      where: { userId, isDeleted: false },
       include: [
         {
           model: model.Device,
@@ -1849,50 +1856,18 @@ async function findAllProfiles(req, res) {
         {
           model: model.DeviceLink,
           include: [
-            {
-              model: model.Profile,
-            },
-            {
-              model: model.Template,
-            },
-            {
-              model: model.Mode,
-            },
-            {
-              model: model.DeviceBranding,
-            },
+            { model: model.Profile },
+            { model: model.Template },
+            { model: model.Mode },
+            { model: model.DeviceBranding },
             {
               model: model.AccountDeviceLink,
-              where: {
-                isDeleted: false,
-              },
-              include: [
-                {
-                  model: model.Device,
-                },
-              ],
+              where: { isDeleted: false },
+              include: [{ model: model.Device }],
             },
           ],
         },
       ],
-      where: {
-        userId: userId,
-        isDeleted: false,
-      },
-    });
-    // if (devices) {
-    //   const imgPath = devices[0].DeviceLink.Profile.dataValues.profileImage;
-
-    //   if (imgPath !== "") {
-    //     const SignedImage = await generateSignedUrl(imgPath);
-    //     devices[0].DeviceLink.Profile.dataValues.profileImage = SignedImage;
-    //   }
-    // }
-
-    const profileImages = model.ProfileImages.findOne({
-      where: {
-        profileId: 4,
-      },
     });
 
     return res.json({
@@ -1900,21 +1875,20 @@ async function findAllProfiles(req, res) {
       data: {
         message: "Profiles found",
         profiles,
-        profileImages,
         devices,
       },
     });
   } catch (error) {
     console.log(error);
-    loggers.error(error + "from findAllProfiles function");
+    loggers.error(error + " from findAllProfiles function");
     return res.json({
       success: false,
-      data: {
-        message: error.message,
-      },
+      data: { message: error.message },
     });
   }
 }
+
+
 
 async function findAllProfilesForMob(req, res) {
   const userId = req.user.id;
