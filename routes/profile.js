@@ -56,7 +56,7 @@ router.put("/update-profile", authenticateToken, updateProfileLatest);
 
 router.post("/find", authenticateToken, getProfile);
 router.post("/findOne", authenticateToken, getProfileOne);
-router.post("/getProfileByUid", authenticateToken, getProfileByUid);
+router.post("/getProfileByUid", getProfileByUid);
 
 // router.get("/one", authenticateToken, getProfileOne);
 router.put("/changeProfile", authenticateToken, changeProfile);

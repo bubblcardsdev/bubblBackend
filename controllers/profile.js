@@ -2609,14 +2609,14 @@ async function getProfileOne(req, res) {
 
 async function getProfileByUid(req, res) {
   const { profileUid, deviceLinkId } = req.body;
-  const userId = req.user.id;
+  // const userId = req.user.id;
 
   try {
     // Fetch the profile using profileUid and userId
     const profile = await model.Profile.findOne({
       where: {
         profileUid: profileUid,
-        userId: userId,
+        // userId: userId,
       },
       include: [
         {
