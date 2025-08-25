@@ -119,6 +119,82 @@ async function createTapDetails(req, res) {
   }
 }
 
+async function createLead (req, res)  {
+  const userId = req.user.id;
+  const { name, emailId, mobileNumber, location, where_you_met, company } = req.body;
+  try {
+
+    const lead = await model.LeadGen.create({
+      userId,
+      name,
+      emailId: emailId || "",
+      mobileNumber,
+      location: location || null,
+      where_you_met: where_you_met || null,
+      company: company || null,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Lead created successfully",
+      data: lead,
+    });
+  } catch (error) {
+    console.error("Error creating lead:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create lead",
+      error: error.message,
+    });
+  }
+};
+
+async function updateLead(req, res) {
+  const userId = req.user.id;
+  const { id, name, emailId, mobileNumber, location, where_you_met, company } = req.body;
+
+  try {
+    const [rowsUpdated] = await model.LeadGen.update(
+      {
+        name,
+        emailId: emailId || "",
+        mobileNumber,
+        location: location || null,
+        where_you_met: where_you_met || null,
+        company: company || null,
+      },
+      {
+        where: { id, userId }, // make sure the lead belongs to this user
+      }
+    );
+
+    if (rowsUpdated === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Lead with id ${id} not found or you don't have permission`,
+      });
+    }
+
+    // Fetch the updated record manually (since MySQL doesn’t return it)
+    const updatedLead = await model.LeadGen.findOne({ where: { id, userId } });
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead updated successfully",
+      data: updatedLead,
+    });
+  } catch (error) {
+    console.error("Error updating lead:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update lead",
+      error: error.message,
+    });
+  }
+}
+
+
+
 async function getLeadsDetails(req, res) {
   try {
     const getLeads = await model.LeadGen.findAll();
@@ -402,5 +478,7 @@ export {
   getDeviceTypes,
   getOverView,
   createTapDetails,
-  getSupportFormLeads
+  getSupportFormLeads,
+  createLead,
+  updateLead
 };

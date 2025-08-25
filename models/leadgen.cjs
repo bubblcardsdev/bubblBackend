@@ -34,6 +34,18 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: false,
       },
+        location: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    where_you_met: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    company: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
     },
     {
       sequelize,
