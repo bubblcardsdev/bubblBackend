@@ -524,21 +524,21 @@ async function DuplicateProfile(req, res) {
     }
      const planId = bubblPlan.planId;
 
-let limit = 5;
-let customMessage = "You've reached your profile limit.";
+ let limit = 5;
+    let customMessage = "You've reached your profile limit.";
 
-// Free plan logic
-if (planId === 1) {
-  const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
+    // Free plan logic
+    if (planId === 1) {
+      const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
 
-  if (isDeviceLinked < 1) {
-    limit = 1;
-    customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
-  } else {
-    limit = 2;
-    customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
-  }
-}
+      if (isDeviceLinked < 1) {
+        limit = 10;
+        customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
+      } else {
+        limit = 20;
+        customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
+      }
+    }
 
 const profileCount = await model.Profile.count({ where: { userId } });
 
