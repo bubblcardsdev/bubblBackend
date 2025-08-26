@@ -15,6 +15,7 @@ import {
   getSupportFormLeads,
   createLead,
   updateLead,
+  getLeadsById,
 } from "../controllers/analytics.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -24,6 +25,7 @@ router.post("/tapDetails", createTapDetails);
 router.post("/createLead",authenticateToken, createLead);
 router.post("/updateLead",authenticateToken, updateLead);
 router.get("/getLeads", authenticateToken, getLeadsDetails);
+router.get("/getLeadsById", authenticateToken, getLeadsById);
 router.get("/getSupportFormLeads", authenticateToken, getSupportFormLeads);
 router.put("/getAnalytics", authenticateToken, getAnalyticsDetails);
 router.put("/getTapsData", authenticateToken, getTapsDataByDevice);
