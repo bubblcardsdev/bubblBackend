@@ -208,6 +208,24 @@ async function getLeadsDetails(req, res) {
   }
 }
 
+async function getLeadsById(req, res) {
+  const userId =req.user.id
+  try {
+    const getLeads = await model.LeadGen.findAll({
+      where:{
+        userId:userId
+      }
+    });
+    return res.json({
+      success: true,
+      getLeads,
+    });
+  } catch (e) {
+    console.log(e);
+    loggers.error(e + "from getLeadsDetails function");
+  }
+}
+
 async function getSupportFormLeads(req,res){
 
   try{
@@ -480,5 +498,6 @@ export {
   createTapDetails,
   getSupportFormLeads,
   createLead,
-  updateLead
+  updateLead,
+  getLeadsById
 };
