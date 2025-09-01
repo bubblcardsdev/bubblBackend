@@ -132,6 +132,7 @@ async function createLead (req, res)  {
       location: location || null,
       where_you_met: where_you_met || null,
       company: company || null,
+      isManual:true
     });
 
     return res.status(201).json({
@@ -148,6 +149,45 @@ async function createLead (req, res)  {
     });
   }
 };
+
+async function deleteLead(req, res) {
+  const userId = req.user.id; 
+  const { leadId } = req.query;
+
+  try {
+    // First find the lead that belongs to the user and isManual
+    const lead = await model.LeadGen.findOne({
+      where: {
+        id: leadId,
+        userId,
+        isManual: true, // Only allow deleting manual leads
+      },
+    });
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found or cannot be deleted",
+      });
+    }
+
+    // Delete the lead
+    await lead.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting lead:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete lead",
+      error: error.message,
+    });
+  }
+}
+
 
 async function updateLead(req, res) {
   const userId = req.user.id;
@@ -499,5 +539,6 @@ export {
   getSupportFormLeads,
   createLead,
   updateLead,
-  getLeadsById
+  getLeadsById,
+  deleteLead
 };

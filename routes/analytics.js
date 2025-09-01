@@ -16,6 +16,7 @@ import {
   createLead,
   updateLead,
   getLeadsById,
+  deleteLead,
 } from "../controllers/analytics.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -23,6 +24,7 @@ const router = express.Router();
 
 router.post("/tapDetails", createTapDetails);
 router.post("/createLead",authenticateToken, createLead);
+router.delete("/deleteLead",authenticateToken,deleteLead)
 router.post("/updateLead",authenticateToken, updateLead);
 router.get("/getLeads", authenticateToken, getLeadsDetails);
 router.get("/getLeadsById", authenticateToken, getLeadsById);
