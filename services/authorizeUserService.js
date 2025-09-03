@@ -14,19 +14,11 @@ async function authorizeUserService(uid) {
       },
     });
 
-    console.log(user.UID);
-    const authorizeTime = new Date(user.AuthorizedTime);
-    const currentTime = new Date();
-
-    console.log(authorizeTime, currentTime);
-    const timeDifference = currentTime - authorizeTime;
-
-    const minutesDifference = Math.abs(timeDifference) / (1000 * 60);
-    if (minutesDifference <= 2) {
-      return true;
-    } else {
+    if (!user) {
       return false;
     }
+
+    return true;
   } catch (error) {
     throw error;
   }
