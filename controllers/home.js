@@ -53,4 +53,40 @@ async function userProfile(req, res) {
   }
 }
 
-export default { userProfile };
+
+async function userImageDelete(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const user = await model.User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.json({
+        success: false,
+        data: { message: "User not found" },
+      });
+    }
+
+    await model.User.update(
+      { userImage: "" },
+      { where: { id: userId } }
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        message: "Image deleted successfully",
+        userImageUrl: "",
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    loggers.error(error + " from userImageDelete function");
+    return res.json({
+      success: false,
+      data: { error },
+    });
+  }
+}
+
+
+export default { userProfile,userImageDelete };
