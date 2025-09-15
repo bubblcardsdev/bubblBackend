@@ -1259,436 +1259,594 @@ async function updateProfile(req, res) {
 
 async function getProfileByDevice(req, res) {
   const { deviceUid, uniqueName } = req.query;
-  console.log(deviceUid, uniqueName, "query");
+
   try {
+    let profileId = null;
+    let deviceLinkId = null;
+
+    // Determine profile and deviceLinkId based on deviceUid
     if (deviceUid) {
-      const device = await model.Device.findOne({
-        where: {
-          deviceUid: deviceUid,
-        },
-      });
-      if (device) {
-        const checkUserDeviceLink = await model.AccountDeviceLink.findOne({
-          where: {
-            deviceId: device.id,
-            isDeleted: false,
-          },
-        });
-        if (checkUserDeviceLink) {
-          const checkProfileDeviceLink = await model.DeviceLink.findOne({
-            where: {
-              accountDeviceLinkId: checkUserDeviceLink.id,
-              activeStatus: true,
-            },
-          });
-          if (checkProfileDeviceLink) {
-            const checkDeviceStatus = await model.DeviceLink.findOne({
-              where: {
-                activeStatus: true,
-              },
-            });
-            if (checkDeviceStatus) {
-              const profileId = checkProfileDeviceLink.profileId;
-              const deviceLinkId = checkProfileDeviceLink.id;
-              const profile = await model.Profile.findOne({
-                where: {
-                  id: profileId,
-                },
-                attributes: { exclude: ["createdAt", "updatedAt"] },
-                include: [
-                  {
-                    model: model.ProfilePhoneNumber,
-                    as: "profilePhoneNumbers",
-                    // where: {
-                    //   activeStatus: true,
-                    //   checkBoxStatus: true,
-                    // },
-                  },
-                  {
-                    model: model.ProfileEmail,
-                    as: "profileEmails",
-                    // where: {
-                    //   activeStatus: true,
-                    //   checkBoxStatus: true,
-                    // },
-                  },
-                  {
-                    model: model.ProfileWebsite,
-                    as: "profileWebsites",
-                    // where: {
-                    //   activeStatus: true,
-                    //   checkBoxStatus: true,
-                    // },
-                  },
-                  {
-                    model: model.ProfileSocialMediaLink,
-                    as: "profileSocialMediaLinks",
-                    // where: {
-                    //   activeStatus: true,
-                    //   // deleteStatus: true,
-                    // },
-                  },
-                  {
-                    model: model.ProfileDigitalPaymentLink,
-                    as: "profileDigitalPaymentLinks",
-                    // where: {
-                    //   activeStatus: true,
-                    //   deleteStatus: true,
-                    // },
-                  },
-                  {
-                    model: model.DeviceLink,
-                    where: {
-                      id: deviceLinkId,
-                      activeStatus: true,
-                    },
-                    include: [
-                      {
-                        model: model.Template,
-                      },
-                      {
-                        model: model.Mode,
-                        where: {
-                          id: checkProfileDeviceLink.modeId,
-                        },
-                      },
-                      {
-                        model: model.AccountDeviceLink,
-                        where: {
-                          isDeleted: false,
-                        },
-                      },
-                    ],
-                  },
-                ],
-              });
-              const userId = checkUserDeviceLink.userId;
-              const user = await model.User.findOne({
-                where: {
-                  id: userId,
-                },
-                attributes: ["id", "firstName", "lastName"],
-                include: [
-                  {
-                    model: model.ClaimLink,
-                  },
-                  {
-                    model: model.BubblPlanManagement,
-                  },
-                ],
-              });
+      const device = await model.Device.findOne({ where: { deviceUid } });
 
-              const deviceBranding = await model.DeviceBranding.findAll({
-                where: {
-                  deviceLinkId: deviceLinkId,
-                  profileId: profileId,
-                },
-              });
-
-              const profileImages = await model.ProfileImages.findAll({
-                where: {
-                  profileId: profileId,
-                },
-              });
-
-              return res.json({
-                success: true,
-                message: "Your Profile",
-                profile,
-                user,
-                deviceBranding,
-                profileImages,
-              });
-            } else {
-              return res.json({
-                success: false,
-                message:
-                  "Device can be either Deleted or Deactivated. Check for it",
-              });
-            }
-          } else {
-            return res.json({
-              success: false,
-              message: "Device is not Attached with the profile",
-            });
-          }
-        } else {
-          return res.json({
-            success: false,
-            message:
-              "Something went wrong while attaching to the account . Contact Administrator",
-          });
-        }
-      }
       if (!device) {
-        const checkWithoutDevice = decryptProfileId(deviceUid);
-        if (checkWithoutDevice) {
-          const profile = await model.Profile.findOne({
-            where: {
-              id: checkWithoutDevice,
-            },
-            attributes: { exclude: ["createdAt", "updatedAt"] },
-            include: [
-              {
-                model: model.ProfilePhoneNumber,
-                as: "profilePhoneNumbers",
-                // where: {
-                //   activeStatus: true,
-                //   checkBoxStatus: true,
-                // },
-              },
-              {
-                model: model.ProfileEmail,
-                as: "profileEmails",
-                // where: {
-                //   activeStatus: true,
-                //   checkBoxStatus: true,
-                // },
-              },
-              {
-                model: model.ProfileWebsite,
-                as: "profileWebsites",
-                // where: {
-                //   activeStatus: true,
-                //   checkBoxStatus: true,
-                // },
-              },
-              {
-                model: model.ProfileSocialMediaLink,
-                as: "profileSocialMediaLinks",
-                // where: {
-                //   activeStatus: true,
-                //   // deleteStatus: true,
-                // },
-              },
-              {
-                model: model.ProfileDigitalPaymentLink,
-                as: "profileDigitalPaymentLinks",
-                // where: {
-                //   activeStatus: true,
-                //   deleteStatus: true,
-                // },
-              },
-              // {
-              //   model: model.DeviceLink,
-              //   where: {
-              //     id: deviceLinkId,
-              //     activeStatus: true,
-              //   },
-              //   include: [
-              //     {
-              //       model: model.Template,
-              //     },
-              //     {
-              //       model: model.Mode,
-              //       where: {
-              //         id: checkProfileDeviceLink.modeId,
-              //       },
-              //     },
-              //     {
-              //       model: model.AccountDeviceLink,
-              //       where: {
-              //         isDeleted: false,
-              //       },
-              //     },
-              //   ],
-              // },
-            ],
-          });
-          const profileImages = await model.ProfileImages.findAll({
-            where: {
-              profileId: checkWithoutDevice,
-            },
-          });
-          const deviceBranding = await model.DeviceBranding.findAll({
-            where: {
-              profileId: checkWithoutDevice,
-            },
-          });
-          return res.json({
-            success: true,
-            message: "Your Profile",
-            profile,
-            // user,
-            deviceBranding,
-            profileImages,
-          });
-        }
-      } else {
-        return res.json({
-          success: false,
-          message: "Unable to find the Device",
-        });
-      }
-    } else if (uniqueName) {
-      const claimedName = await model.UniqueNameDeviceLink.findOne({
-        where: {
-          uniqueName: uniqueName,
-        },
-      });
-
-      if (!claimedName) {
-        return res.json({
-          success: false,
-          message: "cannot find the uniqueName",
-        });
-      }
-
-      const deviceLinkId = claimedName.deviceLinkId;
-
-      const checkDeviceLink = await model.DeviceLink.findOne({
-        where: {
-          id: deviceLinkId,
-          activeStatus: true,
-        },
-      });
-
-      if (checkDeviceLink) {
-        const getDeviceAccountLink = await model.AccountDeviceLink.findOne({
-          where: {
-            id: checkDeviceLink.accountDeviceLinkId,
-          },
-        });
-
-        if (!getDeviceAccountLink) {
-          return res.json({
+        const decryptedProfileId = decryptProfileId(deviceUid);
+        if (!decryptedProfileId) {
+          return res.status(404).json({
             success: false,
-            message: "cannot find the uniqueName",
+            data: { message: "Unable to find the device/profile" },
           });
         }
-        const deviceLinkId = checkDeviceLink.id;
-        const profileId = checkDeviceLink.profileId;
-        const userId = checkDeviceLink.userId;
-        const profile = await model.Profile.findOne({
-          where: {
-            id: profileId,
-          },
-          attributes: { exclude: ["createdAt", "updatedAt"] },
-          include: [
-            {
-              model: model.ProfilePhoneNumber,
-              as: "profilePhoneNumbers",
-              // where: {
-              //   activeStatus: true,
-              //   checkBoxStatus: true,
-              // },
-            },
-            {
-              model: model.ProfileEmail,
-              as: "profileEmails",
-              // where: {
-              //   activeStatus: true,
-              //   checkBoxStatus: true,
-              // },
-            },
-            {
-              model: model.ProfileWebsite,
-              as: "profileWebsites",
-              // where: {
-              //   activeStatus: true,
-              //   checkBoxStatus: true,
-              // },
-            },
-            {
-              model: model.ProfileSocialMediaLink,
-              as: "profileSocialMediaLinks",
-            },
-            {
-              model: model.ProfileDigitalPaymentLink,
-              as: "profileDigitalPaymentLinks",
-              // where: {
-              //   activeStatus: true,
-              //   deleteStatus: true,
-              // },
-            },
-            {
-              model: model.DeviceLink,
-              where: {
-                id: deviceLinkId,
-                activeStatus: true,
-              },
-              include: [
-                {
-                  model: model.Template,
-                },
-                {
-                  model: model.Mode,
-                  where: {
-                    id: checkDeviceLink.modeId,
-                  },
-                },
-                {
-                  model: model.AccountDeviceLink,
-                  where: {
-                    isDeleted: false,
-                  },
-                  include: [
-                    {
-                      model: model.Device,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        });
-        const user = await model.User.findOne({
-          where: {
-            id: userId,
-          },
-          attributes: ["id", "firstName", "lastName"],
-          include: [
-            {
-              model: model.ClaimLink,
-            },
-            {
-              model: model.BubblPlanManagement,
-            },
-          ],
-        });
-
-        const deviceBranding = await model.DeviceBranding.findAll({
-          where: {
-            deviceLinkId: deviceLinkId,
-            profileId: profileId,
-          },
-        });
-
-        const profileImages = await model.ProfileImages.findAll({
-          where: {
-            profileId: profileId,
-          },
-        });
-
-        return res.json({
-          success: true,
-          message: "Your Profile",
-          profile,
-          user,
-          deviceBranding,
-          profileImages,
-        });
+        profileId = decryptedProfileId;
       } else {
-        return res.json({
+        const accountDeviceLink = await model.AccountDeviceLink.findOne({
+          where: { deviceId: device.id, isDeleted: false },
+        });
+
+        if (!accountDeviceLink) {
+          return res.status(404).json({
+            success: false,
+            data: { message: "Device not linked to any account" },
+          });
+        }
+
+        const deviceLink = await model.DeviceLink.findOne({
+          where: { accountDeviceLinkId: accountDeviceLink.id, activeStatus: true },
+        });
+
+        if (!deviceLink) {
+          return res.status(404).json({
+            success: false,
+            data: { message: "Device is not attached to a profile" },
+          });
+        }
+
+        profileId = deviceLink.profileId;
+        deviceLinkId = deviceLink.id;
+      }
+    } 
+    // Determine profile and deviceLinkId based on uniqueName
+    else if (uniqueName) {
+      const claimedName = await model.UniqueNameDeviceLink.findOne({ where: { uniqueName } });
+      if (!claimedName) {
+        return res.status(404).json({
           success: false,
-          message: "Couldnt find the device that is linked with the profile",
+          data: { message: "Cannot find the uniqueName" },
         });
       }
+
+      const deviceLink = await model.DeviceLink.findOne({
+        where: { id: claimedName.deviceLinkId, activeStatus: true },
+      });
+
+      if (!deviceLink) {
+        return res.status(404).json({
+          success: false,
+          data: { message: "DeviceLink not found or inactive" },
+        });
+      }
+
+      profileId = deviceLink.profileId;
+      deviceLinkId = deviceLink.id;
     } else {
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "Please specify the either of two required parameters",
+        data: { message: "Please provide either deviceUid or uniqueName" },
       });
     }
+
+    // Fetch Profile with all associations
+    const profile = await model.Profile.findOne({
+      where: { id: profileId },
+      attributes: { exclude: ["createdAt", "updatedAt"] },
+      include: [
+        { model: model.DeviceLink, required: false, where: deviceLinkId ? { id: deviceLinkId } : undefined, include: [
+            { model: model.Template, attributes: { exclude: ["createdAt","updatedAt"] } },
+            { model: model.Mode, attributes: { exclude: ["createdAt","updatedAt"] } },
+            { model: model.AccountDeviceLink, required: false, include: [{ model: model.Device }] }
+        ] },
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers", attributes: { exclude: ["createdAt","updatedAt"] } },
+        { model: model.ProfileEmail, as: "profileEmails", attributes: { exclude: ["createdAt","updatedAt"] } },
+        { model: model.ProfileWebsite, as: "profileWebsites", attributes: { exclude: ["createdAt","updatedAt"] } },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks", attributes: { exclude: ["createdAt","updatedAt"] } },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks", attributes: { exclude: ["createdAt","updatedAt"] } },
+      ],
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        data: { message: "Profile not found" },
+      });
+    }
+
+    // Generate signed branding logo
+    if (profile.brandingLogo) {
+      profile.brandingLogo = await generateSignedUrl(profile.brandingLogo);
+    }
+
+    // Deduplicate social & payment links
+    profile.setDataValue(
+      "profileSocialMediaLinks",
+      [...new Map(profile.profileSocialMediaLinks.map(item => [item.profileSocialMediaId, item])).values()]
+    );
+    profile.setDataValue(
+      "profileDigitalPaymentLinks",
+      [...new Map(profile.profileDigitalPaymentLinks.map(item => [item.profileDigitalPaymentsId, item])).values()]
+    );
+
+    // Fetch device branding
+    const deviceBranding = await model.DeviceBranding.findAll({
+      where: { profileId, ...(deviceLinkId && { deviceLinkId }) },
+    });
+
+    // Fetch profile images
+    const profileImgs = await model.ProfileImages.findAll({ where: { profileId } });
+
+    // Get deviceUid
+    let device = null;
+    if (deviceLinkId) {
+      const accountDeviceLink = await model.AccountDeviceLink.findOne({
+        where: { id: deviceLinkId },
+      });
+      if (accountDeviceLink) {
+        device = await model.Device.findOne({ where: { id: accountDeviceLink.deviceId } });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        message: "Profile found",
+        profile,
+        profileImgs,
+        deviceBranding,
+        deviceUid: device,
+      },
+    });
+
   } catch (error) {
-    console.log(error);
-    loggers.error(error + "from getProfileByDevice function");
-    return res.json({
+    console.error(error);
+    loggers.error(error + " from getProfileFull");
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      data: { message: error.message },
     });
   }
 }
+
+
+// async function getProfileByDevice(req, res) {
+//   const { deviceUid, uniqueName } = req.query;
+//   console.log(deviceUid, uniqueName, "query");
+//   try {
+//     if (deviceUid) {
+//       const device = await model.Device.findOne({
+//         where: {
+//           deviceUid: deviceUid,
+//         },
+//       });
+//       if (device) {
+//         const checkUserDeviceLink = await model.AccountDeviceLink.findOne({
+//           where: {
+//             deviceId: device.id,
+//             isDeleted: false,
+//           },
+//         });
+//         if (checkUserDeviceLink) {
+//           const checkProfileDeviceLink = await model.DeviceLink.findOne({
+//             where: {
+//               accountDeviceLinkId: checkUserDeviceLink.id,
+//               activeStatus: true,
+//             },
+//           });
+//           if (checkProfileDeviceLink) {
+//             const checkDeviceStatus = await model.DeviceLink.findOne({
+//               where: {
+//                 activeStatus: true,
+//               },
+//             });
+//             if (checkDeviceStatus) {
+//               const profileId = checkProfileDeviceLink.profileId;
+//               const deviceLinkId = checkProfileDeviceLink.id;
+//               const profile = await model.Profile.findOne({
+//                 where: {
+//                   id: profileId,
+//                 },
+//                 attributes: { exclude: ["createdAt", "updatedAt"] },
+//                 include: [
+//                   {
+//                     model: model.ProfilePhoneNumber,
+//                     as: "profilePhoneNumbers",
+//                     // where: {
+//                     //   activeStatus: true,
+//                     //   checkBoxStatus: true,
+//                     // },
+//                   },
+//                   {
+//                     model: model.ProfileEmail,
+//                     as: "profileEmails",
+//                     // where: {
+//                     //   activeStatus: true,
+//                     //   checkBoxStatus: true,
+//                     // },
+//                   },
+//                   {
+//                     model: model.ProfileWebsite,
+//                     as: "profileWebsites",
+//                     // where: {
+//                     //   activeStatus: true,
+//                     //   checkBoxStatus: true,
+//                     // },
+//                   },
+//                   {
+//                     model: model.ProfileSocialMediaLink,
+//                     as: "profileSocialMediaLinks",
+//                     // where: {
+//                     //   activeStatus: true,
+//                     //   // deleteStatus: true,
+//                     // },
+//                   },
+//                   {
+//                     model: model.ProfileDigitalPaymentLink,
+//                     as: "profileDigitalPaymentLinks",
+//                     // where: {
+//                     //   activeStatus: true,
+//                     //   deleteStatus: true,
+//                     // },
+//                   },
+//                   {
+//                     model: model.DeviceLink,
+//                     where: {
+//                       id: deviceLinkId,
+//                       activeStatus: true,
+//                     },
+//                     include: [
+//                       {
+//                         model: model.Template,
+//                       },
+//                       {
+//                         model: model.Mode,
+//                         where: {
+//                           id: checkProfileDeviceLink.modeId,
+//                         },
+//                       },
+//                       {
+//                         model: model.AccountDeviceLink,
+//                         where: {
+//                           isDeleted: false,
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 ],
+//               });
+//               const userId = checkUserDeviceLink.userId;
+//               const user = await model.User.findOne({
+//                 where: {
+//                   id: userId,
+//                 },
+//                 attributes: ["id", "firstName", "lastName"],
+//                 include: [
+//                   {
+//                     model: model.ClaimLink,
+//                   },
+//                   {
+//                     model: model.BubblPlanManagement,
+//                   },
+//                 ],
+//               });
+
+//               const deviceBranding = await model.DeviceBranding.findAll({
+//                 where: {
+//                   deviceLinkId: deviceLinkId,
+//                   profileId: profileId,
+//                 },
+//               });
+
+//               const profileImages = await model.ProfileImages.findAll({
+//                 where: {
+//                   profileId: profileId,
+//                 },
+//               });
+
+//               return res.json({
+//                 success: true,
+//                 message: "Your Profile",
+//                 profile,
+//                 user,
+//                 deviceBranding,
+//                 profileImages,
+//               });
+//             } else {
+//               return res.json({
+//                 success: false,
+//                 message:
+//                   "Device can be either Deleted or Deactivated. Check for it",
+//               });
+//             }
+//           } else {
+//             return res.json({
+//               success: false,
+//               message: "Device is not Attached with the profile",
+//             });
+//           }
+//         } else {
+//           return res.json({
+//             success: false,
+//             message:
+//               "Something went wrong while attaching to the account . Contact Administrator",
+//           });
+//         }
+//       }
+//       if (!device) {
+//         const checkWithoutDevice = decryptProfileId(deviceUid);
+//         if (checkWithoutDevice) {
+//           const profile = await model.Profile.findOne({
+//             where: {
+//               id: checkWithoutDevice,
+//             },
+//             attributes: { exclude: ["createdAt", "updatedAt"] },
+//             include: [
+//               {
+//                 model: model.ProfilePhoneNumber,
+//                 as: "profilePhoneNumbers",
+//                 // where: {
+//                 //   activeStatus: true,
+//                 //   checkBoxStatus: true,
+//                 // },
+//               },
+//               {
+//                 model: model.ProfileEmail,
+//                 as: "profileEmails",
+//                 // where: {
+//                 //   activeStatus: true,
+//                 //   checkBoxStatus: true,
+//                 // },
+//               },
+//               {
+//                 model: model.ProfileWebsite,
+//                 as: "profileWebsites",
+//                 // where: {
+//                 //   activeStatus: true,
+//                 //   checkBoxStatus: true,
+//                 // },
+//               },
+//               {
+//                 model: model.ProfileSocialMediaLink,
+//                 as: "profileSocialMediaLinks",
+//                 // where: {
+//                 //   activeStatus: true,
+//                 //   // deleteStatus: true,
+//                 // },
+//               },
+//               {
+//                 model: model.ProfileDigitalPaymentLink,
+//                 as: "profileDigitalPaymentLinks",
+//                 // where: {
+//                 //   activeStatus: true,
+//                 //   deleteStatus: true,
+//                 // },
+//               },
+//               // {
+//               //   model: model.DeviceLink,
+//               //   where: {
+//               //     id: deviceLinkId,
+//               //     activeStatus: true,
+//               //   },
+//               //   include: [
+//               //     {
+//               //       model: model.Template,
+//               //     },
+//               //     {
+//               //       model: model.Mode,
+//               //       where: {
+//               //         id: checkProfileDeviceLink.modeId,
+//               //       },
+//               //     },
+//               //     {
+//               //       model: model.AccountDeviceLink,
+//               //       where: {
+//               //         isDeleted: false,
+//               //       },
+//               //     },
+//               //   ],
+//               // },
+//             ],
+//           });
+//           const profileImages = await model.ProfileImages.findAll({
+//             where: {
+//               profileId: checkWithoutDevice,
+//             },
+//           });
+//           const deviceBranding = await model.DeviceBranding.findAll({
+//             where: {
+//               profileId: checkWithoutDevice,
+//             },
+//           });
+//           return res.json({
+//             success: true,
+//             message: "Your Profile",
+//             profile,
+//             // user,
+//             deviceBranding,
+//             profileImages,
+//           });
+//         }
+//       } else {
+//         return res.json({
+//           success: false,
+//           message: "Unable to find the Device",
+//         });
+//       }
+//     } else if (uniqueName) {
+//       const claimedName = await model.UniqueNameDeviceLink.findOne({
+//         where: {
+//           uniqueName: uniqueName,
+//         },
+//       });
+
+//       if (!claimedName) {
+//         return res.json({
+//           success: false,
+//           message: "cannot find the uniqueName",
+//         });
+//       }
+
+//       const deviceLinkId = claimedName.deviceLinkId;
+
+//       const checkDeviceLink = await model.DeviceLink.findOne({
+//         where: {
+//           id: deviceLinkId,
+//           activeStatus: true,
+//         },
+//       });
+
+//       if (checkDeviceLink) {
+//         const getDeviceAccountLink = await model.AccountDeviceLink.findOne({
+//           where: {
+//             id: checkDeviceLink.accountDeviceLinkId,
+//           },
+//         });
+
+//         if (!getDeviceAccountLink) {
+//           return res.json({
+//             success: false,
+//             message: "cannot find the uniqueName",
+//           });
+//         }
+//         const deviceLinkId = checkDeviceLink.id;
+//         const profileId = checkDeviceLink.profileId;
+//         const userId = checkDeviceLink.userId;
+//         const profile = await model.Profile.findOne({
+//           where: {
+//             id: profileId,
+//           },
+//           attributes: { exclude: ["createdAt", "updatedAt"] },
+//           include: [
+//             {
+//               model: model.ProfilePhoneNumber,
+//               as: "profilePhoneNumbers",
+//               // where: {
+//               //   activeStatus: true,
+//               //   checkBoxStatus: true,
+//               // },
+//             },
+//             {
+//               model: model.ProfileEmail,
+//               as: "profileEmails",
+//               // where: {
+//               //   activeStatus: true,
+//               //   checkBoxStatus: true,
+//               // },
+//             },
+//             {
+//               model: model.ProfileWebsite,
+//               as: "profileWebsites",
+//               // where: {
+//               //   activeStatus: true,
+//               //   checkBoxStatus: true,
+//               // },
+//             },
+//             {
+//               model: model.ProfileSocialMediaLink,
+//               as: "profileSocialMediaLinks",
+//             },
+//             {
+//               model: model.ProfileDigitalPaymentLink,
+//               as: "profileDigitalPaymentLinks",
+//               // where: {
+//               //   activeStatus: true,
+//               //   deleteStatus: true,
+//               // },
+//             },
+//             {
+//               model: model.DeviceLink,
+//               where: {
+//                 id: deviceLinkId,
+//                 activeStatus: true,
+//               },
+//               include: [
+//                 {
+//                   model: model.Template,
+//                 },
+//                 {
+//                   model: model.Mode,
+//                   where: {
+//                     id: checkDeviceLink.modeId,
+//                   },
+//                 },
+//                 {
+//                   model: model.AccountDeviceLink,
+//                   where: {
+//                     isDeleted: false,
+//                   },
+//                   include: [
+//                     {
+//                       model: model.Device,
+//                     },
+//                   ],
+//                 },
+//               ],
+//             },
+//           ],
+//         });
+//         const user = await model.User.findOne({
+//           where: {
+//             id: userId,
+//           },
+//           attributes: ["id", "firstName", "lastName"],
+//           include: [
+//             {
+//               model: model.ClaimLink,
+//             },
+//             {
+//               model: model.BubblPlanManagement,
+//             },
+//           ],
+//         });
+
+//         const deviceBranding = await model.DeviceBranding.findAll({
+//           where: {
+//             deviceLinkId: deviceLinkId,
+//             profileId: profileId,
+//           },
+//         });
+
+//         const profileImages = await model.ProfileImages.findAll({
+//           where: {
+//             profileId: profileId,
+//           },
+//         });
+
+//         return res.json({
+//           success: true,
+//           message: "Your Profile",
+//           profile,
+//           user,
+//           deviceBranding,
+//           profileImages,
+//         });
+//       } else {
+//         return res.json({
+//           success: false,
+//           message: "Couldnt find the device that is linked with the profile",
+//         });
+//       }
+//     } else {
+//       return res.json({
+//         success: false,
+//         message: "Please specify the either of two required parameters",
+//       });
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     loggers.error(error + "from getProfileByDevice function");
+//     return res.json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// }
 
 async function getProfileImage(req, res) {
   try {
