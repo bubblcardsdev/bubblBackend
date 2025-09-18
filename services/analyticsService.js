@@ -163,7 +163,6 @@ async function GetTapsDataService(req, res, deviceName, timeRange) {
     const deviceId = await getDeviceID(deviceName);
     whereAll.deviceId = deviceId.deviceId;
   }
-
   const totalTaps = await model.Analytics.count({ where: whereAll });
 
   // ========== TAPS IN TIME RANGE ==========
@@ -178,7 +177,6 @@ async function GetTapsDataService(req, res, deviceName, timeRange) {
     const deviceId = await getDeviceID(deviceName);
     whereTimeRange.deviceId = deviceId.deviceId;
   }
-
   const tapsTimeRange = await model.Analytics.count({ where: whereTimeRange });
 
   // ========== TAPS GROUPED BY MONTH ==========
@@ -200,13 +198,16 @@ async function GetTapsDataService(req, res, deviceName, timeRange) {
     raw: true,
   });
 
-  // ========== FILL MISSING MONTHS ==========
+  // ========== FILL MISSING MONTHS UP TO CURRENT ==========
   const allMonths = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
 
-  const tapsByMonth = allMonths.map((name, idx) => {
+  const currentMonthIndex = Today.getMonth(); // 0 = Jan, 8 = Sep
+  const validMonths = allMonths.slice(0, currentMonthIndex + 1);
+
+  const tapsByMonth = validMonths.map((name, idx) => {
     const found = tapsByMonthRaw.find(
       (m) => Number(m.monthNumber) === idx + 1
     );
@@ -220,7 +221,7 @@ async function GetTapsDataService(req, res, deviceName, timeRange) {
   return res.json({
     success: true,
     totalTaps,
-    timeRange,
+    tapsTimeRange,
     tapsByMonth,
   });
 }
