@@ -1,6 +1,6 @@
 import model from "../models/index.js";
 import getTodate from "../helper/analyticsDateTImeHelper.js";
-import { Op } from "sequelize";
+import { col, fn, literal, Op } from "sequelize";
 
 const getDeviceID = async (deviceName) => {
   const linkId = await model.Device.findOne({
@@ -95,63 +95,138 @@ async function getDeviceTypeService(req, res, deviceName, timeRange) {
 }
 
 // Data for Taps Tile
+// async function GetTapsDataService(req, res, deviceName, timeRange) {
+//   const userId = req.user.id;
+//   let getTotalTapsData = [];
+//   if (deviceName === "All") {
+//     getTotalTapsData = await model.Analytics.findAll({
+//       where: {
+//         userId: userId,
+//       },
+//     });
+//   } else {
+//     const deviceId = await getDeviceID(deviceName);
+
+//     getTotalTapsData = await model.Analytics.findAll({
+//       where: {
+//         userId: userId,
+//         deviceId: deviceId.deviceId,
+//       },
+//     });
+//   }
+
+//   const totalTaps = getTotalTapsData.length;
+
+//   const Today = new Date();
+//   const ToDate = getTodate(timeRange);
+
+//   let getTotalTapsDataForTimeRange = "";
+//   if (deviceName === "All") {
+//     getTotalTapsDataForTimeRange = await model.Analytics.findAll({
+//       where: {
+//         userId: userId,
+//         createdAt: {
+//           [Op.between]: [ToDate, Today],
+//         },
+//       },
+//     });
+//   } else {
+//     const deviceId = await getDeviceID(deviceName);
+
+//     getTotalTapsDataForTimeRange = await model.Analytics.findAll({
+//       where: {
+//         userId: userId,
+//         deviceId: deviceId.deviceId,
+//         createdAt: {
+//           [Op.between]: [ToDate, Today],
+//         },
+//       },
+//     });
+//   }
+
+//   const tapsTimeRange = getTotalTapsDataForTimeRange.length;
+
+//   return res.json({
+//     success: true,
+//     totalTaps,
+//     tapsTimeRange,
+//   });
+// }
+
+
 async function GetTapsDataService(req, res, deviceName, timeRange) {
   const userId = req.user.id;
-  let getTotalTapsData = [];
-  if (deviceName === "All") {
-    getTotalTapsData = await model.Analytics.findAll({
-      where: {
-        userId: userId,
-      },
-    });
-  } else {
-    const deviceId = await getDeviceID(deviceName);
 
-    getTotalTapsData = await model.Analytics.findAll({
-      where: {
-        userId: userId,
-        deviceId: deviceId.deviceId,
-      },
-    });
+  // ========== TOTAL TAPS ==========
+  const whereAll = { userId };
+  if (deviceName !== "All") {
+    const deviceId = await getDeviceID(deviceName);
+    whereAll.deviceId = deviceId.deviceId;
   }
 
-  const totalTaps = getTotalTapsData.length;
+  const totalTaps = await model.Analytics.count({ where: whereAll });
 
+  // ========== TAPS IN TIME RANGE ==========
   const Today = new Date();
   const ToDate = getTodate(timeRange);
 
-  let getTotalTapsDataForTimeRange = "";
-  if (deviceName === "All") {
-    getTotalTapsDataForTimeRange = await model.Analytics.findAll({
-      where: {
-        userId: userId,
-        createdAt: {
-          [Op.between]: [ToDate, Today],
-        },
-      },
-    });
-  } else {
+  const whereTimeRange = {
+    userId,
+    createdAt: { [Op.between]: [ToDate, Today] },
+  };
+  if (deviceName !== "All") {
     const deviceId = await getDeviceID(deviceName);
-
-    getTotalTapsDataForTimeRange = await model.Analytics.findAll({
-      where: {
-        userId: userId,
-        deviceId: deviceId.deviceId,
-        createdAt: {
-          [Op.between]: [ToDate, Today],
-        },
-      },
-    });
+    whereTimeRange.deviceId = deviceId.deviceId;
   }
 
-  const tapsTimeRange = getTotalTapsDataForTimeRange.length;
+  const tapsTimeRange = await model.Analytics.count({ where: whereTimeRange });
 
+  // ========== TAPS GROUPED BY MONTH ==========
+  const whereMonthly = { userId };
+  if (deviceName !== "All") {
+    const deviceId = await getDeviceID(deviceName);
+    whereMonthly.deviceId = deviceId.deviceId;
+  }
+
+  const tapsByMonthRaw = await model.Analytics.findAll({
+    attributes: [
+      [fn("MONTH", col("createdAt")), "monthNumber"],   // 1-12
+      [fn("MONTHNAME", col("createdAt")), "monthName"], // January, February...
+      [fn("COUNT", col("id")), "totalTaps"],
+    ],
+    where: whereMonthly,
+    group: [fn("MONTH", col("createdAt"))],
+    order: [[fn("MONTH", col("createdAt")), "ASC"]],
+    raw: true,
+  });
+
+  // ========== FILL MISSING MONTHS ==========
+  const allMonths = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+
+  const tapsByMonth = allMonths.map((name, idx) => {
+    const found = tapsByMonthRaw.find(
+      (m) => Number(m.monthNumber) === idx + 1
+    );
+    return {
+      month: name,
+      totalTaps: found ? Number(found.totalTaps) : 0,
+    };
+  });
+
+  // ========== RESPONSE ==========
   return res.json({
     success: true,
     totalTaps,
-    tapsTimeRange,
+    timeRange,
+    tapsByMonth,
   });
 }
+
+
+
 
 //Data for ModeUsage Pie Chart
 async function getModeUsageService(req, res, deviceName, timeRange) {
