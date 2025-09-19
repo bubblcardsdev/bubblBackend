@@ -114,7 +114,7 @@ const verifyFacebookUserSchemaLatest = Joi.object({
   accesstoken: Joi.string().required(),
 });
 const verifyLinkedinUserSchemaLatest = Joi.object({
-  authorizationCode: Joi.string().required(),
+  code: Joi.string().required(),
 });
 
 const verifyFacebookUserSchema = Joi.object({
