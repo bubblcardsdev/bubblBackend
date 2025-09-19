@@ -1510,9 +1510,9 @@ async function verifyFacebookUser(req, res) {
 }
 
 async function verifyLinkedinUserLatest(req, res) {
-  const { code } = req.query;
+  const { authorizationCode } = req.body;
 
-  const { error } = verifyLinkedinUserSchemaLatest.validate(req.query, { abortEarly: false });
+  const { error } = verifyLinkedinUserSchemaLatest.validate(req.body, { abortEarly: false });
 
   if (error) {
     return res.status(400).json({
@@ -1523,7 +1523,7 @@ async function verifyLinkedinUserLatest(req, res) {
 
   try {
     // Fetch user payload from LinkedIn using the authorization code
-    const payload = await verifyLinkedinAccount(code);
+    const payload = await verifyLinkedinAccount(authorizationCode);
 
     const payloadEmail = payload.email;
     const payloadFirstName = payload.given_name;

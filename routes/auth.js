@@ -43,7 +43,7 @@ router.post("/registerMobileIos", createUserMobileIOS);
 router.post("/verifygoogleuser", verifyGoogleUser);
 router.post("/verifygoogleuserlatest", verifyGoogleUserLatest);
 router.post("/verifyfacebookuser", verifyFacebookUserLatest);
-router.get("/verifylinkedinuserLatest", verifyLinkedinUserLatest);
+router.post("/verifylinkedinuserLatest", verifyLinkedinUserLatest);
 router.post("/verifyfacebookuser", verifyFacebookUser);
 router.post("/verifylinkedinuser", verifyLinkedinUser);
 router.post("/verifyappleuser", verifyAppleUser);
