@@ -156,6 +156,36 @@ async function getDeviceTypeService(req, res, deviceName, timeRange) {
 
 async function GetTapsDataService(req, res, deviceName, timeRange) {
   const userId = req.user.id;
+  const Today = new Date();
+
+  // ========== Helpers ==========
+  const monthFullToShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const weekDaysFullToShort = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const getStartDate = (range) => {
+    const now = new Date();
+    switch (range) {
+      case "Weekly": {
+        const dayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - diff);
+        weekStart.setHours(0,0,0,0);
+        return weekStart;
+      }
+      case "Monthly":
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+      case "Yearly":
+        return new Date(now.getFullYear(), 0, 1);
+      default:
+        const todayStart = new Date(now);
+        todayStart.setHours(0,0,0,0);
+        return todayStart;
+    }
+  };
+
+  const startDate = getStartDate(timeRange);
 
   // ========== TOTAL TAPS ==========
   const whereAll = { userId };
@@ -166,68 +196,96 @@ async function GetTapsDataService(req, res, deviceName, timeRange) {
   const totalTaps = await model.Analytics.count({ where: whereAll });
 
   // ========== TAPS IN TIME RANGE ==========
-  const Today = new Date();
-  const ToDate = getTodate(timeRange);
-
-  const whereTimeRange = {
-    userId,
-    createdAt: { [Op.between]: [ToDate, Today] },
-  };
+  const whereTimeRange = { userId, createdAt: { [Op.between]: [startDate, Today] } };
   if (deviceName !== "All") {
     const deviceId = await getDeviceID(deviceName);
     whereTimeRange.deviceId = deviceId.deviceId;
   }
   const tapsTimeRange = await model.Analytics.count({ where: whereTimeRange });
 
-  // ========== TAPS GROUPED BY MONTH ==========
-  const whereMonthly = { userId };
-  if (deviceName !== "All") {
-    const deviceId = await getDeviceID(deviceName);
-    whereMonthly.deviceId = deviceId.deviceId;
+  // ========== WEEKLY ==========
+  let tapsByWeek = [];
+  if (timeRange === "Weekly") {
+    const weekStart = startDate;
+    for (let i = 0; i <= (Today.getDay() === 0 ? 6 : Today.getDay() - 1); i++) {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + i);
+
+      const dayStart = new Date(dayDate);
+      dayStart.setHours(0,0,0,0);
+
+      const dayEnd = new Date(dayDate);
+      dayEnd.setHours(23,59,59,999);
+
+      const whereDay = { userId, createdAt: { [Op.between]: [dayStart, dayEnd] } };
+      if (deviceName !== "All") {
+        const deviceId = await getDeviceID(deviceName);
+        whereDay.deviceId = deviceId.deviceId;
+      }
+
+      const taps = await model.Analytics.count({ where: whereDay });
+      tapsByWeek.push({ day: weekDaysFullToShort[i], totalTaps: taps });
+    }
   }
 
-  const tapsByMonthRaw = await model.Analytics.findAll({
-    attributes: [
-      [fn("MONTH", col("createdAt")), "monthNumber"],   // 1-12
-      [fn("MONTHNAME", col("createdAt")), "monthName"], // January, February...
-      [fn("COUNT", col("id")), "totalTaps"],
-    ],
-    where: whereMonthly,
-    group: [fn("MONTH", col("createdAt"))],
-    order: [[fn("MONTH", col("createdAt")), "ASC"]],
-    raw: true,
-  });
+// ========== MONTHLY ==========
+let tapsByMonth = [];
+if (timeRange === "Monthly") {
+  for (let day = 1; day <= Today.getDate(); day++) {
+    const dayStart = new Date(Today.getFullYear(), Today.getMonth(), day, 0, 0, 0, 0);
+    const dayEnd = new Date(Today.getFullYear(), Today.getMonth(), day, 23, 59, 59, 999);
 
-  // ========== FILL MISSING MONTHS UP TO CURRENT ==========
-  const allMonths = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
+    const whereDay = { userId, createdAt: { [Op.between]: [dayStart, dayEnd] } };
+    if (deviceName !== "All") {
+      const deviceId = await getDeviceID(deviceName);
+      whereDay.deviceId = deviceId.deviceId;
+    }
 
-  const currentMonthIndex = Today.getMonth(); // 0 = Jan, 8 = Sep
-  const validMonths = allMonths.slice(0, currentMonthIndex + 1);
+    const taps = await model.Analytics.count({ where: whereDay });
 
-  const tapsByMonth = validMonths.map((name, idx) => {
-    const found = tapsByMonthRaw.find(
-      (m) => Number(m.monthNumber) === idx + 1
-    );
-    return {
-      month: name,
-      totalTaps: found ? Number(found.totalTaps) : 0,
-    };
-  });
+    // Format date as YYYY-MM-DD
+    const dateStr = dayStart.toISOString().split("T")[0];
 
-  // ========== RESPONSE ==========
+    tapsByMonth.push({ date: dateStr, totalTaps: taps });
+  }
+}
+
+  // ========== YEARLY ==========
+  let tapsByYear = [];
+  if (timeRange === "Yearly") {
+    const whereYear = { userId };
+    if (deviceName !== "All") {
+      const deviceId = await getDeviceID(deviceName);
+      whereYear.deviceId = deviceId.deviceId;
+    }
+
+    const tapsByMonthRaw = await model.Analytics.findAll({
+      attributes: [
+        [fn("MONTH", col("createdAt")), "monthNumber"],
+        [fn("COUNT", col("id")), "totalTaps"],
+      ],
+      where: whereYear,
+      group: [fn("MONTH", col("createdAt"))],
+      order: [[fn("MONTH", col("createdAt")), "ASC"]],
+      raw: true,
+    });
+
+    const currentMonthIndex = Today.getMonth();
+    tapsByYear = monthFullToShort.slice(0, currentMonthIndex + 1).map((shortName, idx) => {
+      const found = tapsByMonthRaw.find(m => Number(m.monthNumber) === idx + 1);
+      return { month: shortName, totalTaps: found ? Number(found.totalTaps) : 0 };
+    });
+  }
+
   return res.json({
     success: true,
     totalTaps,
     tapsTimeRange,
-    tapsByMonth,
+    week: tapsByWeek,
+    month: tapsByMonth,
+    year: tapsByYear,
   });
 }
-
-
-
 
 //Data for ModeUsage Pie Chart
 async function getModeUsageService(req, res, deviceName, timeRange) {
