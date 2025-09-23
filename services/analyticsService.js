@@ -85,11 +85,11 @@ async function getDeviceTypeService(req, res, deviceName, timeRange) {
       }
     }
   });
-  const counts = [{name:"IOS",count:iosCount},{name:"Android",count:androidCount},{name:"Other",count:othersCount}]
+  const finalData = [{name:"IOS",count:iosCount},{name:"Android",count:androidCount},{name:"Other",count:othersCount}]
 
   return res.json({
     success: true,
-   counts
+   finalData
   });
 }
 
