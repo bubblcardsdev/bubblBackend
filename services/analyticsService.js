@@ -326,7 +326,7 @@ async function getModeUsageService(req, res, deviceName, timeRange) {
 
   return res.json({
     success: true,
-    counts: modeCounts,
+    finalData: modeCounts,
   });
 }
 
