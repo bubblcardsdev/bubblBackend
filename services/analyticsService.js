@@ -85,12 +85,11 @@ async function getDeviceTypeService(req, res, deviceName, timeRange) {
       }
     }
   });
+  const counts = [{name:"IOS",count:iosCount},{name:"Android",count:androidCount},{name:"Other",count:othersCount}]
 
   return res.json({
     success: true,
-    iosCount,
-    androidCount,
-    othersCount,
+   counts
   });
 }
 
@@ -322,7 +321,7 @@ async function getModeUsageService(req, res, deviceName, timeRange) {
     const usageCount = getAnalyticsData.filter(
       (dt) => dt.modeId === data.id
     ).length;
-    return { modeName: data.mode, count: usageCount };
+    return { name: data.mode, count: usageCount };
   });
 
   return res.json({
