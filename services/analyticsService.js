@@ -204,77 +204,84 @@ async function GetTapsDataService(req, res, deviceName, timeRange) {
 
   // ========== WEEKLY ==========
   let tapsByWeek = [];
-  if (timeRange === "Weekly") {
-    const weekStart = startDate;
-    for (let i = 0; i <= (Today.getDay() === 0 ? 6 : Today.getDay() - 1); i++) {
-      const dayDate = new Date(weekStart);
-      dayDate.setDate(weekStart.getDate() + i);
+if (timeRange === "Weekly") {
+  const weekStart = startDate;
+  for (let i = 0; i < 7; i++) {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
 
-      const dayStart = new Date(dayDate);
-      dayStart.setHours(0,0,0,0);
+    const dayStart = new Date(dayDate);
+    dayStart.setHours(0, 0, 0, 0);
 
-      const dayEnd = new Date(dayDate);
-      dayEnd.setHours(23,59,59,999);
+    const dayEnd = new Date(dayDate);
+    dayEnd.setHours(23, 59, 59, 999);
 
+    let taps = null;
+    if (dayDate <= Today) {
       const whereDay = { userId, createdAt: { [Op.between]: [dayStart, dayEnd] } };
       if (deviceName !== "All") {
         const deviceId = await getDeviceID(deviceName);
         whereDay.deviceId = deviceId.deviceId;
       }
-
-      const taps = await model.Analytics.count({ where: whereDay });
-      tapsByWeek.push({ day: weekDaysFullToShort[i], totalTaps: taps });
+      taps = await model.Analytics.count({ where: whereDay });
     }
-  }
 
+    tapsByWeek.push({ day: weekDaysFullToShort[i], totalTaps: taps });
+  }
+}
 // ========== MONTHLY ==========
 let tapsByMonth = [];
 if (timeRange === "Monthly") {
-  for (let day = 1; day <= Today.getDate(); day++) {
+  const daysInMonth = new Date(Today.getFullYear(), Today.getMonth() + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
     const dayStart = new Date(Today.getFullYear(), Today.getMonth(), day, 0, 0, 0, 0);
     const dayEnd = new Date(Today.getFullYear(), Today.getMonth(), day, 23, 59, 59, 999);
 
-    const whereDay = { userId, createdAt: { [Op.between]: [dayStart, dayEnd] } };
-    if (deviceName !== "All") {
-      const deviceId = await getDeviceID(deviceName);
-      whereDay.deviceId = deviceId.deviceId;
+    let taps = null;
+    if (dayStart <= Today) {
+      const whereDay = { userId, createdAt: { [Op.between]: [dayStart, dayEnd] } };
+      if (deviceName !== "All") {
+        const deviceId = await getDeviceID(deviceName);
+        whereDay.deviceId = deviceId.deviceId;
+      }
+      taps = await model.Analytics.count({ where: whereDay });
     }
 
-    const taps = await model.Analytics.count({ where: whereDay });
-
-    // Format date as YYYY-MM-DD
     const dateStr = dayStart.toISOString().split("T")[0];
-
     tapsByMonth.push({ date: dateStr, totalTaps: taps });
   }
 }
 
   // ========== YEARLY ==========
-  let tapsByYear = [];
-  if (timeRange === "Yearly") {
-    const whereYear = { userId };
-    if (deviceName !== "All") {
-      const deviceId = await getDeviceID(deviceName);
-      whereYear.deviceId = deviceId.deviceId;
-    }
-
-    const tapsByMonthRaw = await model.Analytics.findAll({
-      attributes: [
-        [fn("MONTH", col("createdAt")), "monthNumber"],
-        [fn("COUNT", col("id")), "totalTaps"],
-      ],
-      where: whereYear,
-      group: [fn("MONTH", col("createdAt"))],
-      order: [[fn("MONTH", col("createdAt")), "ASC"]],
-      raw: true,
-    });
-
-    const currentMonthIndex = Today.getMonth();
-    tapsByYear = monthFullToShort.slice(0, currentMonthIndex + 1).map((shortName, idx) => {
-      const found = tapsByMonthRaw.find(m => Number(m.monthNumber) === idx + 1);
-      return { month: shortName, totalTaps: found ? Number(found.totalTaps) : 0 };
-    });
+let tapsByYear = [];
+if (timeRange === "Yearly") {
+  const whereYear = { userId };
+  if (deviceName !== "All") {
+    const deviceId = await getDeviceID(deviceName);
+    whereYear.deviceId = deviceId.deviceId;
   }
+
+  const tapsByMonthRaw = await model.Analytics.findAll({
+    attributes: [
+      [fn("MONTH", col("createdAt")), "monthNumber"],
+      [fn("COUNT", col("id")), "totalTaps"],
+    ],
+    where: whereYear,
+    group: [fn("MONTH", col("createdAt"))],
+    order: [[fn("MONTH", col("createdAt")), "ASC"]],
+    raw: true,
+  });
+
+  tapsByYear = monthFullToShort.map((shortName, idx) => {
+    if (idx > Today.getMonth()) {
+      return { month: shortName, totalTaps: null };
+    }
+    const found = tapsByMonthRaw.find(m => Number(m.monthNumber) === idx + 1);
+    return { month: shortName, totalTaps: found ? Number(found.totalTaps) : 0 };
+  });
+}
+
 
   return res.json({
     success: true,
