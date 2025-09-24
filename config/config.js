@@ -1,5 +1,6 @@
 import Joi from "joi";
 import dotenv from "dotenv";
+import payment from "../models/payment.cjs";
 dotenv.config();
 
 const envVarsSchema = Joi.object({
@@ -31,6 +32,8 @@ const envVarsSchema = Joi.object({
   APPLE_KEY_ID: Joi.string().required(),
   APPLE_PRIVATE_KEY: Joi.string().required(),
   APPLE_EXCHANGE_URL: Joi.string().required(),
+  PAYMENT_REDIRECT_URI: Joi.string().required(),
+  MERCHANT_ID: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -72,6 +75,8 @@ const config = {
   appleKeyId: envVars.APPLE_KEY_ID,
   applePrivateKey: envVars.APPLE_PRIVATE_KEY,
   appleExchangeUrl: envVars.APPLE_EXCHANGE_URL,
+  paymentRedirectUri: envVars.PAYMENT_REDIRECT_URI,
+  merchant_id: envVars.MERCHANT_ID,
 };
 
 export default config;

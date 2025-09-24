@@ -63,6 +63,9 @@ module.exports = (sequelize, Sequelize) => {
       email: {
         type: Sequelize.STRING,
       },
+      encResponse:{
+        type:Sequelize.TEXT
+      }
     },
     {
       sequelize,

@@ -62,6 +62,19 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      isPlan: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      planId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+      planType: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
     },
     {
       sequelize,
