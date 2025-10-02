@@ -61,6 +61,7 @@ async function getAllDevices(req, res) {
           productName: device.name,
           price: device.price,
           discount: device.discountPercentage,
+          availability: device.availability,
           sellingPrice:
             device.price - (device.price * device.discountPercentage) / 100,
           primaryImage: imageUrls[0] || null,
@@ -77,10 +78,10 @@ async function getAllDevices(req, res) {
     let removeDuplicates = transformedDevices.map((item) => {
       const findItem = !isEmpty(uniqueItems)
         ? uniqueItems.find(
-            (product) =>
-              product.name === item.productName &&
-              product.material === item.material
-          )
+          (product) =>
+            product.name === item.productName &&
+            product.material === item.material
+        )
         : null;
       if (!findItem) {
         uniqueItems.push({ name: item.productName, material: item.material });
@@ -157,6 +158,7 @@ async function getProductDetailsLatest(req, res) {
       "colorId",
       "materialTypeId",
       "productDetails",
+      'availability',
       [sequelize.col("DevicePatternMaster.name"), "pattern"],
       [sequelize.col("DeviceColorMaster.name"), "color"],
       [sequelize.col("DeviceColorMaster.colorCode"), "colorCode"],
@@ -186,6 +188,13 @@ async function getProductDetailsLatest(req, res) {
       },
     ],
   });
+
+  if (!getProductDetails) {
+    return res.status(404).json({
+      success: false,
+      message: "Product Not Found.",
+    });
+  }
   const productDetail = getProductDetails.get({ plain: true });
   const imageArray = [];
   for (const image of productDetail.DeviceImageInventories) {
@@ -294,13 +303,6 @@ async function getProductDetailsLatest(req, res) {
     materials.push({
       ...plainMaterial,
       imageUrl: signedUrl,
-    });
-  }
-
-  if (!getProductDetails) {
-    return res.status(404).json({
-      success: false,
-      message: "Product Not Found.",
     });
   }
 
@@ -578,6 +580,13 @@ async function addToCart(req, res) {
         message: "Product not found",
       });
     }
+
+    if (getProductDetails.availability == 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Product is out of stock",
+      });
+    };
 
     if (Number(getProductDetails.DeviceTypeMaster.id) !== 6) {
       if (customName || fontId) {

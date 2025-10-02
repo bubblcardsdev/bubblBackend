@@ -336,13 +336,15 @@ async function initiatePayNew(req, res) {
 
     let orderData;
     let user;
+    let formbody = "";
+
     if (isEmail) {
       console.log({
-          id: orderId,
-          email: decodedToken,
-          orderStatusId: 1,
-          isLoggedIn: false,
-        });
+        id: orderId,
+        email: decodedToken,
+        orderStatusId: 1,
+        isLoggedIn: false,
+      });
       orderData = await model.Order.findOne({
         where: {
           id: orderId,
@@ -357,7 +359,7 @@ async function initiatePayNew(req, res) {
       const checkUser = await model.User.findOne({
         where: {
           id: customer.id,
-          
+
         },
       });
       if (!checkUser) {
@@ -409,27 +411,50 @@ async function initiatePayNew(req, res) {
         ? `${shippingDetails.firstName} ${shippingDetails.lastName}`
         : `${user.firstName} ${user.lastName}`;
       const billing_address = `${shippingDetails.flatNumber}, ${shippingDetails.address}`;
+      const billing_email = isEmail ? shippingDetails.emailId : user.email;
 
       const shippingCost = Number(orderData.shippingCharge) || 0;
 
-      const totalAmount = Number(orderData.totalAmount) + shippingCost;
-      rawBodyData = `merchant_id=${config.merchant_id}&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=${config.paymentRedirectUri}&cancel_url=${config.paymentRedirectUri}&language=EN&billing_name=${billing_name}&billing_address=${billing_address}&merchant_param1=${token}&billing_city=${shippingDetails.city}&billing_state=${shippingDetails.state}&billing_zip=${shippingDetails.pincode}&billing_country=${shippingDetails.country}&billing_tel=${shippingDetails.phoneNumber}&billing_email=${shippingDetails.email}&billing_tel=${shippingDetails.phoneNumber}&billing_email=${shippingDetails.emailId}&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+      const totalAmount = Number(orderData.soldPrice) + shippingCost;
+      rawBodyData = `merchant_id=${config.merchant_id}&order_id=${orderId}&currency=INR&amount=${totalAmount}&redirect_url=${config.paymentRedirectUri}&cancel_url=${config.paymentRedirectUri}&language=EN&billing_name=${billing_name}&billing_address=${billing_address}&merchant_param1=${token}&merchant_param2=${orderType}&billing_city=${shippingDetails.city}&billing_state=${shippingDetails.state}&billing_zip=${shippingDetails.pincode}&billing_country=${shippingDetails.country}&billing_tel=${shippingDetails.phoneNumber}&billing_email=${billing_email}&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+    }
+
+    if (orderType === 2) {
+      if (!orderData.isPlan) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment not available for this order type",
+        });
+      }
+      const billing_name = `${user.firstName} ${user.lastName}`;
+      rawBodyData = `merchant_id=${config.merchant_id}&order_id=${orderId}&currency=INR&amount=${orderData.soldPrice}&redirect_url=${config.paymentRedirectUri}&cancel_url=${config.paymentRedirectUri}&language=EN&billing_name=${billing_name}&merchant_param1=${token}&merchant_param2=${orderType}&billing_tel=${user?.phoneNumber || ""}&billing_email=${user.email}&integration_type=iframe_normal&promo_code=&customer_identifier=`;
     }
     const bodyData = encodeURIComponent(rawBodyData);
     const encRequest = encrypt(bodyData, workingKey);
 
+    const POST = qs.parse(bodyData);
+
+    formbody =
+      '<html><head><title>Sub-merchant checkout page</title><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script></head><body><center><!-- width required mininmum 482px --><iframe  width="100%" style="height:100vh"  frameborder="0"  id="paymentFrame" src="https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=' +
+      POST.merchant_id +
+      "&encRequest=" +
+      encRequest +
+      "&access_code=" +
+      accessCode +
+      '"></iframe></center><script type="text/javascript">$(document).ready(function(){$("iframe#paymentFrame").load(function() {window.addEventListener("message", function(e) {$("#paymentFrame").css("height",e.data["newHeight"]+"px"); }, false);}); });</script></body></html>';
+
+    console.log("encRequest-----------------", encRequest, "-----------------");
+    console.log(formbody);
+
     return res.json({
       success: true,
       message: "Payment initiated Successfully",
+
       data: {
-        orderId,
-        orderType,
-        token,
-        rawBodyData,
-        bodyData,
-        encRequest
+        formbody,
       },
     });
+
   } catch (e) {
     res.status(500).json({
       success: false,

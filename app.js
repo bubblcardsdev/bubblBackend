@@ -5,12 +5,10 @@ import compress from "compression";
 import swaggerUi from "swagger-ui-express";
 import { readFile } from "fs/promises";
 import dotenv from "dotenv";
-import swaggerFile from "./swagger-output.json" assert { type: "json" };
-
 dotenv.config();
 
-const swaggerDocument = JSON.parse(
-  await readFile(new URL("./swagger/index.json", import.meta.url))
+const swaggerFile = JSON.parse(
+  await readFile(new URL("./swagger-output.json", import.meta.url))
 );
 
 const app = express();
