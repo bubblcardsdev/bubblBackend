@@ -274,7 +274,7 @@ const updateProfileSchemaLatest = Joi.object({
       Joi.object({
         profileSocialMediaLinkId: Joi.number().optional(),
         profileSocialMediaId: Joi.number().required(),
-        socialMediaName: Joi.string().required().min(1),
+        socialMediaName: Joi.string().required().allow(""),
         enableStatus: Joi.bool(),
         activeStatus: Joi.bool(),
       })
