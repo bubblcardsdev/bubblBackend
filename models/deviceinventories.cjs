@@ -67,6 +67,10 @@ module.exports = (sequelize, Sequelize) => {
       availability: {
         type: Sequelize.BOOLEAN,
       },
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      }
     },
     {
       sequelize,

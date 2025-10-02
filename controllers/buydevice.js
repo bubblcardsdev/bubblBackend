@@ -24,6 +24,7 @@ async function getAllDevices(req, res) {
         { model: model.MaterialTypeMasters },
       ],
       group: ["deviceTypeId", "materialTypeId", "colorId", "patternId"],
+      where: { isActive: true },
     });
 
     if (!devices || devices.length === 0) {
@@ -107,6 +108,11 @@ async function getAllDevices(req, res) {
         finalResponse.others.push(record);
       }
     });
+
+    const sortByAvailabilityAsc = (a, b) => (a.availability ?? 0) - (b.availability ?? 0);
+    finalResponse.basic.sort(sortByAvailabilityAsc);
+    finalResponse.custom.sort(sortByAvailabilityAsc);
+    finalResponse.others.sort(sortByAvailabilityAsc);
 
     return res.json({
       success: true,
