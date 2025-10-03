@@ -613,8 +613,8 @@ async function getDeviceLinkLatest(req, res) {
           required: false,
         },
       ],
-      offset:offset,
-      limit:limit,
+      offset: offset,
+      limit: limit,
     });
 
     if (!linkedDevices || linkedDevices.length === 0) {
@@ -697,6 +697,306 @@ async function fetchCardDetails(req, res) {
   }
 }
 
+const getAllDevices = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const linkedDevices = await model.AccountDeviceLink.findAll({
+      where: {
+        userId: userId,
+      },
+      include: [
+        {
+          model: model.Device,
+          required: false,
+        }]
+    });
+    return res.json({
+      success: true,
+      message: "All Devices",
+      linkedDevices: linkedDevices,
+    });
+  } catch (error) {
+    loggers.error(error + " from getAllDevices function");
+    throw error;
+  }
+}
+
+const linkDevice = async (req, res) => {
+  try {
+    const { deviceUid, profileId, uniqueName } = req.body;
+    const userId = req.user.id;
+
+    const checkUser = await model.User.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!checkUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+
+    //find device ID
+    const device = await model.Device.findOne({
+      where: {
+        deviceUid: deviceUid,
+      },
+    });
+    if (!device) {
+      return res.status(404).json({
+        success: false,
+        message: "Device not found",
+      });
+    }
+
+    let profile;
+    if (profileId) {
+      profile = await model.Profile.findOne({
+        where: {
+          id: profileId,
+        },
+      });
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          message: "Profile not found",
+        });
+      }
+    }
+
+    const deviceId = device.id;
+
+    if (uniqueName) {
+      const userPlan = await model.UserPlan.findOne({
+        where: {
+          userId: userId,
+          planEndDate: { $gte: new Date() },
+          planId: 2 // pro plan id
+        },
+      });
+      if (!userPlan) {
+        return res.status(403).json({
+          success: false,
+          message: "Please subscribe to a plan to use this feature"
+        });
+      }
+      const existingDeviceWithSameName = await model.Device.findOne({
+        where: {
+          deviceNickName: uniqueName,
+          userId: { $ne: userId },
+        },
+      });
+      if (existingDeviceWithSameName) {
+        return res.status(400).json({
+          success: false,
+          message: "Device with the same name already exists",
+        });
+      }
+    }
+    //find if device ever bound to user
+    const accountDeviceLink = await model.AccountDeviceLink.findOne({
+      where: {
+        deviceId,
+        isDeleted: false,
+      },
+    });
+    if (accountDeviceLink) {
+      return res.status(400).json({
+        success: false,
+        message: "Device is already linked to another user",
+      });
+    }
+    //link device to user
+    const newAccountDeviceLink = await model.AccountDeviceLink.create({
+      deviceId,
+      userId,
+      isDeleted: false,
+    });
+
+    //link device to profile
+    if (profile) {
+      const addDeviceLink = await model.DeviceLink.create({
+        accountDeviceLinkId: newAccountDeviceLink.id,
+        activeStatus: true,
+        profileId: profileId,
+        templateId: profile.templateId || 1,
+        modeId: profile.modeId || 2,
+        userId: userId,
+      });
+      await model.DeviceBranding.update(
+        {
+          deviceLinkId: addDeviceLink.id,
+          templateId: profile.templateId || 1,
+        },
+        {
+          where: {
+            profileId: profileId,
+          },
+        }
+      );
+    }
+
+    if (uniqueName) {
+      const deviceUserName = await model.UniqueNameDeviceLink.findOne({
+        where: {
+          userId: userId,
+          deviceLinkId: device.id,
+        },
+      });
+      if (!deviceUserName) {
+        await model.UniqueNameDeviceLink.create({
+          userId: userId,
+          deviceLinkId: device.id,
+          uniqueName: uniqueName,
+          profileId: profileId || null,
+        });
+      } else {
+        await model.UniqueNameDeviceLink.update(
+          { uniqueName: uniqueName },
+          {
+            where: {
+              id: deviceUserName.id,
+            },
+          }
+        );
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: "Device found",
+      device: device,
+      accountDeviceLink: newAccountDeviceLink,
+      deviceLink: null
+    });
+  }
+  catch (error) {
+    loggers.error(error + " from linkDevice function");
+    return res.status(500).json({
+      success: false,
+      message: error,
+    });
+  }
+}
+
+const unlinkDevice = async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    const userId = req.user.id;
+    //find device ID
+    const device = await model.Device.findOne({
+      where: {
+        id: deviceId,
+      },
+    });
+
+    if (!device) {
+      return res.status(404).json({
+        success: false,
+        message: "Device not found",
+      });
+    }
+    //find if device ever bound to user
+    const accountDeviceLink = await model.AccountDeviceLink.findOne({
+      where: {
+        deviceId,
+        userId,
+        isDeleted: false,
+      },
+    });
+    if (!accountDeviceLink) {
+      return res.status(400).json({
+        success: false,
+        message: "Device is not linked to this user",
+      });
+    }
+
+    //find deviceLink
+    const deviceBranding = await model.DeviceBranding.findOne({
+      where: {
+        deviceLinkId: deviceLink ? deviceLink.id : null,
+        profileId: deviceLink ? deviceLink.profileId : null,
+      },
+    });
+
+    //remove deviceLinkId from deviceBranding
+    if (deviceBranding) {
+      await model.DeviceBranding.update(
+        {
+          deviceLinkId: null,
+        },
+        {
+          where: {
+            id: deviceBranding.id,
+          },
+        }
+      );
+    }
+
+    //find deviceLink
+    const deviceLink = await model.DeviceLink.findOne({
+      where: {
+        accountDeviceLinkId: accountDeviceLink.id,
+      },
+    });
+
+    //deactivate deviceLink
+    if (deviceLink) {
+      // await model.DeviceLink.update(
+      //   {
+      //     activeStatus: false,
+      //   },
+      //   {
+      //     where: {
+      //       accountDeviceLinkId: accountDeviceLink.id,
+      //     },
+      //   }
+      // );
+      await model.DeviceLink.destroy({
+        where: {
+          accountDeviceLinkId: accountDeviceLink.id,
+        },
+      });
+    }
+
+    // //soft delete accountDeviceLink
+    // await model.AccountDeviceLink.update(
+    //   {
+    //     isDeleted: true,
+    //   },
+    //   {
+    //     where: {
+    //       deviceId,
+    //       userId,
+    //       isDeleted: false,
+    //     },
+    //   }
+    // );
+
+    //hard delete accountDeviceLink
+    await model.AccountDeviceLink.destroy({
+      where: {
+        id: accountDeviceLink.id
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Device unlinked successfully",
+    });
+  } catch (error) {
+    loggers.error(error + " from unlinkDevice function");
+    return res.status(500).json({
+      success: false,
+      message: error,
+    });
+  }
+}
+
 export {
   deviceLink,
   deactivateDevice,
@@ -706,5 +1006,8 @@ export {
   replaceDevice,
   getDeviceLink,
   fetchCardDetails,
-  getDeviceLinkLatest
+  getDeviceLinkLatest,
+  getAllDevices,
+  linkDevice,
+  unlinkDevice
 };

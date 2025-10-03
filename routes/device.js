@@ -8,7 +8,9 @@ import {
   replaceDevice,
   getDeviceLink,
   fetchCardDetails,
-  getDeviceLinkLatest
+  getAllDevices,
+  linkDevice,
+  unlinkDevice
 } from "../controllers/device.js";
 import { authenticateToken } from "./../middleware/token.js";
 
@@ -25,5 +27,11 @@ router.put("/deactivate", authenticateToken, deactivateDevice);
 router.put("/activate", authenticateToken, activateDevice);
 router.put("/replace", authenticateToken, replaceDevice);
 router.post("/fetchCardDetails", fetchCardDetails);
+
+// V3 Api's
+
+router.get("/all", authenticateToken, getAllDevices);
+router.post("/add", authenticateToken, linkDevice);
+router.post("/remove", authenticateToken, unlinkDevice);
 
 export default router;

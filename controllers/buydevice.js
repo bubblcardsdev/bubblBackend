@@ -25,6 +25,7 @@ async function getAllDevices(req, res) {
       ],
       group: ["deviceTypeId", "materialTypeId", "colorId", "patternId"],
       where: { isActive: true },
+      order: [['deviceTypeId', 'ASC'], ['availability', 'DESC'], ['discountPercentage', 'DESC'], ['id', 'ASC']]
     });
 
     if (!devices || devices.length === 0) {
@@ -109,10 +110,10 @@ async function getAllDevices(req, res) {
       }
     });
 
-    const sortByAvailabilityAsc = (a, b) => (a.availability ?? 0) - (b.availability ?? 0);
-    finalResponse.basic.sort(sortByAvailabilityAsc);
-    finalResponse.custom.sort(sortByAvailabilityAsc);
-    finalResponse.others.sort(sortByAvailabilityAsc);
+    // const sortByAvailabilityAsc = (a, b) => (a.availability ?? 0) - (b.availability ?? 0);
+    // finalResponse.basic.sort(sortByAvailabilityAsc);
+    // finalResponse.custom.sort(sortByAvailabilityAsc);
+    // finalResponse.others.sort(sortByAvailabilityAsc);
 
     return res.json({
       success: true,
@@ -131,208 +132,215 @@ async function getAllDevices(req, res) {
 }
 
 async function getProductDetailsLatest(req, res) {
-  const { productId } = req.body;
+  try {
+    const { productId } = req.body;
 
-  const { error } = getProductId.validate(req.body, {
-    abortEarly: true,
-  });
+    const { error } = getProductId.validate(req.body, {
+      abortEarly: true,
+    });
 
-  if (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Product Id is missing",
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Product Id is missing",
+        data: {
+          error: error.details,
+        },
+      });
+    }
+    const patterns = [];
+    const colors = [];
+    const materials = [];
+    // getting Current Product detail
+    const getProductDetails = await model.DeviceInventories.findOne({
+      where: { productId: productId, isActive: true },
+      attributes: [
+        "productId",
+        "name",
+        "shortDescription",
+        "deviceDescription",
+        ["price", "originalPrice"],
+        "discountPercentage",
+        "deviceTypeId",
+        "patternId",
+        "colorId",
+        "materialTypeId",
+        "productDetails",
+        'availability',
+        [sequelize.col("DevicePatternMaster.name"), "pattern"],
+        [sequelize.col("DeviceColorMaster.name"), "color"],
+        [sequelize.col("DeviceColorMaster.colorCode"), "colorCode"],
+        [sequelize.col("MaterialTypeMaster.name"), "material"],
+        [sequelize.col("DeviceTypeMaster.name"), "deviceType"],
+      ],
+      include: [
+        {
+          model: model.DeviceTypeMasters,
+          attributes: [],
+        },
+        {
+          model: model.DevicePatternMasters,
+          attributes: [],
+        },
+        {
+          model: model.DeviceColorMasters,
+          attributes: [],
+        },
+        {
+          model: model.MaterialTypeMasters,
+          attributes: [],
+        },
+        {
+          model: model.DeviceImageInventories,
+          attributes: ["id", ["imageKey", "imageUrl"]],
+        },
+      ],
+    });
+
+    if (!getProductDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "Product Not Found.",
+      });
+    }
+    const productDetail = getProductDetails.get({ plain: true });
+    const imageArray = [];
+    for (const image of productDetail.DeviceImageInventories) {
+      const signedUrl = await generateSignedUrl(image.imageUrl);
+      imageArray.push({
+        ...image,
+        imageUrl: signedUrl,
+      });
+    }
+
+    productDetail["DeviceImageInventories"] = imageArray;
+
+    const getPatternDetails = await model.DevicePatternMasters.findAll({
+      attributes: [
+        ["name", "patternName"],
+        [sequelize.col("DeviceInventories.productId"), "productId"],
+        [
+          sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+          "imageUrl",
+        ],
+      ],
+      include: [
+        {
+          model: model.DeviceInventories,
+          attributes: [],
+          where: {
+            materialTypeId: getProductDetails?.materialTypeId,
+            deviceTypeId: getProductDetails?.deviceTypeId,
+          },
+          include: {
+            model: model.DeviceImageInventories,
+            attributes: [],
+          },
+        },
+      ],
+    });
+
+    for (const pattern of getPatternDetails) {
+      const plainPattern = pattern.get({ plain: true });
+      const signedUrl = await generateSignedUrl(plainPattern.imageUrl);
+      patterns.push({
+        ...plainPattern,
+        imageUrl: signedUrl,
+      });
+    }
+    const getColorDetails = await model.DeviceColorMasters.findAll({
+      attributes: [
+        ["name", "colorName"],
+        "colorCode",
+        [sequelize.col("DeviceInventories.productId"), "productId"],
+        [
+          sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+          "imageUrl",
+        ],
+      ],
+      include: [
+        {
+          model: model.DeviceInventories,
+          attributes: [],
+          where: {
+            materialTypeId: getProductDetails?.materialTypeId,
+            deviceTypeId: getProductDetails?.deviceTypeId,
+          },
+          include: {
+            model: model.DeviceImageInventories,
+            attributes: [],
+          },
+        },
+      ],
+    });
+    for (const color of getColorDetails) {
+      const plainColor = color.get({ plain: true });
+      const signedUrl = await generateSignedUrl(plainColor.imageUrl);
+      colors.push({
+        ...plainColor,
+        imageUrl: signedUrl,
+      });
+    }
+
+    const getMaterialDetails = await model.MaterialTypeMasters.findAll({
+      attributes: [
+        ["name", "materialName"],
+        [sequelize.col("DeviceInventories.productId"), "productId"],
+        [
+          sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+          "imageUrl",
+        ],
+      ],
+      include: [
+        {
+          model: model.DeviceInventories,
+          attributes: [],
+          where: {
+            deviceTypeId: getProductDetails?.deviceTypeId,
+          },
+          include: {
+            model: model.DeviceImageInventories,
+            attributes: [],
+          },
+        },
+      ],
+    });
+    for (const material of getMaterialDetails) {
+      const plainMaterial = material.get({ plain: true });
+      const signedUrl = await generateSignedUrl(plainMaterial.imageUrl);
+      materials.push({
+        ...plainMaterial,
+        imageUrl: signedUrl,
+      });
+    }
+
+    const originalPrice = parseFloat(productDetail?.originalPrice || 0);
+    const discountPercent = parseFloat(productDetail?.discount || 0);
+
+    const discountAmount = (originalPrice * discountPercent) / 100;
+    const sellingPrice = originalPrice - discountAmount;
+
+    res.json({
+      success: true,
+      message: "Product Details fetched successfully",
       data: {
-        error: error.details,
+        colors,
+        patterns,
+        materials,
+        productDetail: {
+          ...productDetail,
+          sellingPrice: sellingPrice.toFixed(2),
+          originalPrice: originalPrice.toFixed(2),
+          discount: discountPercent.toFixed(2),
+        },
       },
     });
   }
-  const patterns = [];
-  const colors = [];
-  const materials = [];
-  // getting Current Product detail
-  const getProductDetails = await model.DeviceInventories.findOne({
-    where: { productId: productId },
-    attributes: [
-      "productId",
-      "name",
-      "shortDescription",
-      "deviceDescription",
-      ["price", "originalPrice"],
-      "discountPercentage",
-      "deviceTypeId",
-      "patternId",
-      "colorId",
-      "materialTypeId",
-      "productDetails",
-      'availability',
-      [sequelize.col("DevicePatternMaster.name"), "pattern"],
-      [sequelize.col("DeviceColorMaster.name"), "color"],
-      [sequelize.col("DeviceColorMaster.colorCode"), "colorCode"],
-      [sequelize.col("MaterialTypeMaster.name"), "material"],
-      [sequelize.col("DeviceTypeMaster.name"), "deviceType"],
-    ],
-    include: [
-      {
-        model: model.DeviceTypeMasters,
-        attributes: [],
-      },
-      {
-        model: model.DevicePatternMasters,
-        attributes: [],
-      },
-      {
-        model: model.DeviceColorMasters,
-        attributes: [],
-      },
-      {
-        model: model.MaterialTypeMasters,
-        attributes: [],
-      },
-      {
-        model: model.DeviceImageInventories,
-        attributes: ["id", ["imageKey", "imageUrl"]],
-      },
-    ],
-  });
-
-  if (!getProductDetails) {
-    return res.status(404).json({
-      success: false,
-      message: "Product Not Found.",
-    });
+  catch (error) {
+    console.error("Error", error);
+    loggers.error(`${error} from getProductDetailsLatest function`);
+    res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
   }
-  const productDetail = getProductDetails.get({ plain: true });
-  const imageArray = [];
-  for (const image of productDetail.DeviceImageInventories) {
-    const signedUrl = await generateSignedUrl(image.imageUrl);
-    imageArray.push({
-      ...image,
-      imageUrl: signedUrl,
-    });
-  }
-
-  productDetail["DeviceImageInventories"] = imageArray;
-
-  const getPatternDetails = await model.DevicePatternMasters.findAll({
-    attributes: [
-      ["name", "patternName"],
-      [sequelize.col("DeviceInventories.productId"), "productId"],
-      [
-        sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
-        "imageUrl",
-      ],
-    ],
-    include: [
-      {
-        model: model.DeviceInventories,
-        attributes: [],
-        where: {
-          materialTypeId: getProductDetails?.materialTypeId,
-          deviceTypeId: getProductDetails?.deviceTypeId,
-        },
-        include: {
-          model: model.DeviceImageInventories,
-          attributes: [],
-        },
-      },
-    ],
-  });
-
-  for (const pattern of getPatternDetails) {
-    const plainPattern = pattern.get({ plain: true });
-    const signedUrl = await generateSignedUrl(plainPattern.imageUrl);
-    patterns.push({
-      ...plainPattern,
-      imageUrl: signedUrl,
-    });
-  }
-  const getColorDetails = await model.DeviceColorMasters.findAll({
-    attributes: [
-      ["name", "colorName"],
-      "colorCode",
-      [sequelize.col("DeviceInventories.productId"), "productId"],
-      [
-        sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
-        "imageUrl",
-      ],
-    ],
-    include: [
-      {
-        model: model.DeviceInventories,
-        attributes: [],
-        where: {
-          materialTypeId: getProductDetails?.materialTypeId,
-          deviceTypeId: getProductDetails?.deviceTypeId,
-        },
-        include: {
-          model: model.DeviceImageInventories,
-          attributes: [],
-        },
-      },
-    ],
-  });
-  for (const color of getColorDetails) {
-    const plainColor = color.get({ plain: true });
-    const signedUrl = await generateSignedUrl(plainColor.imageUrl);
-    colors.push({
-      ...plainColor,
-      imageUrl: signedUrl,
-    });
-  }
-
-  const getMaterialDetails = await model.MaterialTypeMasters.findAll({
-    attributes: [
-      ["name", "materialName"],
-      [sequelize.col("DeviceInventories.productId"), "productId"],
-      [
-        sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
-        "imageUrl",
-      ],
-    ],
-    include: [
-      {
-        model: model.DeviceInventories,
-        attributes: [],
-        where: {
-          deviceTypeId: getProductDetails?.deviceTypeId,
-        },
-        include: {
-          model: model.DeviceImageInventories,
-          attributes: [],
-        },
-      },
-    ],
-  });
-  for (const material of getMaterialDetails) {
-    const plainMaterial = material.get({ plain: true });
-    const signedUrl = await generateSignedUrl(plainMaterial.imageUrl);
-    materials.push({
-      ...plainMaterial,
-      imageUrl: signedUrl,
-    });
-  }
-
-  const originalPrice = parseFloat(productDetail?.originalPrice || 0);
-  const discountPercent = parseFloat(productDetail?.discount || 0);
-
-  const discountAmount = (originalPrice * discountPercent) / 100;
-  const sellingPrice = originalPrice - discountAmount;
-
-  res.json({
-    success: true,
-    message: "Product Details fetched successfully",
-    data: {
-      colors,
-      patterns,
-      materials,
-      productDetail: {
-        ...productDetail,
-        sellingPrice: sellingPrice,
-        originalPrice: originalPrice,
-        discount: discountPercent,
-      },
-    },
-  });
 }
 
 //#region - adding to cart in one shot
@@ -566,6 +574,7 @@ async function addToCart(req, res) {
     const getProductDetails = await model.DeviceInventories.findOne({
       where: {
         productId: productId,
+        isActive: true,
       },
       include: [
         {

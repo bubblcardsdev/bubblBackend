@@ -14,7 +14,7 @@ import axios from "axios";
 import { decryptProfileId } from "../helper/ccavutil.js";
 import { Op, Sequelize, where } from "sequelize";
 import pkg from "lodash";
-const {isEmpty} = pkg
+const { isEmpty } = pkg
 
 async function getProfileName(req, res) {
   try {
@@ -303,7 +303,7 @@ async function createProfileLatest(req, res) {
     }));
 
     console.log(emailIds);
-    
+
     await insertMany(emailIds, model.ProfileEmail, item => ({
       profileId,
       emailId: item.emailId,
@@ -361,7 +361,7 @@ async function createProfileLatest(req, res) {
     return res.status(500).json({
       success: false,
       message: "Something went wrong while creating the profile.",
-      error:err
+      error: err
     });
   }
 }
@@ -369,7 +369,7 @@ async function createProfileLatest(req, res) {
 
 async function deleteProfile(req, res) {
   const userId = req.user.id;
-  const { profileId } = req.query; 
+  const { profileId } = req.query;
 
   if (!profileId) {
     return res.status(400).json({
@@ -399,7 +399,7 @@ async function deleteProfile(req, res) {
     await model.ProfileDigitalPaymentLink.destroy({ where: { profileId } });
     await model.DeviceBranding.destroy({ where: { profileId } });
     await model.ProfileImages.destroy({ where: { profileId } });
-    await model.DeviceLink.destroy({where: { profileId } })
+    await model.DeviceLink.destroy({ where: { profileId } })
     // 3. Delete parent profile
     await model.Profile.destroy({ where: { id: profileId } });
 
@@ -413,7 +413,7 @@ async function deleteProfile(req, res) {
     loggers.error(err + " from deleteProfile function");
 
     return res.status(500).json({
-      error:err,
+      error: err,
       success: false,
       message: "Something went wrong while deleting the profile.",
     });
@@ -522,9 +522,9 @@ async function DuplicateProfile(req, res) {
         message: "No subscription plan found",
       });
     }
-     const planId = bubblPlan.planId;
+    const planId = bubblPlan.planId;
 
- let limit = 5;
+    let limit = 5;
     let customMessage = "You've reached your profile limit.";
 
     // Free plan logic
@@ -540,16 +540,16 @@ async function DuplicateProfile(req, res) {
       }
     }
 
-const profileCount = await model.Profile.count({ where: { userId } });
+    const profileCount = await model.Profile.count({ where: { userId } });
 
-if (profileCount >= limit) {
-  return res.status(400).json({
-    success: false,
-    message: customMessage,
-  });
-}
+    if (profileCount >= limit) {
+      return res.status(400).json({
+        success: false,
+        message: customMessage,
+      });
+    }
 
-profileDetails.profileName = await getUniqueProfileName(userId, profileDetails.profileName)
+    profileDetails.profileName = await getUniqueProfileName(userId, profileDetails.profileName)
     // 3. Create the new profile
     const newProfile = await model.Profile.create(profileDetails);
 
@@ -586,46 +586,46 @@ profileDetails.profileName = await getUniqueProfileName(userId, profileDetails.p
     };
 
     // 6. Clone all related tables
-   await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, item => ({
-  profileId: newProfile.id,
-  countryCode: item.countryCode,
-  phoneNumber: item.phoneNumber,
-  phoneNumberType: item.phoneNumberType,
-  checkBoxStatus: item.checkBoxStatus,
-  activeStatus: item.activeStatus,
-}));
+    await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, item => ({
+      profileId: newProfile.id,
+      countryCode: item.countryCode,
+      phoneNumber: item.phoneNumber,
+      phoneNumberType: item.phoneNumberType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus,
+    }));
 
-await insertMany(profileEmails, model.ProfileEmail, item => ({
-  profileId: newProfile.id,
-  emailId: item.emailId,
-  emailType: item.emailType,
-  checkBoxStatus: item.checkBoxStatus,
-  activeStatus: item.activeStatus,
-}));
+    await insertMany(profileEmails, model.ProfileEmail, item => ({
+      profileId: newProfile.id,
+      emailId: item.emailId,
+      emailType: item.emailType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus,
+    }));
 
-await insertMany(profileWebsites, model.ProfileWebsite, item => ({
-  profileId: newProfile.id,
-  website: item.website,
-  websiteType: item.websiteType,
-  checkBoxStatus: item.checkBoxStatus,
-  activeStatus: item.activeStatus,
-}));
+    await insertMany(profileWebsites, model.ProfileWebsite, item => ({
+      profileId: newProfile.id,
+      website: item.website,
+      websiteType: item.websiteType,
+      checkBoxStatus: item.checkBoxStatus,
+      activeStatus: item.activeStatus,
+    }));
 
-await insertMany(profileSocialMediaLinks, model.ProfileSocialMediaLink, item => ({
-  profileId: newProfile.id,
-  profileSocialMediaId: item.profileSocialMediaId,
-  socialMediaName: item.socialMediaName,
-  enableStatus: item.enableStatus,
-  activeStatus: item.activeStatus,
-}));
+    await insertMany(profileSocialMediaLinks, model.ProfileSocialMediaLink, item => ({
+      profileId: newProfile.id,
+      profileSocialMediaId: item.profileSocialMediaId,
+      socialMediaName: item.socialMediaName,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus,
+    }));
 
-await insertMany(profileDigitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
-  profileId: newProfile.id,
-  profileDigitalPaymentsId: item.profileDigitalPaymentsId,
-  digitalPaymentLink: item.digitalPaymentLink,
-  enableStatus: item.enableStatus,
-  activeStatus: item.activeStatus,
-}));
+    await insertMany(profileDigitalPaymentLinks, model.ProfileDigitalPaymentLink, item => ({
+      profileId: newProfile.id,
+      profileDigitalPaymentsId: item.profileDigitalPaymentsId,
+      digitalPaymentLink: item.digitalPaymentLink,
+      enableStatus: item.enableStatus,
+      activeStatus: item.activeStatus,
+    }));
 
 
     // 7. Return the full duplicated profile
@@ -1303,7 +1303,7 @@ async function getProfileByDevice(req, res) {
         profileId = deviceLink.profileId;
         deviceLinkId = deviceLink.id;
       }
-    } 
+    }
     // Determine profile and deviceLinkId based on uniqueName
     else if (uniqueName) {
       const claimedName = await model.UniqueNameDeviceLink.findOne({ where: { uniqueName } });
@@ -1339,16 +1339,18 @@ async function getProfileByDevice(req, res) {
       where: { id: profileId },
       attributes: { exclude: ["createdAt", "updatedAt"] },
       include: [
-        { model: model.DeviceLink, required: false, where: deviceLinkId ? { id: deviceLinkId } : undefined, include: [
-            { model: model.Template, attributes: { exclude: ["createdAt","updatedAt"] } },
-            { model: model.Mode, attributes: { exclude: ["createdAt","updatedAt"] } },
+        {
+          model: model.DeviceLink, required: false, where: deviceLinkId ? { id: deviceLinkId } : undefined, include: [
+            { model: model.Template, attributes: { exclude: ["createdAt", "updatedAt"] } },
+            { model: model.Mode, attributes: { exclude: ["createdAt", "updatedAt"] } },
             { model: model.AccountDeviceLink, required: false, include: [{ model: model.Device }] }
-        ] },
-        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers", attributes: { exclude: ["createdAt","updatedAt"] } },
-        { model: model.ProfileEmail, as: "profileEmails", attributes: { exclude: ["createdAt","updatedAt"] } },
-        { model: model.ProfileWebsite, as: "profileWebsites", attributes: { exclude: ["createdAt","updatedAt"] } },
-        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks", attributes: { exclude: ["createdAt","updatedAt"] } },
-        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks", attributes: { exclude: ["createdAt","updatedAt"] } },
+          ]
+        },
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers", attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileEmail, as: "profileEmails", attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileWebsite, as: "profileWebsites", attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks", attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks", attributes: { exclude: ["createdAt", "updatedAt"] } },
       ],
     });
 
@@ -1977,30 +1979,30 @@ async function findAllProfiles(req, res) {
       hooks: false,
     });
 
-   profiles = await Promise.all(
-  profiles.map(async (profile) => {
-    const p = profile.toJSON();
+    profiles = await Promise.all(
+      profiles.map(async (profile) => {
+        const p = profile.toJSON();
 
-    // main profile image (single)
-    if (p.profileImage) {
-      p.profileImage = await generateSignedUrl(p.profileImage);
-    }
+        // main profile image (single)
+        if (p.profileImage) {
+          p.profileImage = await generateSignedUrl(p.profileImage);
+        }
 
-    // multiple profile images
-    if (p.profileImages && p.profileImages.length > 0) {
-      p.profileImages = await Promise.all(
-        p.profileImages.map(async (img) => {
-          if (img.image) { // 👈 correct column name
-            img.image = await generateSignedUrl(img.image);
-          }
-          return img;
-        })
-      );
-    }
+        // multiple profile images
+        if (p.profileImages && p.profileImages.length > 0) {
+          p.profileImages = await Promise.all(
+            p.profileImages.map(async (img) => {
+              if (img.image) { // 👈 correct column name
+                img.image = await generateSignedUrl(img.image);
+              }
+              return img;
+            })
+          );
+        }
 
-    return p;
-  })
-);
+        return p;
+      })
+    );
 
 
     const devices = await model.AccountDeviceLink.findAll({
@@ -2331,61 +2333,61 @@ async function getProfile(req, res) {
           ],
         },
         {
-      model: model.ProfilePhoneNumber,
-      as: "profilePhoneNumbers",
-      attributes: [
-        ["id", "phoneNumberId"],   // alias id → phoneNumberId
-        "countryCode",
-        "phoneNumber",
-        ["phoneNumberType", "phoneNumberType"],
-        ["checkBoxStatus", "checkBoxStatus"],
-        ["activeStatus", "activeStatus"],
-      ],
-    },
-       {
-  model: model.ProfileEmail,
-  as: "profileEmails",
-  attributes: [
-    ["id", "emailIdNumber"],   
-    ["emailId", "emailId"],    
-    ["emailType", "emailType"],
-    ["checkBoxStatus", "checkBoxStatus"],
-    ["activeStatus", "activeStatus"],
-  ],
-},
-{
-  model: model.ProfileWebsite,
-  as: "profileWebsites",
-  attributes: [
-    ["id", "websiteId"],      
-    ["website", "website"],
-    ["websiteType", "websiteType"],
-    ["checkBoxStatus", "checkBoxStatus"],
-    ["activeStatus", "activeStatus"],
-  ],
-},
-{
-  model: model.ProfileSocialMediaLink,
-  as: "profileSocialMediaLinks",
-  attributes: [
-    ["id", "profileSocialMediaLinkId"], 
-    ["profileSocialMediaId", "profileSocialMediaId"],
-    ["socialMediaName", "socialMediaName"],
-    ["enableStatus", "enableStatus"],
-    ["activeStatus", "activeStatus"],
-  ],
-},
-{
-  model: model.ProfileDigitalPaymentLink,
-  as: "profileDigitalPaymentLinks",
-  attributes: [
-    ["id", "profileDigitalPaymentLinkId"],   
-    ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
-    ["digitalPaymentLink", "digitalPaymentLink"],
-    ["enableStatus", "enableStatus"],
-    ["activeStatus", "activeStatus"],
-  ],
-},
+          model: model.ProfilePhoneNumber,
+          as: "profilePhoneNumbers",
+          attributes: [
+            ["id", "phoneNumberId"],   // alias id → phoneNumberId
+            "countryCode",
+            "phoneNumber",
+            ["phoneNumberType", "phoneNumberType"],
+            ["checkBoxStatus", "checkBoxStatus"],
+            ["activeStatus", "activeStatus"],
+          ],
+        },
+        {
+          model: model.ProfileEmail,
+          as: "profileEmails",
+          attributes: [
+            ["id", "emailIdNumber"],
+            ["emailId", "emailId"],
+            ["emailType", "emailType"],
+            ["checkBoxStatus", "checkBoxStatus"],
+            ["activeStatus", "activeStatus"],
+          ],
+        },
+        {
+          model: model.ProfileWebsite,
+          as: "profileWebsites",
+          attributes: [
+            ["id", "websiteId"],
+            ["website", "website"],
+            ["websiteType", "websiteType"],
+            ["checkBoxStatus", "checkBoxStatus"],
+            ["activeStatus", "activeStatus"],
+          ],
+        },
+        {
+          model: model.ProfileSocialMediaLink,
+          as: "profileSocialMediaLinks",
+          attributes: [
+            ["id", "profileSocialMediaLinkId"],
+            ["profileSocialMediaId", "profileSocialMediaId"],
+            ["socialMediaName", "socialMediaName"],
+            ["enableStatus", "enableStatus"],
+            ["activeStatus", "activeStatus"],
+          ],
+        },
+        {
+          model: model.ProfileDigitalPaymentLink,
+          as: "profileDigitalPaymentLinks",
+          attributes: [
+            ["id", "profileDigitalPaymentLinkId"],
+            ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
+            ["digitalPaymentLink", "digitalPaymentLink"],
+            ["enableStatus", "enableStatus"],
+            ["activeStatus", "activeStatus"],
+          ],
+        },
       ],
       required: false,
     });
@@ -3338,7 +3340,7 @@ async function getBase64ImageFromUrlLatest(req, res) {
 
     // 🔹 Step 3: Pick latest image (not second-to-last)
     const lastImage = profileImages[profileImages.length - 1];
-console.log(lastImage.image);
+    console.log(lastImage.image);
 
     // 🔹 Step 4: Download image and convert to base64
     const resp = await axios.get(lastImage.image, { responseType: "arraybuffer" });
@@ -3359,13 +3361,13 @@ console.log(lastImage.image);
 
 async function deleteBrandingImage(req, res) {
   const { profileId } = req.body;
-    const userId = req.user.id;
+  const userId = req.user.id;
 
   try {
     const checkProfileId = await model.Profile.findOne({
       where: {
         id: profileId,
-        userId:userId
+        userId: userId
       },
     });
     if (checkProfileId) {
@@ -3433,45 +3435,45 @@ async function deleteQrImage(req, res) {
 }
 
 async function deleteProfileImage(req, res) {
-const { profileId } = req.body;
-const userId = req.user.id;
+  const { profileId } = req.body;
+  const userId = req.user.id;
 
-try {
-  const checkProfileId = await model.Profile.findOne({
-    where: {
-      id: profileId,
-      userId: userId
-    },
-  });
-
-  if (checkProfileId) {
-    const deleteImg = await model.ProfileImages.destroy({
+  try {
+    const checkProfileId = await model.Profile.findOne({
       where: {
-        profileId: profileId,
+        id: profileId,
+        userId: userId
       },
     });
 
-    if (deleteImg) {
-      return res.json({
-        success: true,
-        message: "Delete Successfully",
+    if (checkProfileId) {
+      const deleteImg = await model.ProfileImages.destroy({
+        where: {
+          profileId: profileId,
+        },
       });
+
+      if (deleteImg) {
+        return res.json({
+          success: true,
+          message: "Delete Successfully",
+        });
+      } else {
+        return res.json({
+          success: false,
+          message: "Something went wrong",
+        });
+      }
     } else {
       return res.json({
         success: false,
-        message: "Something went wrong", 
+        message: "Profile Not Found",
       });
     }
-  } else {
-    return res.json({
-      success: false,
-      message: "Profile Not Found",
-    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ success: false, message: "Internal Server Error", error: e });
   }
-} catch (e) {
-  console.log(e);
-  return res.status(500).json({ success: false, message: "Internal Server Error",error:e });
-}
 }
 
 async function getUserDetails(req, res) {
