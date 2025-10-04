@@ -141,10 +141,11 @@ const verifyAppleUserSchema = Joi.object({
 
 
 const updateUserSchema = Joi.object({
-  userImage: Joi.string(),
+  userImage: Joi.string().allow(""),
   firstName: Joi.string(),
+  email:Joi.string().email(),
   lastName: Joi.string(),
-  phoneNumber: Joi.string(),
+  phoneNumber: Joi.string().allow(""),
   DOB: Joi.string().allow(""),
   gender: Joi.string().allow(""),
   country: Joi.string().allow(""),
