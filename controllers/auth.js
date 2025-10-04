@@ -2045,7 +2045,7 @@ async function verifyAppleUser(req, res) {
 //   console.log("\n✅ If sub === client_id and iss === your team ID, this part is OK.");
 // }
 async function updateUser(req, res) {
-  const { userImage, firstName, lastName, phoneNumber, DOB, gender, country } =
+  const { userImage, firstName, lastName, phoneNumber, DOB, gender, country,email } =
     req.body;
   const userId = req.user.id;
   const { error } = updateUserSchema.validate(req.body, { abortEarly: false });
@@ -2068,6 +2068,7 @@ async function updateUser(req, res) {
     if (checkUser) {
       const updateUser = await model.User.update(
         {
+          email,
           userImage,
           firstName,
           lastName,
