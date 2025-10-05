@@ -10,7 +10,8 @@ import {
   fetchCardDetails,
   getAllDevices,
   linkDevice,
-  unlinkDevice
+  unlinkDevice,
+  switchProfile
 } from "../controllers/device.js";
 import { authenticateToken } from "./../middleware/token.js";
 
@@ -33,5 +34,6 @@ router.post("/fetchCardDetails", fetchCardDetails);
 router.get("/all", authenticateToken, getAllDevices);
 router.post("/add", authenticateToken, linkDevice);
 router.post("/remove", authenticateToken, unlinkDevice);
+router.post("/switchProfile", authenticateToken, switchProfile);
 
 export default router;
