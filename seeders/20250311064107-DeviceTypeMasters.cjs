@@ -1,5 +1,7 @@
 "use strict";
 
+
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -8,24 +10,30 @@ module.exports = {
       [
         {
           name: "Card",
+          version: 1,
         },
         {
           name: "Socket",
+          version: 1,
         },
         {
           name: "Tile",
+          version: 1,
         },
         {
           name: "Bundle Devices",
+          version: 1,
         },
         {
           name: "Full Custom",
+          version: 1,
         },
         {
           name: "Name Custom",
+          version: 1,
         },
       ],
-      { fields: ["name"], ignoreDuplicates: true }
+      { fields: ["name","version"], ignoreDuplicates: true }
     );
   },
 

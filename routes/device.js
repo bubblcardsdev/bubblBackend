@@ -11,7 +11,12 @@ import {
   getAllDevices,
   linkDevice,
   unlinkDevice,
-  switchProfile
+  switchProfile,
+  switchModes,
+  blockDevice,
+  unblockDevice,
+  deviceDeactivate,
+  deviceReactivate
 } from "../controllers/device.js";
 import { authenticateToken } from "./../middleware/token.js";
 
@@ -35,5 +40,10 @@ router.get("/all", authenticateToken, getAllDevices);
 router.post("/add", authenticateToken, linkDevice);
 router.post("/remove", authenticateToken, unlinkDevice);
 router.post("/switchProfile", authenticateToken, switchProfile);
+router.post("/switchModes", authenticateToken, switchModes);
+router.post("/block", authenticateToken, blockDevice);
+router.post("/unblock", authenticateToken, unblockDevice);
+router.post("/deviceDe-activate", authenticateToken, deviceDeactivate);
+router.post("/deviceRe-activate", authenticateToken, deviceReactivate);
 
 export default router;

@@ -25,8 +25,12 @@ module.exports = (sequelize, Sequelize) => {
         defaultValue: "",
       },
       deviceNickName: {
-        type:Sequelize.STRING,
-      }
+        type: Sequelize.STRING,
+      },
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+      },
     },
     {
       sequelize,

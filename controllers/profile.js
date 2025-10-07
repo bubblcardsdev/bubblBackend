@@ -1268,6 +1268,13 @@ async function getProfileByDevice(req, res) {
     if (deviceUid) {
       const device = await model.Device.findOne({ where: { deviceUid } });
 
+      if( device && !device.isActive){
+        return res.status(403).json({
+          success: false,
+          data: { message: "Device is inactive. Please contact support." },
+        });
+      }
+
       if (!device) {
         const decryptedProfileId = decryptProfileId(deviceUid);
         if (!decryptedProfileId) {

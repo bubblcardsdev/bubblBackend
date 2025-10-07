@@ -75,6 +75,10 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      encResponse: {
+        type: Sequelize.TEXT,
+        allowNull: true,  
+      }
     },
     {
       sequelize,
