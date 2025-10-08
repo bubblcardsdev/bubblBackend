@@ -175,9 +175,7 @@ async function createProfileLatest(req, res) {
   if (error) {
     return res.status(400).json({
       success: false,
-      data: {
-        error: error.details,
-      },
+        message: error.details[0].message,
     });
   }
 

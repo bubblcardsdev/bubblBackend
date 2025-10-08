@@ -210,6 +210,10 @@ export default function dbModel(sequelize, Sequelize) {
   Cart.belongsTo(DeviceInventories, { foreignKey: "productId" });
   Cart.belongsTo(User, { foreignKey: "customerId" });
 
+  Device.hasMany(ModeDirectUrl,{foreignKey: "deviceId"})
+
+  ModeDirectUrl.belongsTo(Device,{foreignKey:'deviceId'})
+
   //#endregion
 
   return {

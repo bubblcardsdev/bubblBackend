@@ -40,7 +40,7 @@ router.get("/all", authenticateToken, getAllDevices);
 router.post("/add", authenticateToken, linkDevice);
 router.post("/remove", authenticateToken, unlinkDevice);
 router.post("/switchProfile", authenticateToken, switchProfile);
-router.post("/switchModes", authenticateToken, switchModes);
+router.post("/switchMode", authenticateToken, switchModes);
 router.post("/block", authenticateToken, blockDevice);
 router.post("/unblock", authenticateToken, unblockDevice);
 router.post("/deviceDe-activate", authenticateToken, deviceDeactivate);
