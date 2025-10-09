@@ -748,7 +748,7 @@ const getAllDevices = async (req, res) => {
         [sequelize.col("DeviceLink.Profile.modeId"),"modeId"],
         [sequelize.col("DeviceLink.Profile.profileName"), "profileName"],
         [sequelize.col("DeviceLink.Mode.mode"),"mode"],
-        [sequelize.col("Device.ModeDirectUrl.url"),"modeUrl"]
+        [sequelize.col("Device.ModeDirectUrls.url"),"modeUrl"]
       ],
       include: [
         {
