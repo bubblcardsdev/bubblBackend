@@ -14,13 +14,12 @@ module.exports = (sequelize, Sequelize) => {
   }
   Profile.init(
     {
-
       profileUid: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      defaultValue: DataTypes.UUIDV4,  
-      unique: true,
-    },
+        type: DataTypes.UUID,
+        allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
+        unique: true,
+      },
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -157,26 +156,48 @@ module.exports = (sequelize, Sequelize) => {
       hooks: {
         afterFind: async (profile, options) => {
           const fileUpload = await import("../middleware/fileUpload.js");
-          let profileImage = profile?.getDataValue("profileImage") || "";
-          let profileImageUrl = "";
-          let brandingLogo = profile?.getDataValue("brandingLogo") || "";
-          let brandingLogoUrl = "";
-          let qrCodeImage = profile?.getDataValue("qrCodeImage") || "";
-          let qrCodeImageUrl = "";
 
-          if (profileImage !== "") {
-            profileImageUrl = await fileUpload.generateSignedUrl(profileImage);
-            profile.setDataValue("profileImageUrl", profileImageUrl);
-          }
+          const enhance = async (p) => {
+            // Guard: only process Sequelize instances
+            if (
+              !p ||
+              typeof p.getDataValue !== "function" ||
+              typeof p.setDataValue !== "function"
+            ) {
+              return;
+            }
 
-          if (brandingLogo !== "") {
-            brandingLogoUrl = await fileUpload.generateSignedUrl(brandingLogo);
-            profile.setDataValue("brandingLogoUrl", brandingLogoUrl);
-          }
+            let profileImage = p.getDataValue("profileImage") || "";
+            let profileImageUrl = "";
+            let brandingLogo = p.getDataValue("brandingLogo") || "";
+            let brandingLogoUrl = "";
+            let qrCodeImage = p.getDataValue("qrCodeImage") || "";
+            let qrCodeImageUrl = "";
 
-          if (qrCodeImage !== "") {
-            qrCodeImageUrl = await fileUpload.generateSignedUrl(qrCodeImage);
-            profile.setDataValue("qrCodeImageUrl", qrCodeImageUrl);
+            if (profileImage !== "") {
+              profileImageUrl = await fileUpload.generateSignedUrl(
+                profileImage
+              );
+              p.setDataValue("profileImageUrl", profileImageUrl);
+            }
+
+            if (brandingLogo !== "") {
+              brandingLogoUrl = await fileUpload.generateSignedUrl(
+                brandingLogo
+              );
+              p.setDataValue("brandingLogoUrl", brandingLogoUrl);
+            }
+
+            if (qrCodeImage !== "") {
+              qrCodeImageUrl = await fileUpload.generateSignedUrl(qrCodeImage);
+              p.setDataValue("qrCodeImageUrl", qrCodeImageUrl);
+            }
+          };
+
+          if (Array.isArray(profile)) {
+            await Promise.all(profile.map(enhance));
+          } else {
+            await enhance(profile);
           }
         },
       },

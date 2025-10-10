@@ -744,12 +744,22 @@ const getAllDevices = async (req, res) => {
           sequelize.col("DeviceLink.UniqueUserNameDeviceLink.uniqueName"),
           "uniqueName",
         ],
+        [sequelize.col("DeviceLink.Profile.id"),"profileId"],
+        [sequelize.col("DeviceLink.Profile.modeId"),"modeId"],
+        [sequelize.col("DeviceLink.Profile.profileName"), "profileName"],
+        [sequelize.col("DeviceLink.Mode.mode"),"mode"],
+        [sequelize.col("Device.ModeDirectUrls.url"),"modeUrl"]
       ],
       include: [
         {
           model: model.Device,
           required: false,
           attributes: [],
+          include:[{
+            model: model.ModeDirectUrl,
+            required: false,
+            attributes: []
+          }]
           // include: [
           //   {
           //     model: model.DeviceInventories,
@@ -782,14 +792,29 @@ const getAllDevices = async (req, res) => {
               required: false,
               attributes: [],
             },
+            {
+              model: model.Profile,
+              required:false,
+              attributes:[]
+            },
+            {
+              model: model.Mode,
+              required:false,
+              attributes:[]
+            }
           ],
         },
       ],
     });
+
+    const profiles = await model.Profile.findAll({
+      where:{userId:userId},
+      attributes:["id","profileName"]
+    })
     return res.json({
       success: true,
       message: "All Devices",
-      linkedDevices: linkedDevices,
+      data: {linkedDevices:linkedDevices,profiles:profiles || []},
     });
   } catch (error) {
     loggers.error(error + " from getAllDevices function");
@@ -1049,10 +1074,12 @@ const linkDevice = async (req, res) => {
       return res.json({
         success: true,
         message: "Device Linked Successfully",
-        accountDeviceLink: newAccountDeviceLink.id,
-        deviceLinkId: addDeviceLink.id,
-        uniqueName: uniqueName || null,
-        profileId: profileId || null,
+        data: {
+          accountDeviceLink: newAccountDeviceLink.id,
+          deviceLinkId: addDeviceLink.id,
+          uniqueName: uniqueName || null,
+          profileId: profileId || null,
+        },
       });
     }
 
@@ -1792,6 +1819,13 @@ const updateUniqueName = async (req, res) => {
 
     const checkUser = await model.User.findOne({
       where: { id: userId },
+      
+      attributes:["id",["BubblPlanManagement.planId", "planId"]],
+      include:{
+        model: model.BubblPlanManagement,
+        required: false,
+        attributes:[]
+      },
       transaction: t,
     });
 
@@ -1802,6 +1836,14 @@ const updateUniqueName = async (req, res) => {
         message: "User not found",
       });
     }
+
+    if(checkUser.planId !== 2){
+      res.json({
+        success: false,
+        message: "This feature is available only for Pro Members."
+      })
+    }
+
 
     if (uniqueName.trim() === "") {
       await t.rollback();
@@ -1853,6 +1895,10 @@ const updateUniqueName = async (req, res) => {
       { where: { deviceLinkId: deviceLinkId, userId: userId } },
       { transaction: t }
     );
+    return res.json({
+      success: true,
+      message: "UniqueName updated Successfully"
+    })
   } catch (error) {
     await t.rollback();
     loggers.error(error + " from updateUniqueName function");
