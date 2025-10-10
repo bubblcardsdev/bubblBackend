@@ -6,8 +6,14 @@ const initiatePayValidation = Joi.object({
   token: Joi.string().required(),
 });
 
+// const verifyPaymentValidation = Joi.object({
+//   data: Joi.string().required(),
+// });
+
 const verifyPaymentValidation = Joi.object({
-  data: Joi.string().required(),
+  razorpay_payment_id: Joi.string().required(),
+  razorpay_order_id: Joi.string().required(),
+  razorpay_signature: Joi.string().required(),
 });
 
 export { initiatePayValidation, verifyPaymentValidation };

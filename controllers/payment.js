@@ -20,6 +20,10 @@ import {
 } from "../validations/payment.js";
 
 import ValidateOrder from "../validations/order.js";
+import mode from "../models/mode.cjs";
+import { Op } from "sequelize";
+import razorpay from "../config/razorPay.js";
+import { verifyRazorpaySignature } from "../services/productService.js";
 
 async function initialePay(req, res) {
   try {
@@ -359,7 +363,6 @@ async function initiatePayNew(req, res) {
       const checkUser = await model.User.findOne({
         where: {
           id: customer.id,
-
         },
       });
       if (!checkUser) {
@@ -427,7 +430,17 @@ async function initiatePayNew(req, res) {
         });
       }
       const billing_name = `${user.firstName} ${user.lastName}`;
-      rawBodyData = `merchant_id=${config.merchant_id}&order_id=${orderId}&currency=INR&amount=${orderData.soldPrice}&redirect_url=${config.paymentRedirectUri}&cancel_url=${config.paymentRedirectUri}&language=EN&billing_name=${billing_name}&merchant_param1=${token}&merchant_param2=${orderType}&billing_tel=${user?.phoneNumber || ""}&billing_email=${user.email}&integration_type=iframe_normal&promo_code=&customer_identifier=`;
+      rawBodyData = `merchant_id=${
+        config.merchant_id
+      }&order_id=${orderId}&currency=INR&amount=${
+        orderData.soldPrice
+      }&redirect_url=${config.paymentRedirectUri}&cancel_url=${
+        config.paymentRedirectUri
+      }&language=EN&billing_name=${billing_name}&merchant_param1=${token}&merchant_param2=${orderType}&billing_tel=${
+        user?.phoneNumber || ""
+      }&billing_email=${
+        user.email
+      }&integration_type=iframe_normal&promo_code=&customer_identifier=`;
     }
     const bodyData = encodeURIComponent(rawBodyData);
     const encRequest = encrypt(bodyData, workingKey);
@@ -454,11 +467,111 @@ async function initiatePayNew(req, res) {
         formbody,
       },
     });
-
   } catch (e) {
     res.status(500).json({
       success: false,
       data: { message: e?.message || "Internal Server Error" },
+    });
+  }
+}
+
+async function initiatePayRazorPay(req, res) {
+  try {
+    console.log("initiatePayNew", req.body);
+
+    const { error } = initiatePayValidation.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res
+        .status(400)
+        .json({ success: false, data: { error: error.details } });
+    }
+
+    const { orderId, token } = req.body;
+    const decodedToken = Buffer.from(token, "base64").toString("ascii");
+
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decodedToken);
+    const isJWT = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(
+      decodedToken
+    );
+
+    if (!isEmail && !isJWT) {
+      return res.status(400).json({ success: false, message: "Invalid token" });
+    }
+
+    let orderData;
+    let user;
+
+    if (isEmail) {
+      orderData = await model.Order.findOne({
+        where: {
+          id: orderId,
+          email: decodedToken,
+          orderStatusId: 1,
+          isLoggedIn: false,
+        },
+      });
+    } else if (isJWT) {
+      const customer = jwt.verify(decodedToken, config.accessSecret);
+      user = await model.User.findByPk(customer.id);
+      if (!user)
+        return res
+          .status(400)
+          .json({ success: false, message: "User not found" });
+
+      orderData = await model.Order.findOne({
+        where: {
+          id: orderId,
+          customerId: customer.id,
+          orderStatusId: 1,
+          isLoggedIn: true,
+        },
+      });
+    }
+
+    if (!orderData)
+      return res
+        .status(400)
+        .json({ success: false, message: "Order not found" });
+
+    // Calculate total amount
+    const totalAmount =
+      Number(orderData.soldPrice) + Number(orderData.shippingCharge || 0);
+
+    // Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: totalAmount * 100, // amount in paise
+      currency: "INR",
+      receipt: `order_${orderData.id}_${Date.now()}`,
+      notes: {
+        orderId: orderData.id,
+        email: isEmail ? decodedToken : user.email,
+        planId: orderData.planId || null, // optional
+      },
+    });
+
+    // Update order table with razorpayOrderId and paymentStatus
+    await orderData.update({
+      razorpayOrderId: razorpayOrder.id,
+      orderStatusId: 1,
+    });
+
+    res.json({
+      success: true,
+      message: "Razorpay order created successfully",
+      data: {
+        razorpayOrderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        key: process.env.RAZORPAY_KEY_ID,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      success: false,
+      data: { message: e.message || "Internal Server Error" },
     });
   }
 }
@@ -585,7 +698,7 @@ async function verifyPayment(req, res) {
               },
             });
             console.log(checkDeviceType, obj.order_id, "checkDeviceType");
-            console.log("_____________________________________________");
+            console.log("______________________________________________");
             const products = await Promise.all(
               checkDeviceType.map(async (f) => {
                 console.log(f.productId, "fdfdfd");
@@ -812,6 +925,127 @@ async function verifyPayment(req, res) {
   }
 }
 
+async function verifyPaymentRazorPay(req, res) {
+  try {
+    const userId = req.user.id;
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+    // Validate request body
+    const { error } = verifyPaymentValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ success: false, error: error.details });
+    }
+
+    // Fetch order from DB
+    const orderRecord = await model.Order.findOne({
+      where: {
+        razorpayOrderId: razorpay_order_id,
+        customerId: userId,
+        orderStatusId: { [Op.in]: [1, 2, 4] },
+      },
+    });
+
+    if (!orderRecord) {
+      return res.status(400).json({ success: false, message: "Order not found" });
+    }
+
+    // Fetch Razorpay order details
+    const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
+
+    // Validate amount
+    const amountFromRazorpay = Number((razorpayOrder.amount / 100).toFixed(2));
+    if (Number(orderRecord.soldPrice) !== amountFromRazorpay) {
+      return res.status(400).json({ success: false, message: "Order amount mismatch" });
+    }
+    // Verify Razorpay signature
+    const isSignatureValid = verifyRazorpaySignature(req.body);
+    if (!isSignatureValid) {
+      return res.status(400).json({ success: false, message: "Payment signature mismatch" });
+    }
+
+    // Fetch payment details
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    if (paymentDetails.status !== "captured") {
+      return res.status(400).json({ success: false, message: "Payment not captured" });
+    }
+
+    // Record payment in DB
+    await model.Payment.create({
+      transactionId: razorpay_payment_id,
+      customerId: userId,
+      orderId: orderRecord.id,
+      paymentStatus: true,
+      amount: orderRecord.soldPrice,
+      isLoggedIn: true,
+      email: orderRecord.email,
+      paymentMethod: "Razorpay",
+      encResponse: razorpay_signature,
+    });
+
+    // Update order status to 'Paid'
+    await model.Order.update(
+      { orderStatusId: 3 },
+      { where: { id: orderRecord.id } }
+    );
+// add async mail service fororder placed
+    return res.json({ success: true, message: "Payment verified successfully" });
+  } catch (err) {
+    console.error("verifyPayment error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+async function handlePaymentFailure(req, res) {
+  try {
+    const userId = req.user.id;
+    const { razorpay_payment_id, razorpay_order_id, reason } = req.body;
+
+    // Validate request body
+    if (!razorpay_order_id) {
+      return res.status(400).json({ success: false, message: "Order ID is required" });
+    }
+
+    // Fetch order from DB
+    const orderRecord = await model.Order.findOne({
+      where: {
+        razorpayOrderId: razorpay_order_id,
+        customerId: userId,
+        orderStatusId: { [Op.in]: [1, 2, 4] }, // Only 'Created' or 'Cancelled'
+      },
+    });
+
+    if (!orderRecord) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Record failed payment in DB
+    await model.Payment.create({
+      transactionId: razorpay_payment_id || null,
+      customerId: userId,
+      orderId: orderRecord.id,
+      paymentStatus: false,
+      amount: orderRecord.soldPrice,
+      isLoggedIn: true,
+      email: orderRecord.email,
+      paymentMethod: "Razorpay",
+      failureMessage: reason || "Payment failed",
+      encResponse: null,
+    });
+
+    // Update order status to 'Failure'
+    await model.Order.update(
+      { orderStatusId: 4 }, // Failure
+      { where: { id: orderRecord.id } }
+    );
+
+    return res.json({ success: true, message: "Payment failure recorded successfully" });
+  } catch (err) {
+    console.error("handlePaymentFailure error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+
 async function getShippingCharge(req, res) {
   const { country } = req.body;
   try {
@@ -924,4 +1158,7 @@ export {
   getShippingCharge,
   initialePayLatest,
   initiatePayNew,
+  initiatePayRazorPay,
+  verifyPaymentRazorPay,
+  handlePaymentFailure
 };

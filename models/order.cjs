@@ -75,10 +75,14 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      encResponse: {
-        type: Sequelize.TEXT,
-        allowNull: true,  
-      }
+       razorpayOrderId: {
+      type: Sequelize.STRING,
+      allowNull: true, // keep null for old orders
+    },
+      // encResponse: {
+      //   type: Sequelize.TEXT,
+      //   allowNull: true,  
+      // }
     },
     {
       sequelize,

@@ -8,6 +8,8 @@ import {
 import { sequelize } from "../models/index.js";
 import logger from "../config/logger.js";
 import { Op } from "sequelize";
+import { calculateOrderItems } from "../services/productService.js";
+import razorpay from "../config/razorPay.js";
 
 async function getOrderDetails(req, res) {
   const userId = req.user.id;
@@ -997,8 +999,8 @@ async function checkOut(req, res) {
       orderId: createdOrder.id,
     });
   } catch (error) {
-    console.log(error,"/");
-    
+    console.log(error, "/");
+
     await transaction.rollback();
     logger.error(`${error.message} from checkOut function`);
     return res.status(500).json({
@@ -1008,25 +1010,161 @@ async function checkOut(req, res) {
   }
 }
 
-async function decideShippingCharge(userCountry, transaction) {
-  // try {
-    const shippingCharges = await model.ShippingCharge.findAll({ transaction });
+async function createOrder(req, res) {
+  const userId = req.user.id; // logged-in user guaranteed
+  const { productData, shippingFormData } = req.body;
 
-    const country = userCountry || "Others";
+  // Validate request
+  const { error } = checkOutValidation.validate(req.body, { abortEarly: false });
+  if (error) {
+    return res.status(400).json({ success: false, data: { error: error.details } });
+  }
 
-    let selectedShipping = shippingCharges.find(
-      (charge) => charge.country.toLowerCase() === country.toLowerCase()
-    );
+  let transaction;
+  try {
+    transaction = await sequelize.transaction();
 
-    if (!selectedShipping) {
-      selectedShipping = shippingCharges.find(
-        (charge) => charge.country.toLowerCase() === "others"
+    let cartItems = [];
+
+    if (productData && productData.length > 0) {
+      // Use productData directly if provided
+      cartItems = await Promise.all(
+        productData.map(async (item) => {
+          const product = await model.DeviceInventories.findOne({
+            where: { productId: item.productId },
+          });
+
+          if (!product) throw new Error(`Product not found: ${item.productId}`);
+          // if (product.deviceTypeId === 6 && (!item.fontId || !item.customName)) {
+          //   throw new Error(
+          //     `FontId and CustomName are required for product: ${item.productId}`
+          //   );
+          // }
+
+          return {
+            productId: product.id,
+            quantity: item.quantity,
+            fontId: item.fontId || null,
+            customName: item.customName || null,
+          };
+        })
       );
+    } else {
+      // Fetch from cart
+      cartItems = await model.Cart.findAll({
+        where: {
+          customerId: userId,
+          productStatus: true,
+          productId: { [Op.ne]: null },
+        },
+        transaction,
+      });
+
+      if (!cartItems.length) throw new Error("No products available in the cart");
     }
 
-    const shippingChargeAmount = selectedShipping ? selectedShipping.amount : 0;
+    // Shipping charge
+    const shippingCharge = await decideShippingCharge(shippingFormData?.country, transaction);
 
-    return shippingChargeAmount;
+    // Fetch product details
+    const productDetails = await model.DeviceInventories.findAll({
+      where: { id: cartItems.map((item) => item.productId) },
+      include: [
+        { model: model.DeviceColorMasters },
+        { model: model.DeviceTypeMasters },
+        { model: model.DevicePatternMasters },
+      ],
+      transaction,
+    });
+
+    if (productDetails.length !== cartItems.length) {
+      throw new Error("One or more products could not be found.");
+    }
+
+    // Calculate order totals
+    const { orderItems, totalOrderPrice, totalSellingPrice, totalDiscountAmount } =
+      calculateOrderItems(cartItems, productDetails);
+
+    // Razorpay order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: totalSellingPrice * 100, // paise
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+      payment_capture: 1,
+    });
+
+    if (!razorpayOrder?.id) throw new Error("Razorpay order creation failed");
+
+    // Create main order
+    const createdOrder = await model.Order.create(
+      {
+        customerId: userId,
+        totalPrice: totalOrderPrice,
+        email: shippingFormData?.emailId,
+        orderStatusId: 1,
+        discountAmount: totalDiscountAmount,
+        isLoggedIn: true,
+        shippingCharge,
+        soldPrice: totalSellingPrice,
+        razorpayOrderId: razorpayOrder.id,
+      },
+      { transaction }
+    );
+
+    // Order breakdown
+    await model.OrderBreakDown.bulkCreate(
+      orderItems.map((item) => ({
+        orderId: createdOrder.id,
+        ...item,
+      })),
+      { transaction }
+    );
+
+    // Shipping info
+    await model.Shipping.create(
+      { orderId: createdOrder.id, ...shippingFormData, isShipped: false },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    return res.json({
+      success: true,
+      message: "Order created successfully!",
+      orderId: createdOrder.id,
+      data: {
+        razorpayOrderId: razorpayOrder.id,
+        amount:razorpayOrder.amount / 100,
+        currency: razorpayOrder.currency,
+        key: process.env.RAZORPAY_KEY_ID,
+      },
+    });
+  } catch (err) {
+    if (transaction) await transaction.rollback();
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+
+async function decideShippingCharge(userCountry, transaction) {
+  // try {
+  const shippingCharges = await model.ShippingCharge.findAll({ transaction });
+
+  const country = userCountry || "Others";
+
+  let selectedShipping = shippingCharges.find(
+    (charge) => charge.country.toLowerCase() === country.toLowerCase()
+  );
+
+  if (!selectedShipping) {
+    selectedShipping = shippingCharges.find(
+      (charge) => charge.country.toLowerCase() === "others"
+    );
+  }
+
+  const shippingChargeAmount = selectedShipping ? selectedShipping.amount : 0;
+
+  return shippingChargeAmount;
   // } catch (error) {
   //   throw error;
   // }
@@ -1381,4 +1519,5 @@ export {
   cancelOrder,
   checkOutNonUser,
   getNonUserOrderById,
+  createOrder,
 };
