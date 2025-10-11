@@ -34,6 +34,8 @@ const envVarsSchema = Joi.object({
   APPLE_EXCHANGE_URL: Joi.string().required(),
   PAYMENT_REDIRECT_URI: Joi.string().required(),
   MERCHANT_ID: Joi.string().required(),
+  RAZORPAY_KEY_ID: Joi.string().required(),
+  RAZORPAY_KEY_SECRET: Joi.string().required(),
 })
   .unknown()
   .required();
@@ -77,6 +79,8 @@ const config = {
   appleExchangeUrl: envVars.APPLE_EXCHANGE_URL,
   paymentRedirectUri: envVars.PAYMENT_REDIRECT_URI,
   merchant_id: envVars.MERCHANT_ID,
+  razorpayKeyId:envVars.RAZORPAY_KEY_ID,
+  razorpaySecretId:envVars.RAZORPAY_KEY_SECRET,
 };
 
 export default config;

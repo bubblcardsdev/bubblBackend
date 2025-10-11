@@ -7,7 +7,8 @@ import {
   proceedPayment,
   cancelOrder,
   checkOutNonUser,
-  getNonUserOrderById
+  getNonUserOrderById,
+  createOrder
 } from "../controllers/order.js";
 import { authenticateCheckoutToken, authenticateToken } from "../middleware/token.js";
 
@@ -24,5 +25,12 @@ router.put("/cancel", authenticateToken, cancelOrder);
 // checkout flow before login
 router.post("/checkoutNonUser", checkOutNonUser);
 router.post("/nonUser/one", getNonUserOrderById);
+
+// v3 Api
+
+router.post("/createOrder",authenticateToken,createOrder)
+
+
+
 
 export default router;

@@ -50,7 +50,7 @@ import _deviceTypeMasters from "./devicetypemaster.cjs";
 import _orderStatusMasters from "./orderstatusmaster.cjs";
 import _orderBreakDown from "./orderbreakdown.cjs";
 import _fontMaster from "./customfontmaster.cjs";
-import _supportForm from "./supportForm.cjs"
+import _supportForm from "./supportForm.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -86,7 +86,7 @@ export default function dbModel(sequelize, Sequelize) {
   const ClaimLink = _claimlink(sequelize, Sequelize);
   const ContactUs = _contact(sequelize, Sequelize);
   const NewsLetter = _news(sequelize, Sequelize);
-  const SupportForm = _supportForm(sequelize,Sequelize)
+  const SupportForm = _supportForm(sequelize, Sequelize);
   const Analytics = _analytis(sequelize, Sequelize);
   const ShippingCharge = _shippingcharge(sequelize, Sequelize);
   const Admin = _admin(sequelize, Sequelize);
@@ -132,10 +132,10 @@ export default function dbModel(sequelize, Sequelize) {
   Profile.hasMany(ProfileDigitalPaymentLink, {
     as: "profileDigitalPaymentLinks",
   });
-  Profile.hasMany(ProfileImages, { as: "profileImages" });  
-   Profile.hasOne(DeviceBranding, {
-    foreignKey: 'profileId',
-    as: 'DeviceBranding',
+  Profile.hasMany(ProfileImages, { as: "profileImages" });
+  Profile.hasOne(DeviceBranding, {
+    foreignKey: "profileId",
+    as: "DeviceBranding",
   });
   Profile.hasMany(ProfileSocialMediaLink, { as: "profileSocialMediaLinks" });
   ProfileImages.belongsTo(Profile, { as: "profile", foreignKey: "profileId" });
@@ -201,18 +201,20 @@ export default function dbModel(sequelize, Sequelize) {
     foreignKey: "deviceTypeId",
   });
 
-  DevicePatternMasters.hasMany(DeviceInventories,{foreignKey: "patternId"})
-  DeviceColorMasters.hasMany(DeviceInventories,{foreignKey:"colorId"})
-  MaterialTypeMasters.hasMany(DeviceInventories,{foreignKey:"materialTypeId"})
+  DevicePatternMasters.hasMany(DeviceInventories, { foreignKey: "patternId" });
+  DeviceColorMasters.hasMany(DeviceInventories, { foreignKey: "colorId" });
+  MaterialTypeMasters.hasMany(DeviceInventories, {
+    foreignKey: "materialTypeId",
+  });
 
   Order.hasMany(OrderBreakDown, { foreignKey: "orderId" });
 
   Cart.belongsTo(DeviceInventories, { foreignKey: "productId" });
   Cart.belongsTo(User, { foreignKey: "customerId" });
 
-  Device.hasMany(ModeDirectUrl,{foreignKey: "deviceId"})
+  Device.hasMany(ModeDirectUrl, { foreignKey: "deviceId" });
 
-  ModeDirectUrl.belongsTo(Device,{foreignKey:'deviceId'})
+  ModeDirectUrl.belongsTo(Device, { foreignKey: "deviceId" });
 
   //#endregion
 
