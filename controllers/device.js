@@ -709,17 +709,17 @@ async function fetchCardDetails(req, res) {
 const getAllDevices = async (req, res) => {
   try {
     const userId = req.user.id;
-    const checkUser = await model.User.findOne({
-      where: {
-        id: userId,
-      },
-    });
-    if (!checkUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
+    // const checkUser = await model.User.findOne({
+    //   where: {
+    //     id: userId,
+    //   },
+    // });
+    // if (!checkUser) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "User not found",
+    //   });
+    // }
 
     const linkedDevices = await model.AccountDeviceLink.findAll({
       where: {
@@ -744,22 +744,24 @@ const getAllDevices = async (req, res) => {
           sequelize.col("DeviceLink.UniqueUserNameDeviceLink.uniqueName"),
           "uniqueName",
         ],
-        [sequelize.col("DeviceLink.Profile.id"),"profileId"],
-        [sequelize.col("DeviceLink.Profile.modeId"),"modeId"],
+        [sequelize.col("DeviceLink.Profile.id"), "profileId"],
+        [sequelize.col("DeviceLink.Profile.modeId"), "modeId"],
         [sequelize.col("DeviceLink.Profile.profileName"), "profileName"],
-        [sequelize.col("DeviceLink.Mode.mode"),"mode"],
-        [sequelize.col("Device.ModeDirectUrls.url"),"modeUrl"]
+        [sequelize.col("DeviceLink.Mode.mode"), "mode"],
+        [sequelize.col("Device.ModeDirectUrls.url"), "modeUrl"],
       ],
       include: [
         {
           model: model.Device,
           required: false,
           attributes: [],
-          include:[{
-            model: model.ModeDirectUrl,
-            required: false,
-            attributes: []
-          }]
+          include: [
+            {
+              model: model.ModeDirectUrl,
+              required: false,
+              attributes: [],
+            },
+          ],
           // include: [
           //   {
           //     model: model.DeviceInventories,
@@ -794,27 +796,27 @@ const getAllDevices = async (req, res) => {
             },
             {
               model: model.Profile,
-              required:false,
-              attributes:[]
+              required: false,
+              attributes: [],
             },
             {
               model: model.Mode,
-              required:false,
-              attributes:[]
-            }
+              required: false,
+              attributes: [],
+            },
           ],
         },
       ],
     });
 
     const profiles = await model.Profile.findAll({
-      where:{userId:userId},
-      attributes:["id","profileName"]
-    })
+      where: { userId: userId },
+      attributes: ["id", "profileName"],
+    });
     return res.json({
       success: true,
       message: "All Devices",
-      data: {linkedDevices:linkedDevices,profiles:profiles || []},
+      data: { linkedDevices: linkedDevices, profiles: profiles || [] },
     });
   } catch (error) {
     loggers.error(error + " from getAllDevices function");
@@ -960,7 +962,9 @@ const linkDevice = async (req, res) => {
 
       const accountLinkedToUser = await model.AccountDeviceLink.findOne({
         where: {
-          deviceId,
+           deviceId: {
+                        [Op.ne]: deviceId, 
+                      },
           userId,
           isDeleted: false,
         },
@@ -971,16 +975,19 @@ const linkDevice = async (req, res) => {
         include: [
           {
             model: model.Device,
-            required: true,
-            where: { id: { $ne: deviceId } },
+            required: true, 
+            where: {
+                      deviceNickName: deviceNickName.trim(), // ✅ correct location
+                    },
+            attributes: [],
           },
         ],
         transaction: t,
       });
-
+      console.log(accountLinkedToUser,"accountLinkedToUser");
       if (
         accountLinkedToUser &&
-        accountLinkedToUser.deviceNickName === deviceNickName.trim()
+        accountLinkedToUser.get("deviceNickName") === deviceNickName.trim()
       ) {
         await t.rollback();
         return res.status(400).json({
@@ -1026,18 +1033,14 @@ const linkDevice = async (req, res) => {
         { transaction: t }
       );
 
-      await model.DeviceBranding.update(
-        {
-          deviceLinkId: addDeviceLink.id,
-          templateId: profile.templateId || 1,
-        },
-        {
-          where: {
+      await model.DeviceBranding.create(
+
+          {
             profileId: profileId,
-            deviceLinkId: null,
+            deviceLinkId: addDeviceLink.id,
+            templateId: profile.templateId || 1,
           },
-          transaction: t,
-        }
+        { transaction: t }
       );
 
       if (uniqueName) {
@@ -1116,20 +1119,21 @@ const unlinkDevice = async (req, res) => {
     const userId = req.user.id;
 
     console.log(deviceUid, userId, "unlinkDevice");
-    const checkUser = await model.User.findOne({
-      where: {
-        id: userId,
-      },
-      transaction: t,
-    });
+    // const checkUser = await model.User.findOne({
+    //   where: {
+    //     id: userId,
+    //   },
+    //   transaction: t,
+    // });
 
-    if (!checkUser) {
-      await t.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
+    // if (!checkUser) {
+    //   await t.rollback();
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "User not found",
+    //   });
+    // }
+    
     //find device ID
     const device = await model.Device.findOne({
       where: {
@@ -1192,12 +1196,20 @@ const unlinkDevice = async (req, res) => {
         },
         {
           where: {
-            id: deviceBranding.id,
+            deviceLinkId: deviceLink.id,
           },
           transaction: t,
         }
       );
     }
+
+      // await model.DeviceBranding.destroy({
+      //   where: {
+      //     deviceLinkId: deviceLink ? deviceLink.id : null,
+      //     profileId: deviceLink ? deviceLink.profileId : null,
+      //   },
+      //   transaction: t,
+      // })
 
     //deactivate deviceLink
     if (deviceLink) {
@@ -1280,18 +1292,19 @@ const switchProfile = async (req, res) => {
     const { accountDeviceLinkId, profileId } = req.body;
     const userId = req.user.id;
     console.log(userId, accountDeviceLinkId, profileId, "switchProfile");
-    const checkUser = await model.User.findOne({
-      where: { id: userId },
-      transaction: t,
-    });
 
-    if (!checkUser) {
-      await t.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
+    // const checkUser = await model.User.findOne({
+    //   where: { id: userId },
+    //   transaction: t,
+    // });
+
+    // if (!checkUser) {
+    //   await t.rollback();
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "User not found",
+    //   });
+    // }
 
     // find accountDeviceLink
     const accountDeviceLink = await model.AccountDeviceLink.findOne({
@@ -1372,7 +1385,7 @@ const switchProfile = async (req, res) => {
       where: {
         profileId: profileId,
         deviceLinkId: {
-          [Op.or]: [{ deviceLinkId: null }, { deviceLinkId: deviceLink.id }],
+          [Op.or]: [null, deviceLink.id],
         },
       },
       order: [["deviceLinkId", "DESC"]],
@@ -1566,26 +1579,27 @@ const switchModes = async (req, res) => {
 const blockDevice = async (req, res) => {
   try {
     const { accountDeviceLinkId } = req.body;
+    const userId = req.user.id;
     if (!accountDeviceLinkId) {
       return res.status(400).json({
         success: false,
         message: "accountDeviceLinkId is required",
       });
     }
-    const checkUser = await model.User.findOne({
-      where: { id: req.user.id },
-    });
-    if (!checkUser) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized user",
-      });
-    }
+    // const checkUser = await model.User.findOne({
+    //   where: { id: req.user.id },
+    // });
+    // if (!checkUser) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: "Unauthorized user",
+    //   });
+    // }
     const accountDeviceLink = await model.AccountDeviceLink.findOne({
       where: [
         {
           id: accountDeviceLinkId,
-          userId: checkUser.id,
+          userId,
           isDeleted: false,
         },
       ],
@@ -1603,7 +1617,17 @@ const blockDevice = async (req, res) => {
       },
       {
         where: {
-          id: accountDeviceLink.deviceId,
+          id: accountDeviceLink.id,
+        },
+      }
+    );
+       await model.DeviceLink.update(
+      {
+        activeStatus: false,
+      },
+      {
+        where: {
+          accountDeviceLinkId: accountDeviceLink.id,
         },
       }
     );
@@ -1666,6 +1690,18 @@ const unblockDevice = async (req, res) => {
         },
       }
     );
+
+    await model.DeviceLink.update(
+      {
+        activeStatus: true,
+      },
+      {
+        where: {
+          accountDeviceLinkId: accountDeviceLink.id,
+        },
+      }
+    );
+
     return res.json({
       success: true,
       message: "Device Unblocked",
@@ -1819,12 +1855,12 @@ const updateUniqueName = async (req, res) => {
 
     const checkUser = await model.User.findOne({
       where: { id: userId },
-      
-      attributes:["id",["BubblPlanManagement.planId", "planId"]],
-      include:{
+
+      attributes: ["id", ["BubblPlanManagement.planId", "planId"]],
+      include: {
         model: model.BubblPlanManagement,
         required: false,
-        attributes:[]
+        attributes: [],
       },
       transaction: t,
     });
@@ -1837,13 +1873,12 @@ const updateUniqueName = async (req, res) => {
       });
     }
 
-    if(checkUser.planId !== 2){
+    if (checkUser.planId !== 2) {
       res.json({
         success: false,
-        message: "This feature is available only for Pro Members."
-      })
+        message: "This feature is available only for Pro Members.",
+      });
     }
-
 
     if (uniqueName.trim() === "") {
       await t.rollback();
@@ -1897,8 +1932,8 @@ const updateUniqueName = async (req, res) => {
     );
     return res.json({
       success: true,
-      message: "UniqueName updated Successfully"
-    })
+      message: "UniqueName updated Successfully",
+    });
   } catch (error) {
     await t.rollback();
     loggers.error(error + " from updateUniqueName function");
