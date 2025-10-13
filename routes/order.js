@@ -16,7 +16,7 @@ const router = express.Router();
 
 
 router.get("/all", authenticateToken, getOrderDetails);
-router.post("/one", getOrderById);
+router.post("/one",authenticateToken, getOrderById);
 router.put("/ship", authenticateToken, updateShippingDetails);
 router.post("/checkout", authenticateCheckoutToken, checkOut); //changed - both logged in and guest user can use this. 
 router.put("/pay", authenticateToken, proceedPayment);

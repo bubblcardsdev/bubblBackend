@@ -130,6 +130,7 @@ async function getOrderDetails(req, res) {
 
 async function getOrderById(req, res) {
   const { orderId } = req.body;
+  const user_id = req.user.id
 
   const { error } = getOrderValidation.validate(req.body, {
     abortEarly: false,
@@ -144,7 +145,7 @@ async function getOrderById(req, res) {
   try {
     // Fetch order with breakdowns
     const order = await model.Order.findOne({
-      where: { id: orderId },
+      where: { id: orderId,customerId:user_id },
       include: [{ model: model.OrderBreakDown }],
     });
 
@@ -1085,9 +1086,11 @@ async function createOrder(req, res) {
     const { orderItems, totalOrderPrice, totalSellingPrice, totalDiscountAmount } =
       calculateOrderItems(cartItems, productDetails);
 
+      console.log( typeof totalSellingPrice ,"?tot",totalSellingPrice);
+      
     // Razorpay order
     const razorpayOrder = await razorpay.orders.create({
-      amount: totalSellingPrice * 100, // paise
+      amount: Number(totalSellingPrice) * 100, // paise
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
       payment_capture: 1,
@@ -1140,6 +1143,8 @@ async function createOrder(req, res) {
       },
     });
   } catch (err) {
+    console.log(err,"err in console");
+    
     if (transaction) await transaction.rollback();
     return res.status(500).json({ success: false, message: err.message });
   }
