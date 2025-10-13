@@ -397,6 +397,7 @@ async function deleteProfile(req, res) {
     await model.ProfileDigitalPaymentLink.destroy({ where: { profileId } });
     await model.DeviceBranding.destroy({ where: { profileId } });
     await model.ProfileImages.destroy({ where: { profileId } });
+    await model.UniqueNameDeviceLink.destroy({ where: { profileId } });
     await model.DeviceLink.destroy({ where: { profileId } })
     // 3. Delete parent profile
     await model.Profile.destroy({ where: { id: profileId } });
