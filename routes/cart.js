@@ -5,10 +5,10 @@ import {
   getCart,
   cancelCart,
   clearCart,
-  addToNonUserCart,
-  getNonUserCart,
-  cancelNonUserCart,
-  clearCartNonuser,
+  // addToNonUserCart,
+  // getNonUserCart,
+  // cancelNonUserCart,
+  // clearCartNonuser,
   getProductDetailsLatest
 } from "../controllers/buydevice.js";
 import { authenticateToken } from "../middleware/token.js";

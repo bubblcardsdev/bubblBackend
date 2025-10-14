@@ -1,4 +1,4 @@
-import model from "../models/index.js";
+import model, { sequelize } from "../models/index.js";
 import {
   createProfileSchema,
   createProfileSchemaLatest,
@@ -12,7 +12,7 @@ import { generateSignedUrl } from "../middleware/fileUpload.js";
 import loggers from "../config/logger.js";
 import axios from "axios";
 import { decryptProfileId } from "../helper/ccavutil.js";
-import { Op, Sequelize, where } from "sequelize";
+import { Op } from "sequelize";
 import pkg from "lodash";
 const { isEmpty } = pkg
 
@@ -375,14 +375,16 @@ async function deleteProfile(req, res) {
       message: "Profile ID is required",
     });
   }
-
+ const t = await sequelize.transaction();
   try {
     // 1. Check if profile belongs to the user
     const profile = await model.Profile.findOne({
       where: { id: profileId, userId },
+      transaction: t
     });
 
     if (!profile) {
+      await t.rollback();
       return res.status(404).json({
         success: false,
         message: "Profile not found or does not belong to this user",
@@ -390,17 +392,18 @@ async function deleteProfile(req, res) {
     }
 
     // 2. Delete children first (reverse FK order)
-    await model.ProfilePhoneNumber.destroy({ where: { profileId } });
-    await model.ProfileEmail.destroy({ where: { profileId } });
-    await model.ProfileWebsite.destroy({ where: { profileId } });
-    await model.ProfileSocialMediaLink.destroy({ where: { profileId } });
-    await model.ProfileDigitalPaymentLink.destroy({ where: { profileId } });
-    await model.DeviceBranding.destroy({ where: { profileId } });
-    await model.ProfileImages.destroy({ where: { profileId } });
-    await model.DeviceLink.destroy({ where: { profileId } })
+    await model.ProfilePhoneNumber.destroy({ where: { profileId },transaction: t });
+    await model.ProfileEmail.destroy({ where: { profileId },transaction: t });
+    await model.ProfileWebsite.destroy({ where: { profileId }, transaction: t });
+    await model.ProfileSocialMediaLink.destroy({ where: { profileId }, transaction: t });
+    await model.ProfileDigitalPaymentLink.destroy({ where: { profileId }, transaction: t });
+    await model.DeviceBranding.destroy({ where: { profileId }, transaction: t });
+    await model.ProfileImages.destroy({ where: { profileId }, transaction: t });
+    await model.DeviceLink.destroy({ where: { profileId }, transaction: t })
     // 3. Delete parent profile
-    await model.Profile.destroy({ where: { id: profileId } });
-
+    await model.Profile.destroy({ where: { id: profileId }, transaction: t });
+    
+    await t.commit();
     return res.status(200).json({
       success: true,
       message: "Profile deleted successfully",
@@ -409,7 +412,7 @@ async function deleteProfile(req, res) {
   } catch (err) {
     console.error(err);
     loggers.error(err + " from deleteProfile function");
-
+    await t.rollback();
     return res.status(500).json({
       error: err,
       success: false,

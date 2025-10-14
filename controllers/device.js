@@ -7,6 +7,7 @@ import {
   switchModeSchema,
   switchProfileSchema,
   unlinkDeviceSchema,
+  updateDeviceNameSchema,
   updateUniqueNameSchema,
 } from "../validations/devices.js";
 
@@ -739,27 +740,30 @@ const getAllDevices = async (req, res) => {
         // [sequelize.col("Device.isActive"), "deviceActiveStatus"],
         [sequelize.col("DeviceLink.profileId"), "linkedProfileId"],
         [sequelize.col("DeviceLink.modeId"), "linkedModeId"],
+        // ["isDeleted", "deviceStatus"],
         [sequelize.col("DeviceLink.activeStatus"), "deviceStatus"],
         [
           sequelize.col("DeviceLink.UniqueUserNameDeviceLink.uniqueName"),
           "uniqueName",
         ],
-        [sequelize.col("DeviceLink.Profile.id"),"profileId"],
-        [sequelize.col("DeviceLink.Profile.modeId"),"modeId"],
+        [sequelize.col("DeviceLink.Profile.id"), "profileId"],
+        [sequelize.col("DeviceLink.Profile.modeId"), "modeId"],
         [sequelize.col("DeviceLink.Profile.profileName"), "profileName"],
-        [sequelize.col("DeviceLink.Mode.mode"),"mode"],
-        [sequelize.col("Device.ModeDirectUrls.url"),"modeUrl"]
+        [sequelize.col("DeviceLink.Mode.mode"), "mode"],
+        [sequelize.col("Device.ModeDirectUrls.url"), "modeUrl"],
       ],
       include: [
         {
           model: model.Device,
           required: false,
           attributes: [],
-          include:[{
-            model: model.ModeDirectUrl,
-            required: false,
-            attributes: []
-          }]
+          include: [
+            {
+              model: model.ModeDirectUrl,
+              required: false,
+              attributes: [],
+            },
+          ],
           // include: [
           //   {
           //     model: model.DeviceInventories,
@@ -794,27 +798,27 @@ const getAllDevices = async (req, res) => {
             },
             {
               model: model.Profile,
-              required:false,
-              attributes:[]
+              required: false,
+              attributes: [],
             },
             {
               model: model.Mode,
-              required:false,
-              attributes:[]
-            }
+              required: false,
+              attributes: [],
+            },
           ],
         },
       ],
     });
 
     const profiles = await model.Profile.findAll({
-      where:{userId:userId},
-      attributes:["id","profileName"]
-    })
+      where: { userId: userId },
+      attributes: ["id", "profileName"],
+    });
     return res.json({
       success: true,
       message: "All Devices",
-      data: {linkedDevices:linkedDevices,profiles:profiles || []},
+      data: { linkedDevices: linkedDevices, profiles: profiles || [] },
     });
   } catch (error) {
     loggers.error(error + " from getAllDevices function");
@@ -941,6 +945,7 @@ const linkDevice = async (req, res) => {
       },
       transaction: t,
     });
+
     if (accountDeviceLink) {
       await t.rollback();
       return res.status(400).json({
@@ -948,6 +953,7 @@ const linkDevice = async (req, res) => {
         message: "Device is already linked",
       });
     }
+
     //check device nickname already exists for the user
     if (deviceNickName) {
       if (deviceNickName.trim() === "") {
@@ -1368,34 +1374,48 @@ const switchProfile = async (req, res) => {
       );
     }
 
-    let deviceBranding = await model.DeviceBranding.findOne({
+    const dlid = sequelize.escape(deviceLink.id);
+    const pid = sequelize.escape(profileId);
+
+    const target = await model.DeviceBranding.findOne({
       where: {
-        profileId: profileId,
-        deviceLinkId: {
-          [Op.or]: [{ deviceLinkId: null }, { deviceLinkId: deviceLink.id }],
-        },
+        [Op.or]: [
+          { deviceLinkId: deviceLink.id }, // tier 1
+          {
+            [Op.and]: [
+              { profileId: profileId },
+              { deviceLinkId: { [Op.is]: null } },
+            ],
+          }, // tier 2
+        ],
       },
-      order: [["deviceLinkId", "DESC"]],
+      order: [
+        // rank tier 1 first, then tier 2
+        [
+          sequelize.literal(`CASE 
+        WHEN deviceLinkId = ${dlid} THEN 0
+        WHEN profileId = ${pid} AND deviceLinkId IS NULL THEN 1
+        ELSE 2
+      END`),
+          "ASC",
+        ],
+        ["id", "ASC"], // stable tie-breaker
+      ],
       transaction: t,
+      lock: t.LOCK.UPDATE, // row-level lock (avoids races if concurrent)
     });
 
-    if (!deviceBranding) {
-      deviceBranding = await model.DeviceBranding.create(
-        {
-          profileId: profileId,
-          deviceLinkId: deviceLink.id,
-          templateId: profile.templateId || 1,
-        },
-        { transaction: t }
-      );
-    } else {
+    if (target) {
       await model.DeviceBranding.update(
         {
           deviceLinkId: deviceLink.id,
           profileId: profileId,
           templateId: profile.templateId || 1,
         },
-        { where: { id: deviceBranding.id }, transaction: t }
+        {
+          where: { id: target.id }, // update only the chosen row
+          transaction: t,
+        }
       );
     }
 
@@ -1819,12 +1839,12 @@ const updateUniqueName = async (req, res) => {
 
     const checkUser = await model.User.findOne({
       where: { id: userId },
-      
-      attributes:["id",["BubblPlanManagement.planId", "planId"]],
-      include:{
+
+      attributes: ["id", ["BubblPlanManagement.planId", "planId"]],
+      include: {
         model: model.BubblPlanManagement,
         required: false,
-        attributes:[]
+        attributes: [],
       },
       transaction: t,
     });
@@ -1837,13 +1857,12 @@ const updateUniqueName = async (req, res) => {
       });
     }
 
-    if(checkUser.planId !== 2){
+    if (checkUser.planId !== 2) {
       res.json({
         success: false,
-        message: "This feature is available only for Pro Members."
-      })
+        message: "This feature is available only for Pro Members.",
+      });
     }
-
 
     if (uniqueName.trim() === "") {
       await t.rollback();
@@ -1897,8 +1916,8 @@ const updateUniqueName = async (req, res) => {
     );
     return res.json({
       success: true,
-      message: "UniqueName updated Successfully"
-    })
+      message: "UniqueName updated Successfully",
+    });
   } catch (error) {
     await t.rollback();
     loggers.error(error + " from updateUniqueName function");
@@ -1906,6 +1925,101 @@ const updateUniqueName = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",
+    });
+  }
+};
+
+const updateDeviceName = async (req, res) => {
+  try {
+    const { error } = updateDeviceNameSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
+
+    const userId = req.user.id;
+
+    const checkUser = await model.User.findOne({
+      where: { id: userId },
+
+      attributes: ["id"],
+    });
+
+    if (!checkUser) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const { accountDeviceLinkId, deviceNickName } = req.body;
+
+    const accountDeviceLink = await model.AccountDeviceLink.findOne({
+      where: {
+        id: accountDeviceLinkId,
+        userId: userId,
+        isDeleted: false,
+      },
+      include: [
+        {
+          model: model.Device,
+          required: false,
+          attributes: [],
+        },
+      ],
+      attributes: ["id", "deviceId"],
+    });
+
+    if (!accountDeviceLink) {
+      res.status(400).json({
+        success: false,
+        message: "Device not found",
+      });
+    }
+
+    const existing = await model.AccountDeviceLink.findOne({
+      where: {
+        deviceId: { [Op.ne]: accountDeviceLink.deviceId },
+        userId: userId,
+        isDeleted: false,
+      },
+      include: [
+        {
+          model: model.Device,
+          required: true,
+          attributes: [],
+          where: {
+            deviceNickName: deviceNickName,
+          },
+        },
+      ],
+      attributes: ["id"],
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Device name already exists",
+      });
+    }
+
+    await model.Device.update(
+      {
+        deviceNickName: deviceNickName,
+      },
+      {
+        where: {
+          id: accountDeviceLink.deviceId,
+        },
+      }
+    )
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "SOMETHING WENT WRONG",
     });
   }
 };
@@ -1930,4 +2044,5 @@ export {
   deviceDeactivate,
   deviceReactivate,
   updateUniqueName,
+  updateDeviceName
 };

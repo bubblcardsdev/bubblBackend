@@ -20,10 +20,20 @@ module.exports = async (sequelize, Sequelize) => {
     { tableName: "Profiles", timestamps: false }
   );
 
+    const Modes = sequelize.define(
+    "Modes",
+    {
+      id: { type: Sequelize.INTEGER, primaryKey: true },
+      mode: Sequelize.STRING,
+      activeStatus: Sequelize.BOOLEAN,
+    },
+    { tableName: "Modes", timestamps: false }
+  );
+
   // --- DeviceLinks ---
   // 1) Set modeId = 1 for everything that is NOT old 3
   await DeviceLinks.update(
-    { modeId: 1 },
+    { modeId: 2 },
     {
       where: {
         [Op.or]: [
@@ -34,18 +44,12 @@ module.exports = async (sequelize, Sequelize) => {
     }
   );
 
-  // 2) Set modeId = 2 for old 3
-  await DeviceLinks.update(
-    { modeId: 2 },
-    {
-      where: { modeId: 3 },
-    }
-  );
+
 
   // --- Profiles ---
   // 1) Set modeId = 1 for everything that is NOT old 3
   await Profiles.update(
-    { modeId: 1 },
+    { modeId: 2 },
     {
       where: {
         [Op.or]: [
@@ -56,14 +60,16 @@ module.exports = async (sequelize, Sequelize) => {
     }
   );
 
-  // 2) Set modeId = 2 for old 3
-  await Profiles.update(
-    { modeId: 2 },
+  await Modes.update(
+    { activeStatus: false },
     {
-      where: { modeId: 3 },
+      where: {
+        id: { [Op.in]: [1,4] },
+      },
     }
   );
-
   // Optional logs
   console.log("Mode remap complete: DeviceLinks & Profiles updated.");
 };
+
+module.exports.config = { transaction: true };

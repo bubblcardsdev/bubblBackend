@@ -85,10 +85,22 @@ export const switchModeSchema = Joi.object({
 
 export const updateUniqueNameSchema = Joi.object({
     deviceLinkId: Joi.number().required().messages({
+        "number.base": "Device Link ID must be a number",
+        "any.required": "Device Link ID is required",
+    }),
+    uniqueName: Joi.string().required().messages({
+        "string.base": "Unique Name must be a string",
+        "string.empty": "Unique Name cannot be empty",
+        "any.required": "Unique Name is required",
+    }),
+});
+
+export const updateDeviceNameSchema = Joi.object({
+    accountDeviceLinkId: Joi.number().required().messages({
         "number.base": "Account Device Link ID must be a number",
         "any.required": "Account Device Link ID is required",
     }),
-    uniqueName: Joi.string().required().messages({
+    deviceNickName: Joi.string().required().messages({
         "string.base": "Unique Name must be a string",
         "string.empty": "Unique Name cannot be empty",
         "any.required": "Unique Name is required",

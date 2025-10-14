@@ -37,13 +37,16 @@ router.post("/fetchCardDetails", fetchCardDetails);
 // V3 Api's
 
 router.get("/all", authenticateToken, getAllDevices);
+
 router.post("/add", authenticateToken, linkDevice);
 router.post("/remove", authenticateToken, unlinkDevice);
 router.post("/switchProfile", authenticateToken, switchProfile);
 router.post("/switchMode", authenticateToken, switchModes);
 router.post("/block", authenticateToken, blockDevice);
 router.post("/unblock", authenticateToken, unblockDevice);
-router.post("/deviceDe-activate", authenticateToken, deviceDeactivate);
-router.post("/deviceRe-activate", authenticateToken, deviceReactivate);
+router.post("/de-activate", authenticateToken, deviceDeactivate);
+router.post("/re-activate", authenticateToken, deviceReactivate);
+
+router.put("/update", authenticateToken, updateLinkDevice);
 
 export default router;
