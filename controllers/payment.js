@@ -988,7 +988,7 @@ async function verifyPaymentRazorPay(req, res) {
       { where: { id: orderRecord.id } }
     );
 // add async mail service fororder placed
-    return res.json({ success: true, message: "Payment verified successfully" });
+    return res.json({ success: true, message: "Payment verified successfully",order_id:orderRecord?.id });
   } catch (err) {
     console.error("verifyPayment error:", err);
     return res.status(500).json({ success: false, message: err.message });
