@@ -489,6 +489,7 @@ async function DuplicateProfile(req, res) {
         { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
         { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
         { model: model.DeviceBranding, as: "DeviceBranding" },
+        {model:model.ProfileImages,as:"profileImages"}
       ],
     });
 
@@ -502,6 +503,7 @@ async function DuplicateProfile(req, res) {
       DeviceBranding,
       profilePhoneNumbers,
       profileEmails,
+      profileImages,
       profileWebsites,
       profileSocialMediaLinks,
       profileDigitalPaymentLinks,
@@ -533,10 +535,10 @@ async function DuplicateProfile(req, res) {
       const isDeviceLinked = await model.DeviceLink.count({ where: { userId } });
 
       if (isDeviceLinked < 1) {
-        limit = 10;
+        limit = 1;
         customMessage = "You've reached your profile limit. Please link a device to create one more profile.";
       } else {
-        limit = 20;
+        limit = 2;
         customMessage = "You've reached your profile limit for the free plan. Upgrade your subscription to add more profiles.";
       }
     }
@@ -587,6 +589,14 @@ async function DuplicateProfile(req, res) {
     };
 
     // 6. Clone all related tables
+
+await insertMany(profileImages,model.ProfileImages,item=>({
+  profileId:newProfile.id,
+  image:item.image,
+  type:item.type,
+}))
+
+
     await insertMany(profilePhoneNumbers, model.ProfilePhoneNumber, item => ({
       profileId: newProfile.id,
       countryCode: item.countryCode,
@@ -639,6 +649,7 @@ async function DuplicateProfile(req, res) {
         { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
         { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
         { model: model.DeviceBranding, as: "DeviceBranding" },
+        { model: model.ProfileImages, as: "profileImages" },
       ],
     });
 
