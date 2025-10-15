@@ -62,26 +62,14 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
-      isPlan: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      planId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
-      planType: {
+
+      razorpayOrderId: {
         type: Sequelize.STRING,
-        allowNull: true,
+        allowNull: true, // keep null for old orders
       },
-       razorpayOrderId: {
-      type: Sequelize.STRING,
-      allowNull: true, // keep null for old orders
-    },
       // encResponse: {
       //   type: Sequelize.TEXT,
-      //   allowNull: true,  
+      //   allowNull: true,
       // }
     },
     {

@@ -16,7 +16,9 @@ import {
   blockDevice,
   unblockDevice,
   deviceDeactivate,
-  deviceReactivate
+  deviceReactivate,
+  updateUniqueName,
+  updateDeviceName
 } from "../controllers/device.js";
 import { authenticateToken } from "./../middleware/token.js";
 
@@ -47,6 +49,7 @@ router.post("/unblock", authenticateToken, unblockDevice);
 router.post("/de-activate", authenticateToken, deviceDeactivate);
 router.post("/re-activate", authenticateToken, deviceReactivate);
 
-router.put("/update", authenticateToken, updateLinkDevice);
+router.put("/update-unique-name",authenticateToken, updateUniqueName);
+router.put("/update-device-name",authenticateToken, updateDeviceName);
 
 export default router;

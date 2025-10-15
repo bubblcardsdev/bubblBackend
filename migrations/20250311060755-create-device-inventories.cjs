@@ -22,6 +22,9 @@ module.exports = {
       },
       productId: {
         type: Sequelize.UUID,
+        unique: true,
+        allowNull: false,
+        defaultValue: Sequelize.UUIDV4,
       },
       shortDescription: {
         type: Sequelize.TEXT,

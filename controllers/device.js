@@ -747,7 +747,7 @@ const getAllDevices = async (req, res) => {
           "uniqueName",
         ],
         [sequelize.col("DeviceLink.Profile.id"), "profileId"],
-        [sequelize.col("DeviceLink.Profile.modeId"), "modeId"],
+        [sequelize.col("DeviceLink.modeId"), "modeId"],
         [sequelize.col("DeviceLink.Profile.profileName"), "profileName"],
         [sequelize.col("DeviceLink.Mode.mode"), "mode"],
         [sequelize.col("Device.ModeDirectUrls.url"), "modeUrl"],
@@ -966,9 +966,9 @@ const linkDevice = async (req, res) => {
 
       const accountLinkedToUser = await model.AccountDeviceLink.findOne({
         where: {
-           deviceId: {
-                        [Op.ne]: deviceId, 
-                      },
+          deviceId: {
+            [Op.ne]: deviceId,
+          },
           userId,
           isDeleted: false,
         },
@@ -979,16 +979,16 @@ const linkDevice = async (req, res) => {
         include: [
           {
             model: model.Device,
-            required: true, 
+            required: true,
             where: {
-                      deviceNickName: deviceNickName.trim(), // ✅ correct location
-                    },
+              deviceNickName: deviceNickName.trim(), // ✅ correct location
+            },
             attributes: [],
           },
         ],
         transaction: t,
       });
-      console.log(accountLinkedToUser,"accountLinkedToUser");
+      console.log(accountLinkedToUser, "accountLinkedToUser");
       if (
         accountLinkedToUser &&
         accountLinkedToUser.get("deviceNickName") === deviceNickName.trim()
@@ -1038,12 +1038,11 @@ const linkDevice = async (req, res) => {
       );
 
       await model.DeviceBranding.create(
-
-          {
-            profileId: profileId,
-            deviceLinkId: addDeviceLink.id,
-            templateId: profile.templateId || 1,
-          },
+        {
+          profileId: profileId,
+          deviceLinkId: addDeviceLink.id,
+          templateId: profile.templateId || 1,
+        },
         { transaction: t }
       );
 
@@ -1137,7 +1136,7 @@ const unlinkDevice = async (req, res) => {
     //     message: "User not found",
     //   });
     // }
-    
+
     //find device ID
     const device = await model.Device.findOne({
       where: {
@@ -1207,13 +1206,13 @@ const unlinkDevice = async (req, res) => {
       );
     }
 
-      // await model.DeviceBranding.destroy({
-      //   where: {
-      //     deviceLinkId: deviceLink ? deviceLink.id : null,
-      //     profileId: deviceLink ? deviceLink.profileId : null,
-      //   },
-      //   transaction: t,
-      // })
+    // await model.DeviceBranding.destroy({
+    //   where: {
+    //     deviceLinkId: deviceLink ? deviceLink.id : null,
+    //     profileId: deviceLink ? deviceLink.profileId : null,
+    //   },
+    //   transaction: t,
+    // })
 
     //deactivate deviceLink
     if (deviceLink) {
@@ -1634,7 +1633,7 @@ const blockDevice = async (req, res) => {
         },
       }
     );
-       await model.DeviceLink.update(
+    await model.DeviceLink.update(
       {
         activeStatus: false,
       },
@@ -2044,7 +2043,7 @@ const updateDeviceName = async (req, res) => {
           id: accountDeviceLink.deviceId,
         },
       }
-    )
+    );
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -2073,5 +2072,5 @@ export {
   deviceDeactivate,
   deviceReactivate,
   updateUniqueName,
-  updateDeviceName
+  updateDeviceName,
 };

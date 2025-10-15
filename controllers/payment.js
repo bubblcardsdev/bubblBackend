@@ -392,12 +392,12 @@ async function initiatePayNew(req, res) {
     let rawBodyData = "";
 
     if (orderType === 1) {
-      if (orderData.isPlan) {
-        return res.status(400).json({
-          success: false,
-          message: "Payment not available for this order type",
-        });
-      }
+      // if (orderData.isPlan) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: "Payment not available for this order type",
+      //   });
+      // }
       const shippingDetails = await model.Shipping.findOne({
         where: {
           orderId: orderId,
@@ -423,12 +423,12 @@ async function initiatePayNew(req, res) {
     }
 
     if (orderType === 2) {
-      if (!orderData.isPlan) {
-        return res.status(400).json({
-          success: false,
-          message: "Payment not available for this order type",
-        });
-      }
+      // if (!orderData.isPlan) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: "Payment not available for this order type",
+      //   });
+      // }
       const billing_name = `${user.firstName} ${user.lastName}`;
       rawBodyData = `merchant_id=${
         config.merchant_id
