@@ -1554,22 +1554,24 @@ const switchModes = async (req, res) => {
       transaction: t,
     });
 
-    if (checkModeUrl) {
-      await model.ModeDirectUrl.update(
-        { modeId: modeId, url: modeUrl },
-        {
-          where: { id: checkModeUrl.id },
-          transaction: t,
-        }
-      );
-    } else {
-      await model.ModeDirectUrl.create(
-        {
-          deviceId: accountDeviceLink.deviceId,
-          url: modeUrl,
-        },
-        { transaction: t }
-      );
+    if (modeUrl) {
+      if (checkModeUrl) {
+        await model.ModeDirectUrl.update(
+          { modeId: modeId, url: modeUrl },
+          {
+            where: { id: checkModeUrl.id },
+            transaction: t,
+          }
+        );
+      } else {
+        await model.ModeDirectUrl.create(
+          {
+            deviceId: accountDeviceLink.deviceId,
+            url: modeUrl,
+          },
+          { transaction: t }
+        );
+      }
     }
 
     await t.commit(); // ✅ commit all
@@ -2044,6 +2046,10 @@ const updateDeviceName = async (req, res) => {
         },
       }
     );
+    return res.json({
+      success: true,
+      message: "Device name updated successfully",
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
