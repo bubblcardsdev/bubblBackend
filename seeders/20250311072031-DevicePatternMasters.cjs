@@ -7,34 +7,31 @@ module.exports = {
       "DevicePatternMasters",
       [
         {
-          name: "zebraGrey",
+          name: "darkGreyPattern",
         },
         {
-          name: "sonicGreen",
+          name: "greenPattern",
         },
         {
-          name: "purpleCarrara",
+          name: "purplePattern",
         },
         {
-          name: "pixelComb",
+          name: "lightGreyPattern",
         },
         {
-          name: "maze",
+          name: "orangePattern",
         },
         {
-          name: "princeCout",
+          name: "greyPattern",
         },
         {
           name: "blackPattern",
         },
         {
-          name: "bikanerRed",
+          name: "redPattern",
         },
         {
           name: "yugataRed",
-        },
-        {
-          name: "tithoniaRed",
         },
         {
           name: "umiWhite",
@@ -46,13 +43,7 @@ module.exports = {
           name: "neckerCube",
         },
         {
-          name: "poggendorff",
-        },
-        {
-          name: "AlmondGold",
-        },
-        {
-          name: "starOfBethlehem",
+          name: "tithoniaRed",
         },
       ],
       { fields: ["name"], ignoreDuplicates: true }

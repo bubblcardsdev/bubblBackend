@@ -1870,7 +1870,7 @@ const updateUniqueName = async (req, res) => {
     const checkUser = await model.User.findOne({
       where: { id: userId },
 
-      attributes: ["id", ["BubblPlanManagement.planId", "planId"]],
+      attributes: ["id",[sequelize.col("BubblPlanManagements.planId"),"planId"]],
       include: {
         model: model.BubblPlanManagement,
         required: false,
@@ -1888,9 +1888,10 @@ const updateUniqueName = async (req, res) => {
     }
 
     if (checkUser.planId !== 2) {
-      res.json({
+      res.status(402).json({
         success: false,
         message: "This feature is available only for Pro Members.",
+        error: checkUser
       });
     }
 

@@ -7,7 +7,7 @@ module.exports = async (sequelize, Sequelize) => {
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
   for (const row of rows) {
-    const sql = row[7];
+    const sql = row[3];
     console.log(sql, "sdfsd");
     if (sql && typeof sql === "string") {
       try {

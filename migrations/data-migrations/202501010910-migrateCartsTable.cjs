@@ -96,6 +96,7 @@ module.exports = async (sequelize, Sequelize) => {
   try {
     const carts = await Carts.findAll({
       where: { productId: null },
+    
     });
 
     for (const cart of carts) {
@@ -106,6 +107,7 @@ module.exports = async (sequelize, Sequelize) => {
 
         const deviceType = await DeviceTypes.findOne({
           where: { name: deviceTypeName },
+         
         });
 
         if (!deviceType) {
@@ -124,31 +126,16 @@ module.exports = async (sequelize, Sequelize) => {
             continue;
           }
 
-          const pvcPatterns = {
-            black: "princeCout",
-            darkGrey: "zebraGrey",
-            red: "bikanerRed",
-            green: "sonicGreen",
-            purple: "purpleCarrara",
-            lightGrey: "pixelBomb",
-            grey: "nightShowel",
-            orange: "maze",
+          const patternEnum = {
+            black: "blackPattern",
+            darkGrey: "darkGreyPattern",
+            red: "redPattern",
+            green: "greenPattern",
+            purple: "purplePattern",
+            lightGrey: "lightGreyPattern",
+            grey: "greyPattern",
+            orange: "orangePattern",
           };
-
-          const metalPatterns = {
-            black: "AlmondGold",
-            darkGrey: "poggendorff",
-            green: "sonicGreen",
-          };
-
-          const patternEnum =
-            deviceType.id === 6
-              ? cart.productType === "NC-Pattern"
-                ? pvcPatterns
-                : cart.productType === "NC-Metal"
-                ? metalPatterns
-                : pvcPatterns
-              : {};
 
           const patternNameFromEnum = patternEnum[cart.productColor];
 
@@ -160,10 +147,12 @@ module.exports = async (sequelize, Sequelize) => {
             where: {
               name: patternNameFromEnum,
             },
+
           });
         } else {
           color = await Colors.findOne({
             where: { name: cart.productColor },
+          
           });
         }
 
@@ -199,9 +188,12 @@ module.exports = async (sequelize, Sequelize) => {
         }
 
         if (matchedInventory) {
-          await cart.update({
-            productId: matchedInventory.id,
-          });
+          await cart.update(
+            {
+              productId: matchedInventory.id,
+            },
+            
+          );
           console.log(
             `Cart ID ${cart.id} updated with productId ${matchedInventory.id}`
           );
@@ -292,10 +284,13 @@ module.exports = async (sequelize, Sequelize) => {
     //   }
     // }
 
+
+
     console.log("Cart productStatus toggle completed");
 
     console.log("Cart productId backfill completed");
   } catch (error) {
     console.error("Error during migration:", error.message);
+    
   }
 };
