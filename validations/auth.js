@@ -102,7 +102,6 @@ const createMobileUserSchemaIOS = Joi.object({
 });
 
 
-
 const verifyGoogleUserSchema = Joi.object({
   credential: Joi.string().required(),
   isMobile: Joi.boolean()
@@ -126,6 +125,11 @@ const verifyLinkedinUserSchema = Joi.object({
   authorizationCode: Joi.string().required(),
   isMobile: Joi.boolean()
 });
+
+const verifyAppleUserSchema = Joi.object({
+  identityToken: Joi.string().required(),
+
+});
 const verifyLinkedinUserSchemaMobile = Joi.object({
   family_name: Joi.string().required(),
   given_name: Joi.string().required(),
@@ -134,10 +138,7 @@ const verifyLinkedinUserSchemaMobile = Joi.object({
 });
 
 
-const verifyAppleUserSchema = Joi.object({
-  identityToken: Joi.string().required(),
 
-});
 
 
 const updateUserSchema = Joi.object({
@@ -222,5 +223,6 @@ export {
   createMobileUserSchemaIOS,
   verifyGoogleUserSchemaLatest,
   verifyLinkedinUserSchemaLatest,
-  verifyFacebookUserSchemaLatest
+  verifyFacebookUserSchemaLatest,
+  createMobileUserSchemaIOS
 };

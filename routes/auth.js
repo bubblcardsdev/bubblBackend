@@ -17,14 +17,10 @@ import {
   resetPassword,
   verifyEmailOtp,
   resendMailOtp,
-  createUserMobile,
+  createUserMobile, 
   verifyAppleUser,
-  createUserBulkController,
-  createUserMobileIOS,
-  refreshToken,
-  verifyGoogleUserLatest,
-  verifyFacebookUserLatest,
-  verifyLinkedinUserLatest
+  createUserMobileIOS
+
 } from "../controllers/auth.js";
 import { authenticateToken } from "../middleware/token.js";
 import {SSE, verifyMail, sendEmail, emailVerified, sendForgetPassword} from "../helper/socket_server.js";

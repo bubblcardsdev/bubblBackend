@@ -3,7 +3,6 @@ import model from "../models/index.js";
 import jwt from "jsonwebtoken";
 import {
   generateAccessToken,
-  generateAppleClientSecret,
   generateRefreshToken,
   getAppleSigningKey,
   issueToken,
@@ -1760,105 +1759,7 @@ async function verifyLinkedinUser(req, res) {
     });
   }
 }
-
-// async function verifyAppleUser(req,res){
-
-// const { authorizationCode } = req.body;
-
-//   const { error } = verifyLinkedinUserSchema.validate(req.body, {
-//     abortEarly: false,
-//   });
-
-//   if (error) {
-//     return res.json({
-//       success: false,
-//       message:error.details
-//     });
-//   }
-
-//   const clientSecret  = generateAppleClientSecret();
-//   if (!clientSecret) return res.status(400).json({success:false,message:"errror generating client secret"})
-
-//     const params = new URLSearchParams({
-//    grant_type: 'authorization_code',
-//    code: authorizationCode,
-//    client_id: config.appleClientId,
-//    client_secret: clientSecret,
-// });
-// try{
-// const response = await got.post(`${config.appleExchangeUrl}`,params,{
-//    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-//    responseType: 'json',
-// })
-
-// const idToken = response.body.id_token;
-// const { email: payloadEmail} = jwt.decode(idToken) || {}; //sub: appleUserId
-// const checkEmail = await model.User.findOne({
-//       where: { email: payloadEmail },
-//     });
-
-//     if (checkEmail) {
-//       const user = await model.User.create({
-//         // firstName: payloadFirstName, need to add from frontend
-//         // lastName: payloadLastName,
-//         email: payloadEmail,
-//         emailVerified: true,
-//         phoneVerified: true,
-//         apple: true,
-//         signupType: "social",
-//       });
-
-//       await model.BubblPlanManagement.create({
-//         userId: user.id,
-//         planId: 1,
-//         subscriptionType: "free",
-//       });
-//       await model.ClaimLink.create({
-//         userId: user.id,
-//       });
-//     } else {
-//       await model.User.update(
-//         { apple: true, signupType: "social", emailVerified: true },
-//         { where: { email: payloadEmail } }
-//       );
-//     }
-
-//     const checkUser = await model.User.findOne({
-//       where: { email: payloadEmail },
-//     });
-
-//     const { id, firstName, lastName, email, emailVerified } = checkUser;
-//     const user = { id, firstName, lastName, email };
-
-//     const accessToken = await generateAccessToken(user);
-//     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
-//     const refreshToken = await generateRefreshToken(user);
-//     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
-//     return res.json({
-//       success: true,
-//       data: {
-//         message: "Apple account verified successfully",
-//         firstName,
-//         lastName,
-//         email,
-//         emailVerified,
-//         token: {
-//           accessToken,
-//           accessTokenExpiryInSeconds,
-//           refreshToken,
-//           refreshTokenExpiryInSeconds,
-//         },
-//       },
-//     });
-
-// }
-// catch(err){
-//   res.status(500).json({success:false,message:"Internal server error",error:err})
-// }
-
-// }
-
-async function verifyAppleUser(req, res) {
+async function verifyAppleUser(req,res){
   const { identityToken } = req.body;
 
   const { error } = verifyAppleUserSchema.validate(req.body, {
@@ -1868,151 +1769,51 @@ async function verifyAppleUser(req, res) {
   if (error) {
     return res.json({
       success: false,
-      message: error.details,
+      message:error.details
     });
   }
 
   // const decoded  = jwt.decode(identityToken,{complete:true})
 
-  jwt.verify(
-    identityToken,
-    getAppleSigningKey,
-    {
-      algorithms: ["RS256"],
-      audience: config.appleClientId,
-      issuer: "https://appleid.apple.com",
-    },
-    async (err, payload) => {
-      if (err) {
-        return res.status(401).json({
+ jwt.verify(
+  identityToken,
+  getAppleSigningKey,
+  {
+    algorithms: ['RS256'],
+    audience:config.appleClientId,
+    issuer: 'https://appleid.apple.com',
+  },
+async (err, payload) => {
+  if (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token verification failed',
+      error: err.message,
+    });
+  }
+
+  if (payload.email && payload.email_verified) {
+    try {
+      const userExist = await model.User.findOne({
+        where: { email: payload.email },
+      });
+
+      if (!userExist) {
+        return res.status(404).json({
           success: false,
-          message: "Token verification failed",
-          error: err.message,
+          message: 'User not found',
+          email:payload.email
         });
       }
 
-      if (payload.email && payload.email_verified) {
-        try {
-          const userExist = await model.User.findOne({
-            where: { email: payload.email },
-          });
-
-          if (!userExist) {
-            return res.status(404).json({
-              success: false,
-              message: "User not found",
-              email: payload.email,
-            });
-          }
-
-          if (!userExist.emailVerified) {
-            return res.status(403).json({
-              success: false,
-              message: "Email is not verified",
-            });
-          }
-
-          //   if(!userExist?.apple){
-          //      const [rowsUpdated] = await model.User.update(
-          //   { apple: true, google: false, facebook: false, linkedin: false, local: false },
-          //   { where: { email } }
-          // );
-
-          // if (rowsUpdated === 0) {
-          //   console.warn("No user was updated");
-          // }
-          //   }
-          const { id, firstName, lastName, email, emailVerified } = userExist;
-          const user = { id, firstName, lastName, email };
-
-          const accessToken = await generateAccessToken(user);
-          const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
-          const refreshToken = await generateRefreshToken(user);
-          const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
-
-          return res.json({
-            success: true,
-            data: {
-              message: "Apple account verified successfully",
-              firstName,
-              lastName,
-              email,
-              emailVerified,
-              token: {
-                accessToken,
-                accessTokenExpiryInSeconds,
-                refreshToken,
-                refreshTokenExpiryInSeconds,
-              },
-            },
-          });
-        } catch (error) {
-          console.error("Apple login error:", error);
-          return res.status(500).json({
-            success: false,
-            message: "Internal server error during Apple login",
-            error: error.message,
-          });
-        }
-      } else {
-        return res.status(400).json({
+      if (!userExist.emailVerified) {
+        return res.status(403).json({
           success: false,
-          message: "Email is missing or not verified in token",
+          message: 'Email is not verified',
         });
       }
-    }
-  );
-}
-
-// async function verifyAppleUser(req,res){
-
-// const { authorizationCode } = req.body;
-
-//   const { error } = verifyLinkedinUserSchema.validate(req.body, {
-//     abortEarly: false,
-//   });
-
-//   if (error) {
-//     return res.json({
-//       success: false,
-//       message:error.details
-//     });
-//   }
-
-//   const clientSecret  = generateAppleClientSecret();
-//   if (!clientSecret) return res.status(400).json({success:false,message:"errror generating client secret"})
-
-// logAppleConfigAndClientSecret(clientSecret);
-//     const params = new URLSearchParams({
-//    grant_type: 'authorization_code',
-//    code: authorizationCode,
-//    client_id: config.appleClientId,
-//    client_secret: clientSecret,
-// });
-// try{
-//  const response = await fetch(config.appleExchangeUrl, {
-//     method: 'POST',
-//     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-//     body: params.toString(),
-//   });
-
-//   const responseBody = await response.json();
-
-// if (responseBody?.error === "invalid_client") {
-//   return res.status(400).json({ success: false, message: responseBody?.error});
-// }
-
-// const { email: payloadEmail} = jwt.decode(responseBody.body.id_token) || {};
-//  //sub: appleUserId
-//  if (!payloadEmail) {
-//   return res.status(400).json({ success: false, message: "Email not available in Apple token" });
-// }
-// const validUser = await model.User.findOne({
-//       where: { email: payloadEmail},
-//     });
-
-//     if (validUser) { // user exist
-//       if(!validUser?.apple){
+      
+//   if(!userExist?.apple){
 //      const [rowsUpdated] = await model.User.update(
 //   { apple: true, google: false, facebook: false, linkedin: false, local: false },
 //   { where: { email } }
@@ -2020,61 +1821,51 @@ async function verifyAppleUser(req, res) {
 
 // if (rowsUpdated === 0) {
 //   console.warn("No user was updated");
-// }
+// }  
+//   }
+      const { id, firstName, lastName, email, emailVerified } = userExist;
+      const user = { id, firstName, lastName, email };
 
-//       }
-// const { id, firstName, lastName, email,emailVerified } = validUser;
-// const user = { id, firstName, lastName, email };
-//     const accessToken = await generateAccessToken(user);
-//     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
-//     const refreshToken = await generateRefreshToken(user);
-//     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
-//     return res.json({
-//       success: true,
-//       data: {
-//         message: "Apple account verified successfully",
-//         firstName,
-//         lastName,
-//         email,
-//         emailVerified,
-//         token: {
-//           accessToken,
-//           accessTokenExpiryInSeconds,
-//           refreshToken,
-//           refreshTokenExpiryInSeconds,
-//         },
-//       },
-//     });
+      const accessToken = await generateAccessToken(user);
+      const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+      const refreshToken = await generateRefreshToken(user);
+      const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
 
-//     }
-//     else{
-//       return res.status(400).json({ success: false, message: "User does not exist" });
-//     }
+      return res.json({
+        success: true,
+        data: {
+          message: 'Apple account verified successfully',
+          firstName,
+          lastName,
+          email,
+          emailVerified,
+          token: {
+            accessToken,
+            accessTokenExpiryInSeconds,
+            refreshToken,
+            refreshTokenExpiryInSeconds,
+          },
+        },
+      });
+    } 
+    catch (error) {
+      console.error("Apple login error:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during Apple login',
+        error: error.message,
+      });
+    }
+  } else {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is missing or not verified in token',
+    });
+  }
+}
+);
 
-// }
-// catch(err){
-//   return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//       error: err?.message || err,
-//     });
-// }
-
-// }
-// function logAppleConfigAndClientSecret(clientSecret) {
-//   console.log("\n🔍 DEBUGGING APPLE SIGN-IN CONFIG:\n");
-
-//   console.log("➡️ config.appleClientId     :", config.appleClientId);
-//   console.log("➡️ config.appleTeamId       :", config.appleTeamId);
-//   console.log("➡️ config.appleKeyId        :", config.appleKeyId);
-//   console.log("➡️ config.appleExchangeUrl  :", config.appleExchangeUrl);
-//   console.log("➡️ Private Key Length       :", config.applePrivateKey?.length);
-//   console.log("➡️ Private Key First Line   :", config.applePrivateKey?.split("\n")[0]);
-
-//   const decodedClientSecret = jwt.decode(clientSecret);
-//   console.log("📦 Decoded client_secret payload:", decodedClientSecret);
-//   console.log("\n✅ If sub === client_id and iss === your team ID, this part is OK.");
-// }
+}
 async function updateUser(req, res) {
   const {
     userImage,
@@ -2737,9 +2528,6 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
-  createUserMobileIOS,
-  refreshToken,
-  verifyGoogleUserLatest,
-  verifyLinkedinUserLatest,
-  verifyFacebookUserLatest,
+  verifyAppleUser,
+  createUserMobileIOS
 };

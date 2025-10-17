@@ -1,7 +1,6 @@
 /* eslint-disable no-useless-catch */
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import model from "../models/index.js";
 import jwksClient from 'jwks-rsa';
 
 
@@ -164,7 +163,6 @@ function getAppleSigningKey(header, callback) {
     callback(null, signingKey);
   });
 }
-
 
 export {
   generateAccessToken,
