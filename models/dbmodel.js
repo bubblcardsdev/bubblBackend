@@ -51,6 +51,7 @@ import _orderStatusMasters from "./orderstatusmaster.cjs";
 import _orderBreakDown from "./orderbreakdown.cjs";
 import _fontMaster from "./customfontmaster.cjs";
 import _supportForm from "./supportForm.cjs";
+import _planDescription from "./planDescription.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -111,6 +112,7 @@ export default function dbModel(sequelize, Sequelize) {
   const OrderStatusMaster = _orderStatusMasters(sequelize, Sequelize);
   const OrderBreakDown = _orderBreakDown(sequelize, Sequelize);
   const CustomFontMaster = _fontMaster(sequelize, Sequelize);
+  const PlanDescription = _planDescription(sequelize, Sequelize);
 
   User.hasMany(Profile, { as: "userProfiles" });
   User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
@@ -216,6 +218,8 @@ export default function dbModel(sequelize, Sequelize) {
 
   ModeDirectUrl.belongsTo(Device, { foreignKey: "deviceId" });
 
+  PlanDescription.belongsTo(Plan);
+  Plan.hasMany(PlanDescription);
   //#endregion
 
   return {
@@ -243,6 +247,7 @@ export default function dbModel(sequelize, Sequelize) {
     ModeDirectUrl,
     LeadGen,
     Plan,
+    PlanDescription,
     BubblPlanManagement,
     PlanPayment,
     ClaimLink,

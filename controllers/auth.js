@@ -388,11 +388,11 @@ async function createUser(req, res) {
     templateId,
     phoneNumber,
     companyName,
-     local,
-      google,
-      facebook,
-      apple,
-      linkedin,
+    local,
+    google,
+    facebook,
+    apple,
+    linkedin,
   } = req.body;
   const { error } = createUserSchema.validate(req.body, { abortEarly: false });
 
@@ -424,8 +424,8 @@ async function createUser(req, res) {
         },
       });
     }
-    const isOauthLogin = google || facebook || apple || linkedin
-     var hashedPassword = "";
+    const isOauthLogin = google || facebook || apple || linkedin;
+    var hashedPassword = "";
     if (password) {
       hashedPassword = await hashPassword(password);
     }
@@ -442,7 +442,7 @@ async function createUser(req, res) {
       apple,
       linkedin,
       phoneVerified: true,
-      emailVerified:isOauthLogin
+      emailVerified: isOauthLogin,
     });
 
     if (user) {
@@ -546,6 +546,11 @@ async function createUser(req, res) {
     // return create;
     await sendMail(emailParse, subject, emailMessage);
 
+    const accessToken = await generateAccessToken(user);
+    const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
+    const refreshToken = await generateRefreshToken(user);
+    const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
+
     return res.json({
       success: true,
       data: {
@@ -557,6 +562,12 @@ async function createUser(req, res) {
         emailVerified: user.emailVerified,
         local: user.local,
         signupType: user.signupType,
+        token: {
+          accessToken,
+          accessTokenExpiryInSeconds,
+          refreshToken,
+          refreshTokenExpiryInSeconds,
+        },
       },
     });
   } catch (error) {
@@ -1245,28 +1256,41 @@ async function verifyGoogleUserLatest(req, res) {
     });
 
     if (!checkEmail) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-        data: {
-          email: payloadEmail,
-          firstName: payloadFirstName,
-          lastName: payloadLastName,  // fixed typo here
-        },
+     const user = await model.User.create({
+        firstName: payloadFirstName,
+        lastName: payloadLastName,
+        email: payloadEmail,
+        emailVerified: true,
+        phoneVerified: true,
+        google: true,
+        signupType: "social",
+      });
+      await model.BubblPlanManagement.create({
+        userId: checkEmail.id,
+        planId: 1,
+        subscriptionType: "free",
+      });
+      await model.BubblPlanManagement.create({
+        userId: user.id,
+        planId: 1,
+        subscriptionType: "free",
+        isValid: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await model.ClaimLink.create({
+        userId: user.id,
+      });
+      await model.UniqueNameDeviceLink.create({
+        userId: user.id,
       });
     }
-     if (!checkEmail.emailVerified) {
-            return res.status(403).json({
-              success: false,
-              message: "Email is not verified",
-            });
-          }
 
     const userInfo = {
       id: checkEmail.id,
       firstName: checkEmail.firstName,
       lastName: checkEmail.lastName,
-      email: checkEmail.email,  // safer to take from DB user
+      email: checkEmail.email, // safer to take from DB user
     };
 
     const accessToken = await generateAccessToken(userInfo);
@@ -1299,7 +1323,9 @@ async function verifyGoogleUserLatest(req, res) {
 async function verifyFacebookUserLatest(req, res) {
   const { accesstoken } = req.body;
 
-  const { error } = verifyFacebookUserSchemaLatest.validate(req.body, { abortEarly: false });
+  const { error } = verifyFacebookUserSchemaLatest.validate(req.body, {
+    abortEarly: false,
+  });
 
   if (error) {
     return res.status(400).json({
@@ -1370,7 +1396,6 @@ async function verifyFacebookUserLatest(req, res) {
     });
   }
 }
-
 
 async function verifyFacebookUser(req, res) {
   const { accesstoken, isMobile } = req.body;
@@ -1512,7 +1537,9 @@ async function verifyFacebookUser(req, res) {
 async function verifyLinkedinUserLatest(req, res) {
   const { authorizationCode } = req.body;
 
-  const { error } = verifyLinkedinUserSchemaLatest.validate(req.body, { abortEarly: false });
+  const { error } = verifyLinkedinUserSchemaLatest.validate(req.body, {
+    abortEarly: false,
+  });
 
   if (error) {
     return res.status(400).json({
@@ -1565,7 +1592,6 @@ async function verifyLinkedinUserLatest(req, res) {
     const refreshToken = await generateRefreshToken(userInfo);
     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
 
-    
     return res.status(200).json({
       success: true,
       message: "LinkedIn account verified successfully",
@@ -2045,8 +2071,16 @@ async function verifyAppleUser(req, res) {
 //   console.log("\n✅ If sub === client_id and iss === your team ID, this part is OK.");
 // }
 async function updateUser(req, res) {
-  const { userImage, firstName, lastName, phoneNumber, DOB, gender, country,email } =
-    req.body;
+  const {
+    userImage,
+    firstName,
+    lastName,
+    phoneNumber,
+    DOB,
+    gender,
+    country,
+    email,
+  } = req.body;
   const userId = req.user.id;
   const { error } = updateUserSchema.validate(req.body, { abortEarly: false });
 
@@ -2702,5 +2736,5 @@ export {
   refreshToken,
   verifyGoogleUserLatest,
   verifyLinkedinUserLatest,
-  verifyFacebookUserLatest
+  verifyFacebookUserLatest,
 };

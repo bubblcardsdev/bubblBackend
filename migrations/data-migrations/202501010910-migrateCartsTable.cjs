@@ -25,6 +25,8 @@ module.exports = async (sequelize, Sequelize) => {
       id: { type: Sequelize.INTEGER, primaryKey: true },
       deviceTypeId: Sequelize.INTEGER,
       colorId: Sequelize.INTEGER,
+      materialTypeId: Sequelize.INTEGER,
+      patternId: Sequelize.INTEGER,
     },
     {
       tableName: "DeviceInventories",

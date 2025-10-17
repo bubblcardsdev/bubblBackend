@@ -19,7 +19,7 @@ module.exports = async (sequelize /*, Sequelize */) => {
 
     // ⚠️ Make sure your table really uses "availability" (not misspelled "availablity")
     // Columns we insert: adjust names if your DB differs
-const insertSql = `
+    const insertSql = `
   INSERT INTO bubbldb.DeviceInventories
   (id, name, productId, deviceTypeId, materialTypeId, colorId, patternId,
    price, discountPercentage, availability, isActive, shortDescription, deviceDescription)
@@ -42,34 +42,36 @@ const insertSql = `
 `;
 
     await sequelize.transaction(async (t) => {
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
-console.log(rows[i]);
+        console.log(rows[i]);
         // Map Excel columns -> DB columns
         // (Use the column names from your SELECT/export)
-const params = {
-  id: nn(r.id),
-  name: nn(r?.deviceName || r?.name || r?.deviceType),  // <- will fill :name
-  productId: nn(r.productId),
-  deviceTypeId: nn(r.deviceTypeId),
-  materialTypeId: nn(r.materialId === 'NULL' ? null : r.materialId),
-  colorId: nn(r.colorId === 'NULL' ? null : r.colorId),
-  patternId: nn(r.patternId === 'NULL' ? null : r.patternId),
-  price: nn(r.price),
-  discountPercentage: nn(r.discountPercentage),
-  availability: nn(r.availability),
-  isActive: nn(r.isActive),
-  shortDescription: nn(r.shortDescription),
-  deviceDescription: nn(r.deviceDescription),
-};
+        const params = {
+          id: nn(r.id),
+          name: nn(r?.deviceName || r?.name || r?.deviceType), // <- will fill :name
+          productId: nn(r.productId),
+          deviceTypeId: nn(r.deviceTypeId),
+          materialTypeId: nn(r.materialId === "NULL" ? null : r.materialId),
+          colorId: nn(r.colorId === "NULL" ? null : r.colorId),
+          patternId: nn(r.patternId === "NULL" ? null : r.patternId),
+          price: nn(r.price),
+          discountPercentage: nn(r.discountPercentage),
+          availability: nn(r.availability),
+          isActive: nn(r.isActive),
+          shortDescription: nn(r.shortDescription),
+          deviceDescription: nn(r.deviceDescription),
+        };
 
         // Skip totally empty rows
-        if (
-          Object.values(params).every((v) => v === null || v === undefined)
-        ) continue;
+        if (Object.values(params).every((v) => v === null || v === undefined))
+          continue;
 
         try {
-          await sequelize.query(insertSql, { replacements: params, transaction: t });
+          await sequelize.query(insertSql, {
+            replacements: params,
+            transaction: t,
+          });
           console.log(`[seed] Inserted row ${i + 1}`);
         } catch (err) {
           console.error(`[seed] Error on row ${i + 1}`, err);

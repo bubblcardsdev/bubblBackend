@@ -304,10 +304,33 @@ async function createPlanPayment(req, res) {
   }
 }
 
+async function getAllPlan(req, res) {
+  try {
+    const plan = await model.Plan.findAll({
+      attributes:["id","planName","monthlyPrice","annualPrice","shortDescription","discountPercentage"],
+      where: {
+        isActive: true,
+      },
+      include: [{ model: model.PlanDescription, attributes: ["description"] }],
+    });
+    return res.json({
+      success: true,
+      message: "Plan details",
+      data: plan,
+    });
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 export {
   getPlan,
   getPlanDetails,
   updatePlanDetails,
   deactivatePlan,
   createPlanPayment,
+  getAllPlan
 };

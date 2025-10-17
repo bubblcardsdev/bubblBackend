@@ -1302,9 +1302,9 @@ async function getProfileByDevice(req, res) {
         });
 
         if (!accountDeviceLink) {
-          return res.status(404).json({
-            success: false,
-            data: { message: "Device not linked to any account" },
+          return res.status(201).json({
+            success: true,
+            message: "New Device Detected",
           });
         }
 

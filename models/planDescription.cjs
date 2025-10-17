@@ -1,7 +1,7 @@
 "use strict";
 const { Model, Sequelize } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
-  class Plan extends Model {
+  class PlanDescription extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,40 +11,41 @@ module.exports = (sequelize, Sequelize) => {
       // define association here
     }
   }
-  Plan.init(
+  PlanDescription.init(
     {
-      planName: {
+        id: {
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: Sequelize.INTEGER,
+      },
+      planId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Plans",
+          key: "id",
+        },
+      },
+      description: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true,
       },
-      monthlyPrice: {
-        type: Sequelize.INTEGER,
+      createdAt: {
         allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
-      annualPrice: {
-        type: Sequelize.INTEGER,
+      updatedAt: {
         allowNull: false,
-      },
-      shortDescription: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      isActive: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: true,
-      },
-      discountPercentage: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
     },
     {
       sequelize,
-      modelName: "Plan",
+      modelName: "PlanDescription",
     }
   );
-  return Plan;
+  return PlanDescription;
 };

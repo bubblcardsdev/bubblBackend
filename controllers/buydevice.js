@@ -18,14 +18,23 @@ async function getAllDevices(req, res) {
   try {
     let devices = await model.DeviceInventories.findAll({
       include: [
-        { model: model.DeviceImageInventories },
+        {
+          model: model.DeviceImageInventories,
+          separate: true, // run a separate query per parent
+          order: [["id", "DESC"]],
+        }, // sort images by id DESC},
         { model: model.DeviceColorMasters },
         { model: model.DevicePatternMasters },
         { model: model.MaterialTypeMasters },
       ],
       group: ["deviceTypeId", "materialTypeId", "colorId", "patternId"],
       where: { isActive: true },
-      order: [['deviceTypeId', 'ASC'], ['availability', 'DESC'], ['discountPercentage', 'DESC'], ['id', 'ASC']]
+      order: [
+        ["deviceTypeId", "ASC"],
+        ["availability", "DESC"],
+        ["discountPercentage", "DESC"],
+        ["id", "ASC"],
+      ],
     });
 
     if (!devices || devices.length === 0) {
@@ -80,10 +89,10 @@ async function getAllDevices(req, res) {
     let removeDuplicates = transformedDevices.map((item) => {
       const findItem = !isEmpty(uniqueItems)
         ? uniqueItems.find(
-          (product) =>
-            product.name === item.productName &&
-            product.material === item.material
-        )
+            (product) =>
+              product.name === item.productName &&
+              product.material === item.material
+          )
         : null;
       if (!findItem) {
         uniqueItems.push({ name: item.productName, material: item.material });
@@ -166,7 +175,7 @@ async function getProductDetailsLatest(req, res) {
         "colorId",
         "materialTypeId",
         "productDetails",
-        'availability',
+        "availability",
         [sequelize.col("DevicePatternMaster.name"), "pattern"],
         [sequelize.col("DeviceColorMaster.name"), "color"],
         [sequelize.col("DeviceColorMaster.colorCode"), "colorCode"],
@@ -192,6 +201,8 @@ async function getProductDetailsLatest(req, res) {
         },
         {
           model: model.DeviceImageInventories,
+          separate: true,
+          order: [["id", "DESC"]],
           attributes: ["id", ["imageKey", "imageUrl"]],
         },
       ],
@@ -232,12 +243,24 @@ async function getProductDetailsLatest(req, res) {
             materialTypeId: getProductDetails?.materialTypeId,
             deviceTypeId: getProductDetails?.deviceTypeId,
           },
-          include: {
-            model: model.DeviceImageInventories,
-            attributes: [],
-          },
+          include: [
+            {
+              model: model.DeviceImageInventories,
+              attributes: [],
+            },
+          ],
         },
       ],
+      // ⬇️ ensure images are ordered newest-first
+      order: [
+        [
+          { model: model.DeviceInventories },
+          { model: model.DeviceImageInventories },
+          "id",
+          "DESC",
+        ],
+      ],
+      subQuery: false, // helps Sequelize generate a single query where ORDER applies correctly
     });
 
     for (const pattern of getPatternDetails) {
@@ -282,29 +305,36 @@ async function getProductDetailsLatest(req, res) {
       });
     }
 
-    const getMaterialDetails = await model.MaterialTypeMasters.findAll({
-      attributes: [
-        ["name", "materialName"],
-        [sequelize.col("DeviceInventories.productId"), "productId"],
-        [
-          sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
-          "imageUrl",
-        ],
-      ],
+const getMaterialDetails = await model.MaterialTypeMasters.findAll({
+  attributes: [
+    "id",
+    ["name", "materialName"],
+    [sequelize.col("DeviceInventories.productId"), "productId"],
+    [sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"), "imageUrl"],
+  ],
+  include: [
+    {
+      model: model.DeviceInventories,
+      attributes: [],
+      where: { deviceTypeId: getProductDetails?.deviceTypeId },
       include: [
         {
-          model: model.DeviceInventories,
+          model: model.DeviceImageInventories,
           attributes: [],
-          where: {
-            deviceTypeId: getProductDetails?.deviceTypeId,
-          },
-          include: {
-            model: model.DeviceImageInventories,
-            attributes: [],
-          },
         },
       ],
-    });
+    },
+  ],
+  order: [
+    // 1) material type ascending
+    ["id", "ASC"], // or [sequelize.col("MaterialTypeMasters.name"), "ASC"]
+
+    // 2) images newest-first for each joined row
+    [{ model: model.DeviceInventories }, { model: model.DeviceImageInventories }, "id", "DESC"],
+  ],
+  subQuery: false,
+});
+
     for (const material of getMaterialDetails) {
       const plainMaterial = material.get({ plain: true });
       const signedUrl = await generateSignedUrl(plainMaterial.imageUrl);
@@ -335,11 +365,14 @@ async function getProductDetailsLatest(req, res) {
         },
       },
     });
-  }
-  catch (error) {
+  } catch (error) {
     console.error("Error", error);
     loggers.error(`${error} from getProductDetailsLatest function`);
-    res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 }
 
@@ -601,7 +634,7 @@ async function addToCart(req, res) {
         success: false,
         message: "Product is out of stock",
       });
-    };
+    }
 
     if (Number(getProductDetails.DeviceTypeMaster.id) !== 6) {
       if (customName || fontId) {

@@ -133,10 +133,10 @@ module.exports = async (sequelize, Sequelize) => {
   await queryInterface.removeColumn("Payments", "soldPrice");
   await queryInterface.removeColumn("Payments", "totalPrice");
 
-  // //carts
-  // await queryInterface.removeColumn("Carts", "productType");
-  // await queryInterface.removeColumn("Carts", "productColor");
-  // await queryInterface.removeColumn("Carts", "email");
-  // await queryInterface.removeColumn("Carts", "productPrice");
-  // await queryInterface.removeColumn("Carts", "orderId");
+  //carts
+  await queryInterface.removeColumn("Carts", "productType");
+  await queryInterface.removeColumn("Carts", "productColor");
+  await queryInterface.removeColumn("Carts", "email");
+  await queryInterface.removeColumn("Carts", "productPrice");
+  await queryInterface.removeColumn("Carts", "orderId");
 };
