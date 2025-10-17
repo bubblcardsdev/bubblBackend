@@ -22,7 +22,7 @@ module.exports = {
         },
         {
           name: "white",
-          colorCode: "#F5F4F4",
+          colorCode: "#d1d3d4",
         },
         {
           name: "Pitch black",

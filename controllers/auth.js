@@ -429,7 +429,6 @@ async function createUser(req, res) {
     if (password) {
       hashedPassword = await hashPassword(password);
     }
-    var userId = null;
     const user = await model.User.create({
       firstName: firstName,
       lastName: lastName,
@@ -445,8 +444,7 @@ async function createUser(req, res) {
       emailVerified: isOauthLogin,
     });
 
-    if (user) {
-      userId = user.id;
+    const userId = user.id;
       await model.BubblPlanManagement.create({
         userId: user.id,
         planId: 1,
@@ -461,7 +459,7 @@ async function createUser(req, res) {
       await model.UniqueNameDeviceLink.create({
         userId: user.id,
       });
-    }
+    
     const otp = generateOtp();
 
     await model.User.update({ otp }, { where: { email } });
@@ -546,9 +544,16 @@ async function createUser(req, res) {
     // return create;
     await sendMail(emailParse, subject, emailMessage);
 
-    const accessToken = await generateAccessToken(user);
+    const tokenData = {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      }
+
+    const accessToken = await generateAccessToken(tokenData);
     const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
-    const refreshToken = await generateRefreshToken(user);
+    const refreshToken = await generateRefreshToken(tokenData);
     const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
 
     return res.json({
@@ -571,7 +576,7 @@ async function createUser(req, res) {
       },
     });
   } catch (error) {
-    console.log(error.message, "ee");
+    console.log(error, "ee");
     loggers.error(error + "from createUser function");
     if (error instanceof UniqueConstraintError) {
       await model.User.findOne({ where: { email } });
@@ -1251,12 +1256,12 @@ async function verifyGoogleUserLatest(req, res) {
     const payloadFirstName = payload.given_name;
     const payloadLastName = payload.family_name;
 
-    const checkEmail = await model.User.findOne({
+    let checkEmail = await model.User.findOne({
       where: { email: payloadEmail, google: true },
     });
 
     if (!checkEmail) {
-     const user = await model.User.create({
+     checkEmail = await model.User.create({
         firstName: payloadFirstName,
         lastName: payloadLastName,
         email: payloadEmail,
@@ -1271,7 +1276,7 @@ async function verifyGoogleUserLatest(req, res) {
         subscriptionType: "free",
       });
       await model.BubblPlanManagement.create({
-        userId: user.id,
+        userId: checkEmail.id,
         planId: 1,
         subscriptionType: "free",
         isValid: false,
@@ -1279,10 +1284,10 @@ async function verifyGoogleUserLatest(req, res) {
         updatedAt: new Date(),
       });
       await model.ClaimLink.create({
-        userId: user.id,
+        userId: checkEmail.id,
       });
       await model.UniqueNameDeviceLink.create({
-        userId: user.id,
+        userId: checkEmail.id,
       });
     }
 
