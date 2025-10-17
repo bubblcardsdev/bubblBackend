@@ -224,5 +224,4 @@ export {
   verifyGoogleUserSchemaLatest,
   verifyLinkedinUserSchemaLatest,
   verifyFacebookUserSchemaLatest,
-  createMobileUserSchemaIOS
 };

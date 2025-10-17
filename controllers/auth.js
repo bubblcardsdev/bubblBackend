@@ -2528,6 +2528,9 @@ export {
   resendMailOtp,
   createUserBulkController,
   createUserMobile,
-  verifyAppleUser,
-  createUserMobileIOS
+  createUserMobileIOS,
+  verifyGoogleUserLatest,
+  verifyFacebookUserLatest,
+  verifyLinkedinUserLatest,
+  refreshToken
 };
