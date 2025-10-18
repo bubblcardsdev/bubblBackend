@@ -2,6 +2,7 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import jwksClient from 'jwks-rsa';
+import  model from "../models/index.js";
 
 
 const generateToken = function (user, secret, expiration) {
@@ -68,7 +69,7 @@ const authenticateToken = async (req, res, next) => {
       req.user = user;
       next();
     } catch (error) {
-      return res.json({
+      return res.status(401).json({
         success: false,
         data: {
           error,
