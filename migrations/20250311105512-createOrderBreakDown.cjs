@@ -28,6 +28,7 @@ module.exports = {
       },
       fontId: {
         type: Sequelize.INTEGER,
+        allowNull: true,
         references: {
           model: "CustomFontMasters",
           key: "id",
@@ -35,6 +36,7 @@ module.exports = {
       },
       customName: {
         type: Sequelize.STRING,
+        allowNull: true,
       },
       originalPrice: {
         type: Sequelize.DECIMAL(10, 2),
