@@ -105,6 +105,7 @@ async function getAllDevices(req, res) {
     removeDuplicates = removeDuplicates.filter((item) => item !== undefined);
 
     const basicTypes = [1, 2, 3];
+    const customTypes = [5, 6];
     const finalResponse = {
       basic: [],
       custom: [],
@@ -115,7 +116,7 @@ async function getAllDevices(req, res) {
     removeDuplicates.map((record) => {
       if (basicTypes.includes(record.deviceTypeId)) {
         finalResponse.basic.push(record);
-      } else if (record.productName.includes("Custom")) {
+      } else if (customTypes.includes(record.deviceTypeId)) {
         finalResponse.custom.push(record);
       } else if (record.deviceTypeId === 9) {
         finalResponse.festiveBundles.push(record);
