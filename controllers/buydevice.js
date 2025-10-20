@@ -207,7 +207,7 @@ async function getProductDetailsLatest(req, res) {
         },
         {
           model: model.DeviceImageInventories,
-          
+          separate: true,
           order: [["id", "DESC"]],
           attributes: ["id", ["imageKey", "imageUrl"]],
         },
