@@ -14,17 +14,30 @@ export const calculateOrderItems = (cartItems, productDetails) => {
     const originalPricePerUnit = product.price;
     const discountAmountPerUnit =
       (originalPricePerUnit * product.discountPercentage) / 100;
-    const discountedPricePerUnit = originalPricePerUnit - discountAmountPerUnit;
+    const discountedPricePerUnit = (originalPricePerUnit - discountAmountPerUnit).toFixed(2);
+
+    console.log("====================================\n");
+    console.log(originalPricePerUnit,"originalPricePerUnit\n");
+    console.log(discountedPricePerUnit,"discountedPricePerUnit\n");
+    console.log(discountAmountPerUnit,"discountAmountPerUnit\n");
+    console.log(quantity, "quantity\n");
+    console.log(
+      originalPricePerUnit * quantity,
+      "originalPricePerUnit * quantity\n"
+    );
+        console.log("====================================");
 
     totalOrderPrice += originalPricePerUnit * quantity;
     totalSellingPrice += discountedPricePerUnit * quantity;
     totalDiscountAmount += discountAmountPerUnit * quantity;
 
+
+
     return {
       productId: cartItem.productId,
       quantity,
       originalPrice: originalPricePerUnit,
-      discountAmount: discountAmountPerUnit,
+      discountedAmount: discountAmountPerUnit,
       discountedPrice: discountedPricePerUnit,
       discountPercentage: product.discountPercentage,
       sellingPrice: discountedPricePerUnit,

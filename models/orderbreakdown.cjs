@@ -49,7 +49,7 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.DECIMAL(10, 2),
       },
       discountPercentage: {
-        type: Sequelize.DECIMAL(10, 2),
+        type: Sequelize.FLOAT,
         defaultValue: 0,
       },
       discountedAmount: {

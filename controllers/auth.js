@@ -1834,7 +1834,7 @@ async (err, payload) => {
       return res.json({
         success: true,
         data: {
-          message: 'Apple account verified successfully',
+          message: "Apple account verified successfully",
           firstName,
           lastName,
           email,
@@ -1852,7 +1852,7 @@ async (err, payload) => {
       console.error("Apple login error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Internal server error during Apple login',
+        message: "Internal server error during Apple login",
         error: error.message,
       });
     }

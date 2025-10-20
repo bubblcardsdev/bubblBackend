@@ -26,6 +26,7 @@ async function getAllDevices(req, res) {
         { model: model.DeviceColorMasters },
         { model: model.DevicePatternMasters },
         { model: model.MaterialTypeMasters },
+        { model: model.DeviceTypeMasters },
       ],
       group: ["deviceTypeId", "materialTypeId", "colorId", "patternId"],
       where: { isActive: true },
@@ -80,6 +81,7 @@ async function getAllDevices(req, res) {
           colors: color,
           material: device.MaterialTypeMaster.name,
           deviceTypeId: device.deviceTypeId,
+          deviceTypeName: device.DeviceTypeMaster.name,
         };
       })
     );
@@ -107,6 +109,7 @@ async function getAllDevices(req, res) {
       basic: [],
       custom: [],
       others: [],
+      festiveBundles: [],
     };
 
     removeDuplicates.map((record) => {
@@ -114,6 +117,8 @@ async function getAllDevices(req, res) {
         finalResponse.basic.push(record);
       } else if (record.productName.includes("Custom")) {
         finalResponse.custom.push(record);
+      } else if (record.deviceTypeId === 9) {
+        finalResponse.festiveBundles.push(record);
       } else {
         finalResponse.others.push(record);
       }
@@ -201,7 +206,7 @@ async function getProductDetailsLatest(req, res) {
         },
         {
           model: model.DeviceImageInventories,
-          separate: true,
+          
           order: [["id", "DESC"]],
           attributes: ["id", ["imageKey", "imageUrl"]],
         },
@@ -305,35 +310,43 @@ async function getProductDetailsLatest(req, res) {
       });
     }
 
-const getMaterialDetails = await model.MaterialTypeMasters.findAll({
-  attributes: [
-    "id",
-    ["name", "materialName"],
-    [sequelize.col("DeviceInventories.productId"), "productId"],
-    [sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"), "imageUrl"],
-  ],
-  include: [
-    {
-      model: model.DeviceInventories,
-      attributes: [],
-      where: { deviceTypeId: getProductDetails?.deviceTypeId },
+    const getMaterialDetails = await model.MaterialTypeMasters.findAll({
+      attributes: [
+        "id",
+        ["name", "materialName"],
+        [sequelize.col("DeviceInventories.productId"), "productId"],
+        [
+          sequelize.col("DeviceInventories->DeviceImageInventories.imageKey"),
+          "imageUrl",
+        ],
+      ],
       include: [
         {
-          model: model.DeviceImageInventories,
+          model: model.DeviceInventories,
           attributes: [],
+          where: { deviceTypeId: getProductDetails?.deviceTypeId },
+          include: [
+            {
+              model: model.DeviceImageInventories,
+              attributes: [],
+            },
+          ],
         },
       ],
-    },
-  ],
-  order: [
-    // 1) material type ascending
-    ["id", "ASC"], // or [sequelize.col("MaterialTypeMasters.name"), "ASC"]
+      order: [
+        // 1) material type ascending
+        ["id", "ASC"], // or [sequelize.col("MaterialTypeMasters.name"), "ASC"]
 
-    // 2) images newest-first for each joined row
-    [{ model: model.DeviceInventories }, { model: model.DeviceImageInventories }, "id", "DESC"],
-  ],
-  subQuery: false,
-});
+        // 2) images newest-first for each joined row
+        [
+          { model: model.DeviceInventories },
+          { model: model.DeviceImageInventories },
+          "id",
+          "DESC",
+        ],
+      ],
+      subQuery: false,
+    });
 
     for (const material of getMaterialDetails) {
       const plainMaterial = material.get({ plain: true });
@@ -345,10 +358,17 @@ const getMaterialDetails = await model.MaterialTypeMasters.findAll({
     }
 
     const originalPrice = parseFloat(productDetail?.originalPrice || 0);
-    const discountPercent = parseFloat(productDetail?.discount || 0);
+    const discountPercent = productDetail?.discountPercentage || 0;
 
     const discountAmount = (originalPrice * discountPercent) / 100;
     const sellingPrice = originalPrice - discountAmount;
+
+    console.log("====================================");
+    console.log("originalPrice", originalPrice);
+    console.log("discountPercent", discountPercent);
+    console.log("discountAmount", discountAmount);
+    console.log("sellingPrice", sellingPrice);
+    console.log("====================================");
 
     res.json({
       success: true,
@@ -361,7 +381,7 @@ const getMaterialDetails = await model.MaterialTypeMasters.findAll({
           ...productDetail,
           sellingPrice: sellingPrice.toFixed(2),
           originalPrice: originalPrice.toFixed(2),
-          discount: discountPercent.toFixed(2),
+          discountPercentage: discountPercent.toFixed(2),
         },
       },
     });

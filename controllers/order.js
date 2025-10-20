@@ -1083,10 +1083,13 @@ async function createOrder(req, res) {
     }
 
     // Calculate order totals
-    const { orderItems, totalOrderPrice, totalSellingPrice, totalDiscountAmount } =
+    const { orderItems, totalOrderPrice, totalSellingPrice, totalDiscountAmount, adjustmentsPositive, adjustments } =
       calculateOrderItems(cartItems, productDetails);
 
       console.log( typeof totalSellingPrice ,"?tot",totalSellingPrice);
+      console.log(typeof shippingCharge, "?tot", shippingCharge);
+      console.log(typeof totalOrderPrice, "?tot", totalOrderPrice);
+      console.log(typeof totalDiscountAmount, "?tot", totalDiscountAmount);
       
     // Razorpay order
     const razorpayOrder = await razorpay.orders.create({
