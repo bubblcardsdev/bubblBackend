@@ -483,11 +483,11 @@ async function DuplicateProfile(req, res) {
     const ExistingProfile = await model.Profile.findOne({
       where: { id: profileId, userId },
       include: [
-        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-        { model: model.ProfileEmail, as: "profileEmails" },
-        { model: model.ProfileWebsite, as: "profileWebsites" },
-        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
-        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks" },
+        { model: model.ProfilePhoneNumber,where:{activeStatus:true}, as: "profilePhoneNumbers" },
+        { model: model.ProfileEmail,where:{activeStatus:true}, as: "profileEmails" },
+        { model: model.ProfileWebsite,where:{activeStatus:true}, as: "profileWebsites" },
+        { model: model.ProfileSocialMediaLink,where:{activeStatus:true}, as: "profileSocialMediaLinks" },
+        { model: model.ProfileDigitalPaymentLink,where:{activeStatus:true}, as: "profileDigitalPaymentLinks" },
         { model: model.DeviceBranding, as: "DeviceBranding" },
         {model:model.ProfileImages,as:"profileImages"}
       ],
@@ -1365,11 +1365,11 @@ async function getProfileByDevice(req, res) {
             { model: model.AccountDeviceLink, required: false, include: [{ model: model.Device }] }
           ]
         },
-        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers", attributes: { exclude: ["createdAt", "updatedAt"] } },
-        { model: model.ProfileEmail, as: "profileEmails", attributes: { exclude: ["createdAt", "updatedAt"] } },
-        { model: model.ProfileWebsite, as: "profileWebsites", attributes: { exclude: ["createdAt", "updatedAt"] } },
-        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks", attributes: { exclude: ["createdAt", "updatedAt"] } },
-        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks", attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers",where:{activeStatus:true}, attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileEmail, as: "profileEmails",where:{activeStatus:true}, attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileWebsite, as: "profileWebsites",where:{activeStatus:true}, attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks",where:{activeStatus:true}, attributes: { exclude: ["createdAt", "updatedAt"] } },
+        { model: model.ProfileDigitalPaymentLink, as: "profileDigitalPaymentLinks",where:{activeStatus:true}, attributes: { exclude: ["createdAt", "updatedAt"] } },
       ],
     });
 
@@ -1921,6 +1921,7 @@ async function getProfile(req, res) {
         {
           model: model.ProfilePhoneNumber,
           as: "profilePhoneNumbers",
+          where:{activeStatus:true},
           attributes: [
             ["id", "phoneNumberId"],   // alias id → phoneNumberId
             "countryCode",
@@ -1933,6 +1934,7 @@ async function getProfile(req, res) {
         {
           model: model.ProfileEmail,
           as: "profileEmails",
+          where:{activeStatus:true},
           attributes: [
             ["id", "emailIdNumber"],
             ["emailId", "emailId"],
@@ -1944,6 +1946,7 @@ async function getProfile(req, res) {
         {
           model: model.ProfileWebsite,
           as: "profileWebsites",
+          where:{activeStatus:true},
           attributes: [
             ["id", "websiteId"],
             ["website", "website"],
@@ -1955,6 +1958,7 @@ async function getProfile(req, res) {
         {
           model: model.ProfileSocialMediaLink,
           as: "profileSocialMediaLinks",
+          where:{activeStatus:true},
           attributes: [
             ["id", "profileSocialMediaLinkId"],
             ["profileSocialMediaId", "profileSocialMediaId"],
@@ -1966,6 +1970,7 @@ async function getProfile(req, res) {
         {
           model: model.ProfileDigitalPaymentLink,
           as: "profileDigitalPaymentLinks",
+          where:{activeStatus:true},
           attributes: [
             ["id", "profileDigitalPaymentLinkId"],
             ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
@@ -2102,6 +2107,7 @@ async function getProfileOne(req, res) {
           {
             model: model.ProfilePhoneNumber,
             as: "profilePhoneNumbers",
+            where:{activeStatus:true},
             attributes: {
               exclude: ["createdAt", "updatedAt"],
             },
@@ -2109,6 +2115,7 @@ async function getProfileOne(req, res) {
           {
             model: model.ProfileEmail,
             as: "profileEmails",
+            where:{activeStatus:true},
             attributes: {
               exclude: ["createdAt", "updatedAt"],
             },
@@ -2116,6 +2123,7 @@ async function getProfileOne(req, res) {
           {
             model: model.ProfileWebsite,
             as: "profileWebsites",
+            where:{activeStatus:true},
             attributes: {
               exclude: ["createdAt", "updatedAt"],
             },
@@ -2123,6 +2131,7 @@ async function getProfileOne(req, res) {
           {
             model: model.ProfileSocialMediaLink,
             as: "profileSocialMediaLinks",
+            where:{activeStatus:true},
             attributes: {
               exclude: ["createdAt", "updatedAt"],
             },
@@ -2131,6 +2140,7 @@ async function getProfileOne(req, res) {
           {
             model: model.ProfileDigitalPaymentLink,
             as: "profileDigitalPaymentLinks",
+            where:{activeStatus:true},
             attributes: {
               exclude: ["createdAt", "updatedAt"],
             },
@@ -2391,26 +2401,31 @@ async function getProfileByUid(req, res) {
         {
           model: model.ProfilePhoneNumber,
           as: "profilePhoneNumbers",
+          where:{activeStatus:true},
           attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileEmail,
           as: "profileEmails",
+          where:{activeStatus:true},
           attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileWebsite,
           as: "profileWebsites",
+          where:{activeStatus:true},
           attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileSocialMediaLink,
           as: "profileSocialMediaLinks",
+          where:{activeStatus:true},
           attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: model.ProfileDigitalPaymentLink,
           as: "profileDigitalPaymentLinks",
+          where:{activeStatus:true},
           attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
