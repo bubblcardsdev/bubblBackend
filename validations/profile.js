@@ -241,7 +241,7 @@ const updateProfileSchemaLatest = Joi.object({
       phoneNumberId: Joi.number().optional(),
       countryCode: Joi.string().required(),
       phoneNumber: Joi.string().required(),
-      phoneNumberType: Joi.string().empty("").default("home"),
+      phoneNumberType: Joi.string().empty("").default("Home"),
       checkBoxStatus: Joi.boolean().optional(),
       activeStatus: Joi.boolean().required(),
     })
