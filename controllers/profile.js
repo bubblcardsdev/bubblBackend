@@ -675,18 +675,19 @@ async function updateProfileLatest(req, res) {
 
   try {
     // ✅ Validate request body
-    const { error,value } = updateProfileSchemaLatest.validate(req.body, { abortEarly: false });
+    const { error } = updateProfileSchemaLatest.validate(req.body, { abortEarly: false });
     if (error) {
       return res.status(400).json({
         success: false,
         data: { error: error.details },
       });
     }
-const phoneNumbers = value?.phoneNumbers
+
     // ✅ Extract body data
     const {
       profileId,
       deviceLinkId,
+      phoneNumbers,
       emailIds,
       websites,
       socialMediaNames,
