@@ -353,13 +353,15 @@ async function createProfileLatest(req, res) {
     const createdProfile = await model.Profile.findOne({
       where: { id: newProfile?.id },
       include: [
-        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-        { model: model.ProfileEmail, as: "profileEmails" },
-        { model: model.ProfileWebsite, as: "profileWebsites" },
-        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers", where: { activeStatus: true }, required: false },
+        { model: model.ProfileEmail, as: "profileEmails" ,where: { activeStatus: true }, required: false },
+        { model: model.ProfileWebsite, as: "profileWebsites",where: { activeStatus: true }, required: false },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks", where: { activeStatus: true }, required: false },
         {
           model: model.ProfileDigitalPaymentLink,
           as: "profileDigitalPaymentLinks",
+          where: { activeStatus: true },
+          required: false
         },
         { model: model.DeviceBranding, as: "DeviceBranding" },
       ],
@@ -374,11 +376,11 @@ async function createProfileLatest(req, res) {
     console.error(err);
     loggers.error(err + " from createProfileLatest function");
 
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while creating the profile.",
-      error: err,
-    });
+     return res.status(500).json({
+     success: false,
+     message:
+     err.message || "An unexpected error occurred while creating your profile. Please try again later.",
+  });
   }
 }
 
@@ -514,26 +516,31 @@ async function DuplicateProfile(req, res) {
         {
           model: model.ProfilePhoneNumber,
           where: { activeStatus: true },
+          required: false,
           as: "profilePhoneNumbers",
         },
         {
           model: model.ProfileEmail,
           where: { activeStatus: true },
+          required: false,
           as: "profileEmails",
         },
         {
           model: model.ProfileWebsite,
           where: { activeStatus: true },
+          required: false,
           as: "profileWebsites",
         },
         {
           model: model.ProfileSocialMediaLink,
           where: { activeStatus: true },
+          required: false,
           as: "profileSocialMediaLinks",
         },
         {
           model: model.ProfileDigitalPaymentLink,
           where: { activeStatus: true },
+          required: false,
           as: "profileDigitalPaymentLinks",
         },
         { model: model.DeviceBranding, as: "DeviceBranding" },
@@ -709,13 +716,14 @@ async function DuplicateProfile(req, res) {
     const createdProfile = await model.Profile.findOne({
       where: { id: newProfile.id },
       include: [
-        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-        { model: model.ProfileEmail, as: "profileEmails" },
-        { model: model.ProfileWebsite, as: "profileWebsites" },
-        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers",where: { activeStatus: true },   required: false },
+        { model: model.ProfileEmail, as: "profileEmails",where: { activeStatus: true },   required: false },
+        { model: model.ProfileWebsite, as: "profileWebsites",where: { activeStatus: true },   required: false },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks",where: { activeStatus: true },   required: false },
         {
           model: model.ProfileDigitalPaymentLink,
           as: "profileDigitalPaymentLinks",
+          where: { activeStatus: true },   required: false
         },
         { model: model.DeviceBranding, as: "DeviceBranding" },
         { model: model.ProfileImages, as: "profileImages" },
@@ -730,11 +738,11 @@ async function DuplicateProfile(req, res) {
   } catch (err) {
     console.error(err);
     loggers.error(err + " from DuplicateProfile function");
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while duplicating the profile.",
-      error: err,
-    });
+     return res.status(500).json({
+     success: false,
+     message:
+     err.message || "An unexpected error occurred while duplicating your profile. Please try again later.",
+  });
   }
 }
 
@@ -964,13 +972,14 @@ async function updateProfileLatest(req, res) {
     const updatedProfile = await model.Profile.findOne({
       where: { id: profileId },
       include: [
-        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" },
-        { model: model.ProfileEmail, as: "profileEmails" },
-        { model: model.ProfileWebsite, as: "profileWebsites" },
-        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks" },
+        { model: model.ProfilePhoneNumber, as: "profilePhoneNumbers" ,where: { activeStatus: true }, required: false },
+        { model: model.ProfileEmail, as: "profileEmails",where: { activeStatus: true }, required: false },
+        { model: model.ProfileWebsite, as: "profileWebsites",where: { activeStatus: true }, required: false },
+        { model: model.ProfileSocialMediaLink, as: "profileSocialMediaLinks",where: { activeStatus: true }, required: false },
         {
           model: model.ProfileDigitalPaymentLink,
           as: "profileDigitalPaymentLinks",
+          where: { activeStatus: true }, required: false
         },
         { model: model.DeviceBranding, as: "DeviceBranding" },
       ],
