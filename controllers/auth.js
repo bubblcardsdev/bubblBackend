@@ -96,8 +96,18 @@ async function login(req, res) {
   }
 
   try {
-    const checkUser = await model.User.findOne({ where: { email } });
-    if (!checkUser) {
+const checkUser = await model.User.findOne({
+  where: { email },
+  include: [
+    {
+      model: model.BubblPlanManagement, // related model
+      required: false, // optional, include even if there's no relation
+    },
+  ],
+});   
+console.log(checkUser);
+
+if (!checkUser) {
       return res.status(400).json({
         success: false,
         data: {
@@ -176,9 +186,10 @@ async function login(req, res) {
         }
       }
 
+      const planId = checkUser?.BubblPlanManagements?.[0].planId;
       const accessToken = await generateAccessToken(user);
       const accessTokenExpiryInSeconds = `${config.accessTokenExpiration}`;
-      const refreshToken = await generateRefreshToken(user);
+      const refreshToken = await generateRefreshToken({...user,planId});
       const refreshTokenExpiryInSeconds = `${config.refreshTokenExpiration}`;
       if (isMobile) {
         if (Profile) {
