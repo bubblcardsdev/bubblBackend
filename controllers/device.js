@@ -1979,7 +1979,7 @@ const updateDeviceName = async (req, res) => {
     });
 
     if (!checkUser) {
-      await t.rollback();
+
       return res.status(404).json({
         success: false,
         message: "User not found",
