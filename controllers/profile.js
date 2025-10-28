@@ -184,10 +184,10 @@ async function createProfileLatest(req, res) {
     websites,
     socialMediaNames,
     digitalPaymentLinks,
-    brandingFontColor,
-    brandingBackGroundColor,
-    brandingAccentColor,
-    darkMode,
+    // brandingFontColor,
+    // brandingBackGroundColor,
+    // brandingAccentColor,
+    // darkMode,
     profileName,
     ...profileDetails
   } = req.body;
@@ -2532,7 +2532,7 @@ async function getProfileByUid(req, res) {
     const brandImgPath = profile.dataValues.brandingLogo;
     if (brandImgPath !== "") {
       const SignedImage = await generateSignedUrl(brandImgPath);
-      profile.dataValues.brandingLogo = SignedImage;
+      // profile.dataValues.brandingLogo = SignedImage;
     }
 
     // Deduplicate and reverse links

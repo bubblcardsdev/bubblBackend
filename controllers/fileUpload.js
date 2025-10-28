@@ -79,14 +79,16 @@ async function profileImageUpload(req, res) {
       }
 
       const profileImageUrl = await model.ProfileImages.findAll({
-        where: { profileId },
-      });
+  where: { profileId },
+});
+
+const plainProfileImages = profileImageUrl.map((img) => img.get({ plain: true }));
 
       return res.json({
         success: true,
         data: {
           message: "Profile Image uploaded successfully",
-          profileImageUrl,
+         profileImageUrl:plainProfileImages,
         },
       });
     } else {
@@ -244,6 +246,7 @@ async function brandingLogoUpload(req, res) {
         data: {
           message: "Branding Logo uploaded successfully",
           brandingLogoUrl,
+          key
         },
       });
     } else {
