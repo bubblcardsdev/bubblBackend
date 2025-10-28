@@ -186,18 +186,8 @@ async function updateLinkDevice(req, res) {
           }
         );
 
-        await model.DeviceBranding.update(
-          {
-            deviceLinkId: accountInProfileDeviceLink.id,
-          },
-          {
-            where: {
-              profileId: profileId,
-            },
-          }
-        );
       } else {
-        const deviceLinkId = await model.DeviceLink.create({
+         await model.DeviceLink.create({
           accountDeviceLinkId: checkUserId.id,
           // deviceStatus: true,
           activestatus: true,
@@ -206,16 +196,7 @@ async function updateLinkDevice(req, res) {
           modeId: 2,
           userId: userId,
         });
-        await model.DeviceBranding.update(
-          {
-            deviceLinkId: deviceLinkId.id,
-          },
-          {
-            where: {
-              profileId: profileId,
-            },
-          }
-        );
+
       }
       if (isMobile) {
         await model.Device.update(
@@ -1037,14 +1018,6 @@ const linkDevice = async (req, res) => {
         { transaction: t }
       );
 
-      await model.DeviceBranding.create(
-        {
-          profileId: profileId,
-          deviceLinkId: addDeviceLink.id,
-          templateId: profile.templateId || 1,
-        },
-        { transaction: t }
-      );
 
       if (uniqueName) {
         const deviceUserName = await model.UniqueNameDeviceLink.findOne({
@@ -1182,37 +1155,7 @@ const unlinkDevice = async (req, res) => {
       transaction: t,
     });
 
-    //find deviceLink
-    const deviceBranding = await model.DeviceBranding.findOne({
-      where: {
-        deviceLinkId: deviceLink ? deviceLink.id : null,
-        profileId: deviceLink ? deviceLink.profileId : null,
-      },
-      transaction: t,
-    });
 
-    //remove deviceLinkId from deviceBranding
-    if (deviceBranding) {
-      await model.DeviceBranding.update(
-        {
-          deviceLinkId: null,
-        },
-        {
-          where: {
-            deviceLinkId: deviceLink.id,
-          },
-          transaction: t,
-        }
-      );
-    }
-
-    // await model.DeviceBranding.destroy({
-    //   where: {
-    //     deviceLinkId: deviceLink ? deviceLink.id : null,
-    //     profileId: deviceLink ? deviceLink.profileId : null,
-    //   },
-    //   transaction: t,
-    // })
 
     //deactivate deviceLink
     if (deviceLink) {
@@ -1384,46 +1327,6 @@ const switchProfile = async (req, res) => {
       );
     }
 
-    const dlid = sequelize.escape(deviceLink.id);
-    const pid = sequelize.escape(profileId);
-
-    const target = await model.DeviceBranding.findOne({
-      where: {
-        profileId: profileId,
-        deviceLinkId: {
-          [Op.or]: [null, deviceLink.id],
-        },
-      },
-      order: [
-        // rank tier 1 first, then tier 2
-        [
-          sequelize.literal(`CASE 
-        WHEN deviceLinkId = ${dlid} THEN 0
-        WHEN profileId = ${pid} AND deviceLinkId IS NULL THEN 1
-        ELSE 2
-      END`),
-          "ASC",
-        ],
-        ["id", "ASC"], // stable tie-breaker
-      ],
-      transaction: t,
-      lock: t.LOCK.UPDATE, // row-level lock (avoids races if concurrent)
-    });
-
-    if (target) {
-      await model.DeviceBranding.update(
-        {
-          deviceLinkId: deviceLink.id,
-          profileId: profileId,
-          templateId: profile.templateId || 1,
-        },
-        {
-          where: { id: target.id }, // update only the chosen row
-          transaction: t,
-        }
-      );
-    }
-
     await model.UniqueNameDeviceLink.update(
       { profileId: profileId },
       {
@@ -1538,14 +1441,6 @@ const switchModes = async (req, res) => {
           "Device is deactivated, please activate the device to switch mode",
       });
     }
-
-    //update mode in deviceLink and deviceBranding
-    await model.DeviceLink.update(
-      {
-        modeId: modeId,
-      },
-      { where: { id: deviceLink.id }, transaction: t }
-    );
 
     const checkModeUrl = await model.ModeDirectUrl.findOne({
       where: {
