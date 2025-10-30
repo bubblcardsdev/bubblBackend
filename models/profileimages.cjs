@@ -12,47 +12,52 @@ module.exports = (sequelize, Sequelize) => {
     }
   }
   ProfileImages.init(
-    {
-      profileId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Profiles",
-          key: "id",
-        },
-      },
-      image: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      type: {
-        type: Sequelize.STRING,
-        allowNull: false,
+  {
+    profileId: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Profiles",
+        key: "id",
       },
     },
-    {
-      sequelize,
-      modelName: "ProfileImages",
-      hooks: {
-        afterFind: async (profileImage) => {
-          const fileUpload = await import("../middleware/fileUpload.js");
+    image: {
+      type: Sequelize.STRING,
+      allowNull: false,
+    },
+    type: {
+      type: Sequelize.STRING,
+      allowNull: false,
+    },
+  },
+  {
+    sequelize,
+    modelName: "ProfileImages",
+    hooks: {
+      afterFind: async (profileImage) => {
+        if (!profileImage) return;
 
-          if (profileImage) {
-            const profileImages = Array.isArray(profileImage)
-              ? profileImage
-              : [profileImage];
-            for (const item of profileImages) {
-              const image = item.getDataValue("image") || "";
+        const fileUpload = await import("../middleware/fileUpload.js");
+        const generateSignedUrl = fileUpload.generateSignedUrl;
 
-              if (image !== "") {
-                const imageUrl = await fileUpload.generateSignedUrl(image);
-                item.setDataValue("image", imageUrl);
-              }
-            }
-          }
-        },
+        const items = Array.isArray(profileImage)
+          ? profileImage
+          : [profileImage];
+
+        for (const item of items) {
+          const imageKey = item.getDataValue("image");
+          if (!imageKey) continue;
+
+          // Generate signed URL for the stored S3 key
+          const signedUrl = await generateSignedUrl(imageKey);
+
+          // Keep both: raw key + signed URL
+          item.setDataValue("key", imageKey);
+          item.setDataValue("image", signedUrl);
+        }
       },
-    }
-  );
+    },
+  }
+);
   return ProfileImages;
 };

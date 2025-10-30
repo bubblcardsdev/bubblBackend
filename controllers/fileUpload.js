@@ -4,8 +4,92 @@ import model from "../models/index.js";
 import {
   brandingLogoUploadSchema,
   profileImageUploadSchema,
+  profileImageUploadSchemaLatest,
   qrCodeImageUploadSchema,
 } from "../validations/fileUpload.js";
+
+async function profileImageUploadL(req, res) {
+  try {
+    const { profileId } = req.body;
+    const {
+      squareImage: [squareImage],
+      rectangleImage: [rectangleImage],
+    } = req.files;
+
+    const { error } = profileImageUploadSchemaLatest.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
+
+    //  Case 1: No profileId — just return uploaded S3 keys
+    if (!profileId) {
+      return res.json({
+        success: true,
+        data: {
+          message: "Images uploaded successfully to S3",
+          key: squareImage.key
+        },
+      });
+    }
+
+    //  Case 2: profileId exists — update the DB records
+    const profile = await model.Profile.findOne({ where: { id: profileId } });
+
+    if (!profile) {
+      return res.json({
+        success: false,
+        data: { message: "Profile not found" },
+      });
+    }
+
+    const profileImageCheck = await model.ProfileImages.findAll({
+      where: { profileId },
+    });
+
+    if (profileImageCheck.length > 0) {
+      // Update both images
+      await model.ProfileImages.update(
+        { image: squareImage.key },
+        { where: { profileId, type: 0 } }
+      );
+      await model.ProfileImages.update(
+        { image: rectangleImage.key },
+        { where: { profileId, type: 1 } }
+      );
+    } else {
+      // Insert new records
+      await model.ProfileImages.bulkCreate([
+        { image: squareImage.key, profileId, type: 0 },
+        { image: rectangleImage.key, profileId, type: 1 },
+      ]);
+    }
+
+    const updatedImages = await model.ProfileImages.findAll({
+      where: { profileId },
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        message: "Profile images updated successfully",
+        profileImageUrl: updatedImages.map((img) => img.get({ plain: true })),
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " from profileImageUploadL function");
+    return res.json({
+      success: false,
+      data: { error: err.message || err },
+    });
+  }
+}
 
 async function profileImageUpload(req, res) {
   try {
@@ -82,11 +166,15 @@ async function profileImageUpload(req, res) {
         where: { profileId },
       });
 
+      const plainProfileImages = profileImageUrl.map((img) =>
+        img.get({ plain: true })
+      );
+
       return res.json({
         success: true,
         data: {
           message: "Profile Image uploaded successfully",
-          profileImageUrl,
+          profileImageUrl: plainProfileImages,
         },
       });
     } else {
@@ -111,7 +199,7 @@ async function profileImageUpload(req, res) {
 
 async function profileImageUploadLatest(req, res) {
   const { profileId } = req.body;
-  console.log(req.files, "/",profileId);
+  console.log(req.files, "/", profileId);
 
   const {
     profileImage: [profileImage],
@@ -134,38 +222,37 @@ async function profileImageUploadLatest(req, res) {
       where: { id: profileId },
     });
 
-if (profile) { // need to upload company logo in company image
-  const [rowsAffected] = await model.ProfileImages.upsert(
-    { image: profileImage[0].key },
-    { where: { id: profileId } }
-  );
-  const [affected] =  await model.Profile.update(
+    if (profile) {
+      // need to upload company logo in company image
+      const [rowsAffected] = await model.ProfileImages.upsert(
+        { image: profileImage[0].key },
+        { where: { id: profileId } }
+      );
+      const [affected] = await model.Profile.update(
         { brandingLogo: companyLogo[0].key },
         { where: { id: profileId } }
       );
 
-  if (rowsAffected > 0 || affected > 0) {
-
-    const signedUrl =  await generateSignedUrl(profileImage[0].key)
-     const brandingLogoUrl = await generateSignedUrl(key);
-    return res.status(200).json({
-      success: true,
-      message: "Profile image updated successfully.",
-      data: {profilr_image:signedUrl,compamy_logo:brandingLogoUrl}
-    });
-  } else {
-    return res.status(404).json({
-      success: false,
-      message: "No matching record found or image is unchanged.",
-    });
-  }
-} else {
-  return res.status(404).json({
-    success: false,
-    message: "Profile not found.",
-  });
-}
-
+      if (rowsAffected > 0 || affected > 0) {
+        const signedUrl = await generateSignedUrl(profileImage[0].key);
+        const brandingLogoUrl = await generateSignedUrl(key);
+        return res.status(200).json({
+          success: true,
+          message: "Profile image updated successfully.",
+          data: { profilr_image: signedUrl, compamy_logo: brandingLogoUrl },
+        });
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: "No matching record found or image is unchanged.",
+        });
+      }
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found.",
+      });
+    }
   } catch (err) {
     console.log(error);
     loggers.error(error + "from profileImageUpload function");
@@ -176,7 +263,6 @@ if (profile) { // need to upload company logo in company image
       },
     });
   }
-
 }
 
 async function pdfImageUpload(res, keyFileName, userId, email = "") {
@@ -214,6 +300,7 @@ async function brandingLogoUpload(req, res) {
   try {
     const { profileId } = req.body;
     const { key } = req.file;
+console.log(key,"?");
 
     const { error } = brandingLogoUploadSchema.validate(req.body, {
       abortEarly: false,
@@ -244,6 +331,7 @@ async function brandingLogoUpload(req, res) {
         data: {
           message: "Branding Logo uploaded successfully",
           brandingLogoUrl,
+          key,
         },
       });
     } else {
@@ -264,6 +352,69 @@ async function brandingLogoUpload(req, res) {
     });
   }
 }
+async function brandingLogoUploadL(req, res) {
+  try {
+    const { profileId } = req.body;
+    const { key } = req.file; // assuming multer upload field name is brandingLogo
+
+    const { error } = brandingLogoUploadSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
+
+    if (!profileId) {
+      return res.json({
+        success: true,
+        data: {
+          message: "Branding logo uploaded successfully to S3",
+          key: key,
+        },
+      });
+    }
+
+    // 🟢 Case 2: profileId provided — update DB
+    const profile = await model.Profile.findOne({ where: { id: profileId } });
+
+    if (!profile) {
+      return res.json({
+        success: false,
+        data: { message: "Profile not found" },
+      });
+    }
+
+    // Update the branding logo field
+    await model.Profile.update(
+      { brandingLogo: key },
+      { where: { id: profileId } }
+    );
+
+    // Generate a signed URL for preview
+    const brandingLogoUrl = await generateSignedUrl(key);
+
+    return res.json({
+      success: true,
+      data: {
+        message: "Branding logo uploaded and updated successfully",
+        brandingLogoUrl,
+        key:key,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " from brandingLogoUpload function");
+    return res.json({
+      success: false,
+      data: { error: err.message || err },
+    });
+  }
+}
+
 
 async function qrCodeImageUpload(req, res) {
   try {
@@ -365,4 +516,6 @@ export {
   userImageUpload,
   pdfImageUpload,
   profileImageUploadLatest,
+  profileImageUploadL,
+  brandingLogoUploadL
 };

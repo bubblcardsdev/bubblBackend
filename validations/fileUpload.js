@@ -4,8 +4,12 @@ const profileImageUploadSchema = Joi.object({
   profileId: Joi.number().required(),
 });
 
+const profileImageUploadSchemaLatest = Joi.object({
+  profileId: Joi.number().optional(),
+});
+
 const brandingLogoUploadSchema = Joi.object({
-  profileId: Joi.number().required(),
+ profileId: Joi.number().optional(),
 });
 
 const qrCodeImageUploadSchema = Joi.object({
@@ -16,4 +20,5 @@ export {
   profileImageUploadSchema,
   brandingLogoUploadSchema,
   qrCodeImageUploadSchema,
+  profileImageUploadSchemaLatest
 };
