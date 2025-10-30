@@ -5,6 +5,7 @@ import {
   qrCodeImageUpload,
   userImageUpload,
   profileImageUploadL,
+  brandingLogoUploadL,
 } from "../controllers/fileUpload.js";
 import { upload } from "../middleware/fileUpload.js";
 import { authenticateToken } from "../middleware/token.js";
@@ -26,7 +27,7 @@ router.post(
   "/brandinglogo",
   authenticateToken,
   upload.single("brandingLogo"),
-  brandingLogoUpload
+  brandingLogoUploadL
 );
 
 router.post(

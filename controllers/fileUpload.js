@@ -300,6 +300,7 @@ async function brandingLogoUpload(req, res) {
   try {
     const { profileId } = req.body;
     const { key } = req.file;
+console.log(key,"?");
 
     const { error } = brandingLogoUploadSchema.validate(req.body, {
       abortEarly: false,
@@ -351,6 +352,69 @@ async function brandingLogoUpload(req, res) {
     });
   }
 }
+async function brandingLogoUploadL(req, res) {
+  try {
+    const { profileId } = req.body;
+    const { key } = req.file; // assuming multer upload field name is brandingLogo
+
+    const { error } = brandingLogoUploadSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
+
+    if (!profileId) {
+      return res.json({
+        success: true,
+        data: {
+          message: "Branding logo uploaded successfully to S3",
+          key: key,
+        },
+      });
+    }
+
+    // 🟢 Case 2: profileId provided — update DB
+    const profile = await model.Profile.findOne({ where: { id: profileId } });
+
+    if (!profile) {
+      return res.json({
+        success: false,
+        data: { message: "Profile not found" },
+      });
+    }
+
+    // Update the branding logo field
+    await model.Profile.update(
+      { brandingLogo: key },
+      { where: { id: profileId } }
+    );
+
+    // Generate a signed URL for preview
+    const brandingLogoUrl = await generateSignedUrl(key);
+
+    return res.json({
+      success: true,
+      data: {
+        message: "Branding logo uploaded and updated successfully",
+        brandingLogoUrl,
+        key:key,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    loggers.error(err + " from brandingLogoUpload function");
+    return res.json({
+      success: false,
+      data: { error: err.message || err },
+    });
+  }
+}
+
 
 async function qrCodeImageUpload(req, res) {
   try {
@@ -452,5 +516,6 @@ export {
   userImageUpload,
   pdfImageUpload,
   profileImageUploadLatest,
-  profileImageUploadL
+  profileImageUploadL,
+  brandingLogoUploadL
 };

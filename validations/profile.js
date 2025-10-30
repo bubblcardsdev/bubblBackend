@@ -144,6 +144,8 @@ const createProfileSchemaLatest = Joi.object({
   websiteEnable: Joi.bool().optional(),
   socialMediaEnable: Joi.bool().optional(),
   digitalMediaEnable: Joi.bool().optional(),
+  profileImageKey:Joi.string().optional().allow(""),
+  companyLogoKey:Joi.string().optional().allow(""),
   phoneNumbers: Joi.array()
   .items(
     Joi.object({
@@ -241,7 +243,7 @@ const updateProfileSchemaLatest = Joi.object({
       phoneNumberId: Joi.number().optional(),
       countryCode: Joi.string().required(),
       phoneNumber: Joi.string().required(),
-      phoneNumberType: Joi.string().optional(),
+      phoneNumberType: Joi.string().optional().allow(""),
       checkBoxStatus: Joi.boolean().optional(),
       activeStatus: Joi.boolean().required(),
     })

@@ -189,6 +189,8 @@ async function createProfileLatest(req, res) {
     // brandingAccentColor,
     // darkMode,
     profileName,
+    companyLogoKey,
+    profileImageKey,
     ...profileDetails
   } = req.body;
 
@@ -252,7 +254,7 @@ async function createProfileLatest(req, res) {
     }
 
     // 4. Create Profile
-    const newProfile = await model.Profile.create(profileDetails);
+    const newProfile = await model.Profile.create({...profileDetails,brandingLogo:companyLogoKey});
     const profileId = newProfile.id;
 
     if (!newProfile?.id) {
@@ -261,6 +263,24 @@ async function createProfileLatest(req, res) {
         message: "No profileId is found",
       });
     }
+
+    if(profileImageKey){
+ await model.ProfileImages.bulkCreate([
+  {
+    profileId: newProfile.id,
+    image: profileImageKey, // your first image key
+    type: 0,
+  },
+  {
+    profileId: newProfile.id,
+    image: profileImageKey, // your second image key
+    type: 1,
+  },
+]);
+    }
+  
+
+
 
     const insertMany = async (arr, modelRef, mapperFn) => {
       if (!Array.isArray(arr) || arr.length === 0) return;
@@ -746,7 +766,7 @@ async function updateProfileLatest(req, res) {
   const userId = req.user.id;
 
   try {
-    // ✅ Validate request body
+    //  Validate request body
     const { error } = updateProfileSchemaLatest.validate(req.body, {
       abortEarly: false,
     });
@@ -757,7 +777,7 @@ async function updateProfileLatest(req, res) {
       });
     }
 
-    // ✅ Extract body data
+    //  Extract body data
     const {
       profileId,
       deviceLinkId,
@@ -772,7 +792,7 @@ async function updateProfileLatest(req, res) {
       ...profileDetails
     } = req.body;
 
-    // ✅ Check if profile exists
+    //  Check if profile exists
     const profileExist = await model.Profile.findOne({
       where: { id: profileId, userId },
     });
@@ -783,7 +803,7 @@ async function updateProfileLatest(req, res) {
       });
     }
 
-    // ✅ Check for duplicate profileName
+    //  Check for duplicate profileName
     if (
       profileDetails.profileName &&
       profileDetails.profileName !== profileExist.profileName
@@ -799,7 +819,7 @@ async function updateProfileLatest(req, res) {
       }
     }
 
-    // ✅ Prepare update data
+    //  Prepare update data
     const updateData = {};
 
     const allowedProfileFields = [

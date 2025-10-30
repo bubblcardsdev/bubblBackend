@@ -9,7 +9,7 @@ const profileImageUploadSchemaLatest = Joi.object({
 });
 
 const brandingLogoUploadSchema = Joi.object({
-  profileId: Joi.number().required(),
+ profileId: Joi.number().optional(),
 });
 
 const qrCodeImageUploadSchema = Joi.object({
