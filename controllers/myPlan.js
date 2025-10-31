@@ -17,6 +17,34 @@ async function getPlan(req, res) {
   }
 }
 
+async function getPlanDescription(_req, res) {
+  try {
+    const plans = await model.Plan.findAll({
+      include: [
+        {
+          model: model.PlanDescription,
+          as: "PlanDescriptions", // must match your association alias
+          attributes: ["id", "description"],
+        },
+      ],
+      attributes: [["id","planId"], "planName",],
+      order: [["id", "ASC"]],
+    });
+
+    return res.json({
+      success: true,
+      message: "Plans with Descriptions",
+      description:plans,
+    });
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+
 async function getPlanDetails(req, res) {
   const userId = req.user.id;
   const currentDate = new Date();
@@ -332,5 +360,6 @@ export {
   updatePlanDetails,
   deactivatePlan,
   createPlanPayment,
-  getAllPlan
+  getAllPlan,
+ getPlanDescription
 };
