@@ -23,7 +23,7 @@ const checkOutValidation = Joi.object({
       .required(),
     emailId: Joi.string().email().required(),
     companyName: Joi.string().optional().allow(""), // Allow empty string
-    address: Joi.string().min(5).required(),
+    address: Joi.string().required(),
     city: Joi.string().min(2).max(50).required(),
     state: Joi.string().min(2).max(50).required(),
     zipcode: Joi.number().integer().required(),

@@ -27,14 +27,14 @@ async function getPlanDescription(_req, res) {
           attributes: ["id", "description"],
         },
       ],
-      attributes: [["id","planId"], "planName",],
+      attributes: [["id","planId"], "planName","monthlyPrice","annualPrice","shortDescription"],
       order: [["id", "ASC"]],
     });
 
     return res.json({
       success: true,
       message: "Plans with Descriptions",
-      description:plans,
+      data:plans,
     });
   } catch (error) {
     return res.json({
