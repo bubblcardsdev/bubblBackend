@@ -6,12 +6,14 @@ import {
   deactivatePlan,
   createPlanPayment,
   getAllPlan,
+  getPlanDescription,
 } from "../controllers/myPlan.js";
 import { authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
 
 router.get("/all", getPlan);
+router.get("/planDescription",getPlanDescription)
 router.get("/find", authenticateToken, getPlanDetails);
 router.put("/update", authenticateToken, updatePlanDetails);
 router.put("/cancel", authenticateToken, deactivatePlan);
