@@ -7,6 +7,7 @@ import {
   createPlanPayment,
   getAllPlan,
   getPlanDescription,
+  getUserPlan,
 } from "../controllers/myPlan.js";
 import { authenticateToken } from "../middleware/token.js";
 
@@ -19,8 +20,8 @@ router.put("/cancel", authenticateToken, deactivatePlan);
 router.post("/initiate", authenticateToken, createPlanPayment);
 
 //V3
-router.get("/findDetails", getAllPlan);
+router.get("/findDetails", getAllPlan); // failed route remove later
 router.get("/planDescription",getPlanDescription);//latest one
-
+router.get("/user",authenticateToken,getUserPlan)
 
 export default router;

@@ -1,5 +1,7 @@
 /* eslint-disable no-case-declarations */
 import model from "../models/index.js";
+import { generateETag } from "../helper/hash.js";
+import lruCache from "../helper/lruCache.js";
 
 async function getPlan(req, res) {
   try {
@@ -27,14 +29,20 @@ async function getPlanDescription(_req, res) {
           attributes: ["id", "description"],
         },
       ],
-      attributes: [["id","planId"], "planName","monthlyPrice","annualPrice","shortDescription"],
+      attributes: [
+        ["id", "planId"],
+        "planName",
+        "monthlyPrice",
+        "annualPrice",
+        "shortDescription",
+      ],
       order: [["id", "ASC"]],
     });
 
     return res.json({
       success: true,
       message: "Plans with Descriptions",
-      data:plans,
+      data: plans,
     });
   } catch (error) {
     return res.json({
@@ -43,7 +51,6 @@ async function getPlanDescription(_req, res) {
     });
   }
 }
-
 
 async function getPlanDetails(req, res) {
   const userId = req.user.id;
@@ -110,7 +117,7 @@ async function updatePlanDetails(req, res) {
           const checkPayment = await model.PlanPayment.findOne({
             where: {
               userId,
-              paymentStatus:true
+              paymentStatus: true,
             },
             order: [["updatedAt", "DESC"]],
           });
@@ -335,7 +342,14 @@ async function createPlanPayment(req, res) {
 async function getAllPlan(req, res) {
   try {
     const plan = await model.Plan.findAll({
-      attributes:["id","planName","monthlyPrice","annualPrice","shortDescription","discountPercentage"],
+      attributes: [
+        "id",
+        "planName",
+        "monthlyPrice",
+        "annualPrice",
+        "shortDescription",
+        "discountPercentage",
+      ],
       where: {
         isActive: true,
       },
@@ -354,6 +368,54 @@ async function getAllPlan(req, res) {
   }
 }
 
+async function getUserPlan(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access",
+      });
+    }
+
+    const clientEtag = req.headers["if-none-match"]; // FIXED
+
+    const isCached = lruCache.get(`etag:${userId}`);
+
+    if (isCached && isCached === clientEtag)  return res.sendStatus(304);
+
+    const plan = await model.BubblPlanManagement.findOne({ where: { userId } });
+
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "No plan found for this user",
+      });
+    }
+
+    const plainObj = plan.get({ plain: true });
+    const ETag = generateETag(plainObj.updatedAt);
+
+    lruCache.set(`etag:${userId}`, ETag);
+
+    res.setHeader("ETag", ETag);
+
+    return res.status(200).json({
+      success: true,
+      message: "User plan fetched successfully",
+      plan,
+    });
+  } catch (error) {
+    console.error("Error fetching user plan:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
 export {
   getPlan,
   getPlanDetails,
@@ -361,5 +423,6 @@ export {
   deactivatePlan,
   createPlanPayment,
   getAllPlan,
- getPlanDescription
+  getPlanDescription,
+  getUserPlan,
 };
