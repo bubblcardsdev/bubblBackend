@@ -2024,116 +2024,132 @@ async function findAllProfilesForMob(req, res) {
 
 async function getProfile(req, res) {
   const { profileId } = req.body;
-  const userId = req.user.id;
+  // const userId = req.user.id;
 
   try {
-    const profile = await model.Profile.findOne({
-      where: { id: profileId, userId },
+   const latestDigitalPaymentIds = await model.ProfileDigitalPaymentLink.findAll({
+  attributes: [
+    [sequelize.fn("MAX", sequelize.col("id")), "latestId"],
+  ],
+  where: { activeStatus: true },
+  group: ["profileId", "profileDigitalPaymentsId"],
+  raw: true,
+});
+
+// Extract only the latest IDs
+const latestIds = latestDigitalPaymentIds.map((e) => e.latestId);
+
+// 🧩 Step 2: Fetch the profile with all associations
+const profile = await model.Profile.findOne({
+  where: { id: profileId },
+  include: [
+    {
+      model: model.DeviceLink,
       include: [
         {
-          model: model.DeviceLink,
-          include: [
-            {
-              model: model.Template,
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-            },
-            {
-              model: model.Mode,
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-            },
-          ],
+          model: model.Template,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
-
-        // 📞 Phone Numbers — limit 2 latest
         {
-          model: model.ProfilePhoneNumber,
-          as: "profilePhoneNumbers",
-          where: { activeStatus: true },
-          required: false,
-          separate: true,
-          limit: 2,
-          order: [["updatedAt", "DESC"]],
-          attributes: [
-            ["id", "phoneNumberId"],
-            "countryCode",
-            "phoneNumber",
-            ["phoneNumberType", "phoneNumberType"],
-            ["checkBoxStatus", "checkBoxStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-
-        // 📧 Emails — limit 2 latest
-        {
-          model: model.ProfileEmail,
-          as: "profileEmails",
-          where: { activeStatus: true },
-          required: false,
-          separate: true,
-          limit: 2,
-          order: [["updatedAt", "DESC"]],
-          attributes: [
-            ["id", "emailIdNumber"],
-            ["emailId", "emailId"],
-            ["emailType", "emailType"],
-            ["checkBoxStatus", "checkBoxStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-
-        // 🌐 Websites — limit 1 latest
-        {
-          model: model.ProfileWebsite,
-          as: "profileWebsites",
-          where: { activeStatus: true },
-          required: false,
-          separate: true,
-          limit: 1,
-          order: [["updatedAt", "DESC"]],
-          attributes: [
-            ["id", "websiteId"],
-            ["website", "website"],
-            ["websiteType", "websiteType"],
-            ["checkBoxStatus", "checkBoxStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-
-        // 💬 Social Media Links — ensure unique and latest
-        {
-          model: model.ProfileSocialMediaLink,
-          as: "profileSocialMediaLinks",
-          where: { activeStatus: true },
-          required: false,
-          separate: true,
-          order: [["updatedAt", "DESC"]],
-          attributes: [
-            ["id", "profileSocialMediaLinkId"],
-            ["profileSocialMediaId", "profileSocialMediaId"],
-            ["socialMediaName", "socialMediaName"],
-            ["enableStatus", "enableStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-
-        // 💰 Digital Payment Links — latest first
-        {
-          model: model.ProfileDigitalPaymentLink,
-          as: "profileDigitalPaymentLinks",
-          where: { activeStatus: true },
-          required: false,
-          separate: true,
-          order: [["updatedAt", "DESC"]],
-          attributes: [
-            ["id", "profileDigitalPaymentLinkId"],
-            ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
-            ["digitalPaymentLink", "digitalPaymentLink"],
-            ["enableStatus", "enableStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
+          model: model.Mode,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
-    });
+    },
+
+    // 📞 Phone Numbers — limit 2 latest
+    {
+      model: model.ProfilePhoneNumber,
+      as: "profilePhoneNumbers",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      limit: 2,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "phoneNumberId"],
+        "countryCode",
+        "phoneNumber",
+        ["phoneNumberType", "phoneNumberType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 📧 Emails — limit 2 latest
+    {
+      model: model.ProfileEmail,
+      as: "profileEmails",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      limit: 2,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "emailIdNumber"],
+        ["emailId", "emailId"],
+        ["emailType", "emailType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 🌐 Websites — limit 1 latest
+    {
+      model: model.ProfileWebsite,
+      as: "profileWebsites",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      limit: 1,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "websiteId"],
+        ["website", "website"],
+        ["websiteType", "websiteType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 💬 Social Media Links — already working fine
+    {
+      model: model.ProfileSocialMediaLink,
+      as: "profileSocialMediaLinks",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "profileSocialMediaLinkId"],
+        ["profileSocialMediaId", "profileSocialMediaId"],
+        ["socialMediaName", "socialMediaName"],
+        ["enableStatus", "enableStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 💰 Digital Payment Links — only latest unique entries
+    {
+      model: model.ProfileDigitalPaymentLink,
+      as: "profileDigitalPaymentLinks",
+      where: {
+        activeStatus: true,
+        id: latestIds, //  only include latest IDs we fetched
+      },
+      required: false,
+      separate: true,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "profileDigitalPaymentLinkId"],
+        ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
+        ["digitalPaymentLink", "digitalPaymentLink"],
+        ["enableStatus", "enableStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+  ],
+});
 
     if (!profile) {
       throw new Error("Unable to find profile");
