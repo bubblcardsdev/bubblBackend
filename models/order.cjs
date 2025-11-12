@@ -67,6 +67,14 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: true, // keep null for old orders
       },
+      promoCodeId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: { model: "PromoCodes", key: "id" },
+      },
+      // paymentStatus: {
+      //   type: Sequelize.STRING,
+      // },
       // encResponse: {
       //   type: Sequelize.TEXT,
       //   allowNull: true,

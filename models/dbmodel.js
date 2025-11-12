@@ -51,6 +51,9 @@ import _orderBreakDown from "./orderbreakdown.cjs";
 import _fontMaster from "./customfontmaster.cjs";
 import _supportForm from "./supportForm.cjs";
 import _planDescription from "./planDescription.cjs";
+import _promoCodeType from "./promoCodeType.cjs";
+import _promoCode from "./promocodes.cjs";
+import _promoCodeUsage from "./promoCodeUsage.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -111,6 +114,9 @@ export default function dbModel(sequelize, Sequelize) {
   const OrderBreakDown = _orderBreakDown(sequelize, Sequelize);
   const CustomFontMaster = _fontMaster(sequelize, Sequelize);
   const PlanDescription = _planDescription(sequelize, Sequelize);
+  const PromoCodeType = _promoCodeType(sequelize, Sequelize);
+  const PromoCode = _promoCode(sequelize, Sequelize);
+  const PromoCodeUsage = _promoCodeUsage(sequelize, Sequelize);
 
   User.hasMany(Profile, { as: "userProfiles" });
   User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
@@ -213,7 +219,32 @@ export default function dbModel(sequelize, Sequelize) {
 
   PlanDescription.belongsTo(Plan);
   Plan.hasMany(PlanDescription);
-  //#endregion
+
+  PromoCodeType.hasMany(PromoCode, {
+    foreignKey: "offerTypeId",
+  });
+  PromoCode.belongsTo(PromoCodeType, {
+    foreignKey: "offerTypeId",
+  });
+
+  // 1..N PromoCodeUsage
+  PromoCode.hasMany(PromoCodeUsage, {
+    foreignKey: "promoCodeId",
+  });
+
+  // 1..N Orders
+  PromoCode.hasMany(Order, {
+    foreignKey: "promoCodeId",
+  });
+
+  PromoCodeUsage.belongsTo(PromoCode, {
+    foreignKey: "promoCodeId",
+  });
+
+  // Optional: link to Users (your FKs point to Users)
+  PromoCodeUsage.belongsTo(User, {
+    foreignKey: "customerId",
+  });
 
   return {
     User,
@@ -268,5 +299,8 @@ export default function dbModel(sequelize, Sequelize) {
     OrderStatusMaster,
     OrderBreakDown,
     CustomFontMaster,
+    PromoCodeType,
+    PromoCode,
+    PromoCodeUsage,
   };
 }
