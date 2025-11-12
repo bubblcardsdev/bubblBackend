@@ -4,12 +4,14 @@ import model from "../models/index.js";
 import {
   checkOutValidation,
   getOrderValidation,
+  getPromoValidation,
 } from "../validations/orderShipping.js";
 import { sequelize } from "../models/index.js";
 import logger from "../config/logger.js";
 import { Op } from "sequelize";
 import { calculateOrderItems } from "../services/productService.js";
 import razorpay from "../config/razorPay.js";
+import applyPromoCode from "../helper/promocode.js";
 
 async function getOrderDetails(req, res) {
   const userId = req.user.id;
@@ -130,7 +132,7 @@ async function getOrderDetails(req, res) {
 
 async function getOrderById(req, res) {
   const { orderId } = req.body;
-  const user_id = req.user.id
+  const user_id = req.user.id;
 
   const { error } = getOrderValidation.validate(req.body, {
     abortEarly: false,
@@ -145,7 +147,7 @@ async function getOrderById(req, res) {
   try {
     // Fetch order with breakdowns
     const order = await model.Order.findOne({
-      where: { id: orderId,customerId:user_id },
+      where: { id: orderId, customerId: user_id },
       include: [{ model: model.OrderBreakDown }],
     });
 
@@ -1011,14 +1013,19 @@ async function checkOut(req, res) {
   }
 }
 
+
 async function createOrder(req, res) {
   const userId = req.user.id; // logged-in user guaranteed
-  const { productData, shippingFormData } = req.body;
+  const { productData, shippingFormData, promoCode } = req.body;
 
   // Validate request
-  const { error } = checkOutValidation.validate(req.body, { abortEarly: false });
+  const { error } = checkOutValidation.validate(req.body, {
+    abortEarly: false,
+  });
   if (error) {
-    return res.status(400).json({ success: false, data: { error: error.details } });
+    return res
+      .status(400)
+      .json({ success: false, data: { error: error.details } });
   }
 
   let transaction;
@@ -1036,11 +1043,6 @@ async function createOrder(req, res) {
           });
 
           if (!product) throw new Error(`Product not found: ${item.productId}`);
-          // if (product.deviceTypeId === 6 && (!item.fontId || !item.customName)) {
-          //   throw new Error(
-          //     `FontId and CustomName are required for product: ${item.productId}`
-          //   );
-          // }
 
           return {
             productId: product.id,
@@ -1061,11 +1063,15 @@ async function createOrder(req, res) {
         transaction,
       });
 
-      if (!cartItems.length) throw new Error("No products available in the cart");
+      if (!cartItems.length)
+        throw new Error("No products available in the cart");
     }
 
     // Shipping charge
-    const shippingCharge = await decideShippingCharge(shippingFormData?.country, transaction);
+    const shippingCharge = await decideShippingCharge(
+      shippingFormData?.country,
+      transaction
+    );
 
     // Fetch product details
     const productDetails = await model.DeviceInventories.findAll({
@@ -1082,18 +1088,34 @@ async function createOrder(req, res) {
       throw new Error("One or more products could not be found.");
     }
 
-    // Calculate order totals
-    const { orderItems, totalOrderPrice, totalSellingPrice, totalDiscountAmount, adjustmentsPositive, adjustments } =
-      calculateOrderItems(cartItems, productDetails);
+    // Calculate order totals (unchanged)
+    const {
+      orderItems,
+      totalOrderPrice, // MRP total?
+      totalSellingPrice, // discounted per-item subtotal (pre-shipping)
+      totalDiscountAmount, // built-in per-item discounts (not promo)
+    } = calculateOrderItems(cartItems, productDetails);
 
-      console.log( typeof totalSellingPrice ,"?tot",totalSellingPrice);
-      console.log(typeof shippingCharge, "?tot", shippingCharge);
-      console.log(typeof totalOrderPrice, "?tot", totalOrderPrice);
-      console.log(typeof totalDiscountAmount, "?tot", totalDiscountAmount);
-      
-    // Razorpay order
+    // IMPORTANT: ensure each orderItem includes unitSellingPrice for FREE_QUANTITY to work.
+    // If you only have `sellingPrice` and `quantity`, add `unitSellingPrice = sellingPrice / quantity` when building orderItems.
+
+    // Apply promo (if any)
+    const { discount: promoDiscount, promo } = await applyPromoCode({
+      user_id: userId,
+      promoCodeRaw: promoCode,
+      orderItems,
+      totalSellingPrice,
+      transaction,
+    });
+
+    const subtotalAfterPromo =
+      Number(totalSellingPrice) - Number(promoDiscount);
+    const soldAfterPromoAndShipping =
+      Math.max(0, subtotalAfterPromo) + Number(shippingCharge);
+
+    // Razorpay order uses amount user will pay now (in paise)
     const razorpayOrder = await razorpay.orders.create({
-      amount: Number(totalSellingPrice) * 100, // paise
+      amount: Math.round(soldAfterPromoAndShipping * 100),
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
       payment_capture: 1,
@@ -1101,18 +1123,19 @@ async function createOrder(req, res) {
 
     if (!razorpayOrder?.id) throw new Error("Razorpay order creation failed");
 
-    // Create main order
+    // Create main order (store BOTH product discounts and promo discount in discountAmount)
     const createdOrder = await model.Order.create(
       {
         customerId: userId,
-        totalPrice: totalOrderPrice,
+        totalPrice: totalOrderPrice, // original total (pre any discounts)
         email: shippingFormData?.emailId,
         orderStatusId: 1,
-        discountAmount: totalDiscountAmount,
+        discountAmount: Number(totalDiscountAmount) + Number(promoDiscount),
         isLoggedIn: true,
         shippingCharge,
-        soldPrice: totalSellingPrice,
+        soldPrice: soldAfterPromoAndShipping, // final amount (subtotal - promo + shipping)
         razorpayOrderId: razorpayOrder.id,
+        promoCodeId: promo ? promo.id : null, // FK to applied promo
       },
       { transaction }
     );
@@ -1140,19 +1163,125 @@ async function createOrder(req, res) {
       orderId: createdOrder.id,
       data: {
         razorpayOrderId: razorpayOrder.id,
-        amount:razorpayOrder.amount / 100,
+        amount: soldAfterPromoAndShipping, // human-readable rupees
         currency: razorpayOrder.currency,
         key: process.env.RAZORPAY_KEY_ID,
+        promo: promo
+          ? { code: promo.code, discountApplied: promoDiscount }
+          : null,
       },
     });
   } catch (err) {
-    console.log(err,"err in console");
-    
     if (transaction) await transaction.rollback();
+    console.log(err, "err in console");
     return res.status(500).json({ success: false, message: err.message });
   }
 }
 
+async function getPromo(req, res) {
+  let transaction;
+  try {
+    const userId = req.user.id; // logged-in user guaranteed
+    const { error } = getPromoValidation.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res
+        .status(400)
+        .json({ success: false, data: { error: error.details } });
+    }
+    const { promoCode, productData } = req.body;
+
+    transaction = await sequelize.transaction();
+
+    let cartItems = [];
+
+    if (productData && productData.length > 0) {
+      // Use productData directly if provided
+      cartItems = await Promise.all(
+        productData.map(async (item) => {
+          const product = await model.DeviceInventories.findOne({
+            where: { productId: item.productId },
+          });
+
+          if (!product) throw new Error(`Product not found: ${item.productId}`);
+
+          return {
+            productId: product.id,
+            quantity: item.quantity,
+          };
+        })
+      );
+    } else {
+      // Fetch from cart
+      cartItems = await model.Cart.findAll({
+        where: {
+          customerId: userId,
+          productStatus: true,
+          productId: { [Op.ne]: null },
+        },
+        transaction,
+      });
+
+      if (!cartItems.length)
+        throw new Error("No products available in the cart");
+    }
+
+    // Fetch product details
+    const productDetails = await model.DeviceInventories.findAll({
+      where: { id: cartItems.map((item) => item.productId) },
+      include: [
+        { model: model.DeviceColorMasters },
+        { model: model.DeviceTypeMasters },
+        { model: model.DevicePatternMasters },
+      ],
+      transaction,
+    });
+
+    if (productDetails.length !== cartItems.length) {
+      throw new Error("One or more products could not be found.");
+    }
+
+    // Calculate order totals (unchanged)
+    const {
+      orderItems,
+      totalOrderPrice, // MRP total?
+      totalSellingPrice, // discounted per-item subtotal (pre-shipping)
+      totalDiscountAmount, // built-in per-item discounts (not promo)
+    } = calculateOrderItems(cartItems, productDetails);
+
+    const { discount: promoDiscount, promo } = await applyPromoCode({
+      user_id: userId,
+      promoCodeRaw: promoCode,
+      orderItems,
+      totalSellingPrice,
+      transaction,
+    });
+
+    const subtotalAfterPromo =
+      Number(totalSellingPrice) - Number(promoDiscount);
+       await transaction.commit();
+    return res.json({
+      success: true,
+      message: "Promo code applied successfully!",
+      data: {
+        promo: promo
+          ? { code: promo.code, discountApplied: promoDiscount }
+          : null,
+        subtotalAfterPromo,
+        totalOrderPrice,
+        totalDiscountAmount,
+      },
+    });
+   
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error applying promo code.",
+    });
+  }
+}
 
 async function decideShippingCharge(userCountry, transaction) {
   // try {
@@ -1528,4 +1657,5 @@ export {
   checkOutNonUser,
   getNonUserOrderById,
   createOrder,
+  getPromo,
 };

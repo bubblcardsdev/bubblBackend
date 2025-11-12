@@ -928,10 +928,13 @@ async function verifyPayment(req, res) {
 async function verifyPaymentRazorPay(req, res) {
   try {
     const userId = req.user.id;
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } =
+      req.body;
 
     // Validate request body
-    const { error } = verifyPaymentValidation.validate(req.body, { abortEarly: false });
+    const { error } = verifyPaymentValidation.validate(req.body, {
+      abortEarly: false,
+    });
     if (error) {
       return res.status(400).json({ success: false, error: error.details });
     }
@@ -946,7 +949,9 @@ async function verifyPaymentRazorPay(req, res) {
     });
 
     if (!orderRecord) {
-      return res.status(400).json({ success: false, message: "Order not found" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Order not found" });
     }
 
     // Fetch Razorpay order details
@@ -955,18 +960,24 @@ async function verifyPaymentRazorPay(req, res) {
     // Validate amount
     const amountFromRazorpay = Number((razorpayOrder.amount / 100).toFixed(2));
     if (Number(orderRecord.soldPrice) !== amountFromRazorpay) {
-      return res.status(400).json({ success: false, message: "Order amount mismatch" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Order amount mismatch" });
     }
     // Verify Razorpay signature
     const isSignatureValid = verifyRazorpaySignature(req.body);
     if (!isSignatureValid) {
-      return res.status(400).json({ success: false, message: "Payment signature mismatch" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Payment signature mismatch" });
     }
 
     // Fetch payment details
     const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
     if (paymentDetails.status !== "captured") {
-      return res.status(400).json({ success: false, message: "Payment not captured" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Payment not captured" });
     }
 
     // Record payment in DB
@@ -987,8 +998,21 @@ async function verifyPaymentRazorPay(req, res) {
       { orderStatusId: 3 },
       { where: { id: orderRecord.id } }
     );
-// add async mail service fororder placed
-    return res.json({ success: true, message: "Payment verified successfully",order_id:orderRecord?.id });
+
+    if (orderRecord.promoCodeId) {
+      await model.PromoCodeUsage.create({
+        promoCodeId: orderRecord.promoCodeId,
+        customerId: userId || null,
+        email: orderRecord.email || null,
+        usedAt: new Date(),
+      });
+    }
+    // add async mail service fororder placed
+    return res.json({
+      success: true,
+      message: "Payment verified successfully",
+      order_id: orderRecord?.id,
+    });
   } catch (err) {
     console.error("verifyPayment error:", err);
     return res.status(500).json({ success: false, message: err.message });
@@ -1002,7 +1026,9 @@ async function handlePaymentFailure(req, res) {
 
     // Validate request body
     if (!razorpay_order_id) {
-      return res.status(400).json({ success: false, message: "Order ID is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Order ID is required" });
     }
 
     // Fetch order from DB
@@ -1015,7 +1041,9 @@ async function handlePaymentFailure(req, res) {
     });
 
     if (!orderRecord) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
     // Record failed payment in DB
@@ -1038,13 +1066,15 @@ async function handlePaymentFailure(req, res) {
       { where: { id: orderRecord.id } }
     );
 
-    return res.json({ success: true, message: "Payment failure recorded successfully" });
+    return res.json({
+      success: true,
+      message: "Payment failure recorded successfully",
+    });
   } catch (err) {
     console.error("handlePaymentFailure error:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 }
-
 
 async function getShippingCharge(req, res) {
   const { country } = req.body;
@@ -1160,5 +1190,5 @@ export {
   initiatePayNew,
   initiatePayRazorPay,
   verifyPaymentRazorPay,
-  handlePaymentFailure
+  handlePaymentFailure,
 };

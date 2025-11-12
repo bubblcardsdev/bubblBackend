@@ -37,4 +37,18 @@ const getOrderValidation = Joi.object({
   orderId: Joi.number().required().greater(0),
 });
 
-export { checkOutValidation, getOrderValidation };
+const getPromoValidation = Joi.object({
+    productData: Joi.array()
+    .items(
+      Joi.object({
+        productId: Joi.string().uuid().required(),
+        quantity: Joi.number().integer().min(1).required(),
+      })
+    )
+    .min(1)
+    .optional(),
+
+  promoCode: Joi.string().optional().allow(""), 
+});
+
+export { checkOutValidation, getOrderValidation, getPromoValidation };
