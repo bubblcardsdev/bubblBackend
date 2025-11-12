@@ -2024,7 +2024,7 @@ async function findAllProfilesForMob(req, res) {
 
 async function getProfile(req, res) {
   const { profileId } = req.body;
-  // const userId = req.user.id;
+  const userId = req.user.id;
 
   try {
    const latestDigitalPaymentIds = await model.ProfileDigitalPaymentLink.findAll({
@@ -2039,9 +2039,9 @@ async function getProfile(req, res) {
 // Extract only the latest IDs
 const latestIds = latestDigitalPaymentIds.map((e) => e.latestId);
 
-// 🧩 Step 2: Fetch the profile with all associations
+//  Step 2: Fetch the profile with all associations
 const profile = await model.Profile.findOne({
-  where: { id: profileId },
+  where: { id: profileId,userId },
   include: [
     {
       model: model.DeviceLink,

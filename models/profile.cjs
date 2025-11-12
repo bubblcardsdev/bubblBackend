@@ -98,27 +98,27 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: "",
       },
-      // brandingFont: {
-      //   type: Sequelize.STRING,
-      //   allowNull: false,
-      //   defaultValue: "",
-      // },
+      brandingFont: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: "",
+      },
       
-        // brandingAccentColor: {
-        //   type: Sequelize.STRING,
-        //   allowNull: false,
-        //   defaultValue: "#60449a",
-        // },
-        // brandingBackGroundColor: {
-        //   type: Sequelize.STRING,
-        //   allowNull: false,
-        //   defaultValue: null,
-        // },
-        // brandingFontColor: {
-        //   type: Sequelize.STRING,
-        //   allowNull: false,
-        //   defaultValue: null,
-        // },
+        brandingAccentColor: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          defaultValue: "#60449a",
+        },
+        brandingBackGroundColor: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          defaultValue: null,
+        },
+        brandingFontColor: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          defaultValue: null,
+        },
         // darkMode: {
         //   type: Sequelize.BOOLEAN,
         //   allowNull: false,
