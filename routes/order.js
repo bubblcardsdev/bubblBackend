@@ -8,7 +8,8 @@ import {
   cancelOrder,
   checkOutNonUser,
   getNonUserOrderById,
-  createOrder
+  createOrder,
+  getPromo
 } from "../controllers/order.js";
 import { authenticateCheckoutToken, authenticateToken } from "../middleware/token.js";
 
@@ -28,7 +29,8 @@ router.post("/nonUser/one", getNonUserOrderById);
 
 // v3 Api
 
-router.post("/createOrder",authenticateToken,createOrder)
+router.post("/createOrder",authenticateToken,createOrder);
+router.post("/applyPromo", authenticateToken, getPromo);
 
 
 
