@@ -254,7 +254,7 @@ const updateProfileSchemaLatest = Joi.object({
     Joi.object({
       emailIdNumber: Joi.number().optional(),
       emailId: Joi.string().email().required(),
-      emailType: Joi.string().optional(),
+      emailType: Joi.string().optional().allow(""),
       checkBoxStatus: Joi.boolean().optional(),
       activeStatus: Joi.boolean().required(),
     })

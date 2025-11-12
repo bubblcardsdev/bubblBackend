@@ -454,15 +454,31 @@ async function deleteProfile(req, res) {
       message: "Profile deleted successfully",
     });
   } catch (err) {
-    console.error(err);
-    loggers.error(err + " from deleteProfile function");
-    await t.rollback();
-    return res.status(500).json({
-      error: err,
+  console.error("Delete profile error:", err);
+  await t.rollback();
+
+  // MySQL foreign key constraint error
+  if (err.name === "SequelizeForeignKeyConstraintError" || err.original?.code === "ER_ROW_IS_REFERENCED_2") {
+    return res.status(400).json({
       success: false,
-      message: "Something went wrong while deleting the profile.",
+      message: "Profile cannot be deleted because it is linked to other records. Please remove related link device first.",
     });
   }
+
+  // Validation or other Sequelize errors
+  if (err.name === "SequelizeValidationError") {
+    return res.status(400).json({
+      success: false,
+      message: err.errors?.[0]?.message || "Validation error occurred",
+    });
+  }
+
+  // Default fallback
+  return res.status(500).json({
+    success: false,
+    message: "An unexpected error occurred while deleting profile",
+  });
+}
 }
 
 async function getUniqueProfileName(userId, baseName) {
@@ -2007,151 +2023,177 @@ async function findAllProfilesForMob(req, res) {
 }
 
 async function getProfile(req, res) {
-  // const userId = req.user.id;
   const { profileId } = req.body;
-
   const userId = req.user.id;
 
   try {
-    const profile = await model.Profile.findOne({
-      where: {
-        id: profileId,
-        userId: userId,
-      },
+   const latestDigitalPaymentIds = await model.ProfileDigitalPaymentLink.findAll({
+  attributes: [
+    [sequelize.fn("MAX", sequelize.col("id")), "latestId"],
+  ],
+  where: { activeStatus: true },
+  group: ["profileId", "profileDigitalPaymentsId"],
+  raw: true,
+});
+
+// Extract only the latest IDs
+const latestIds = latestDigitalPaymentIds.map((e) => e.latestId);
+
+//  Step 2: Fetch the profile with all associations
+const profile = await model.Profile.findOne({
+  where: { id: profileId,userId },
+  include: [
+    {
+      model: model.DeviceLink,
       include: [
         {
-          model: model.DeviceLink,
-          include: [
-            {
-              model: model.Template,
-              attributes: {
-                exclude: ["createdAt", "updatedAt"],
-              },
-            },
-            {
-              model: model.Mode,
-              attributes: {
-                exclude: ["createdAt", "updatedAt"],
-              },
-            },
-          ],
+          model: model.Template,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
-          model: model.ProfilePhoneNumber,
-          as: "profilePhoneNumbers",
-          where: { activeStatus: true },
-          required: false,
-          attributes: [
-            ["id", "phoneNumberId"], // alias id → phoneNumberId
-            "countryCode",
-            "phoneNumber",
-            ["phoneNumberType", "phoneNumberType"],
-            ["checkBoxStatus", "checkBoxStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-        {
-          model: model.ProfileEmail,
-          as: "profileEmails",
-          where: { activeStatus: true },
-          required: false,
-          attributes: [
-            ["id", "emailIdNumber"],
-            ["emailId", "emailId"],
-            ["emailType", "emailType"],
-            ["checkBoxStatus", "checkBoxStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-        {
-          model: model.ProfileWebsite,
-          as: "profileWebsites",
-          where: { activeStatus: true },
-          required: false,
-          attributes: [
-            ["id", "websiteId"],
-            ["website", "website"],
-            ["websiteType", "websiteType"],
-            ["checkBoxStatus", "checkBoxStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-        {
-          model: model.ProfileSocialMediaLink,
-          as: "profileSocialMediaLinks",
-          where: { activeStatus: true },
-          required: false,
-          attributes: [
-            ["id", "profileSocialMediaLinkId"],
-            ["profileSocialMediaId", "profileSocialMediaId"],
-            ["socialMediaName", "socialMediaName"],
-            ["enableStatus", "enableStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
-        },
-        {
-          model: model.ProfileDigitalPaymentLink,
-          as: "profileDigitalPaymentLinks",
-          where: { activeStatus: true },
-          required: false,
-          attributes: [
-            ["id", "profileDigitalPaymentLinkId"],
-            ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
-            ["digitalPaymentLink", "digitalPaymentLink"],
-            ["enableStatus", "enableStatus"],
-            ["activeStatus", "activeStatus"],
-          ],
+          model: model.Mode,
+          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
+    },
+
+    // 📞 Phone Numbers — limit 2 latest
+    {
+      model: model.ProfilePhoneNumber,
+      as: "profilePhoneNumbers",
+      where: { activeStatus: true },
       required: false,
-    });
+      separate: true,
+      limit: 2,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "phoneNumberId"],
+        "countryCode",
+        "phoneNumber",
+        ["phoneNumberType", "phoneNumberType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 📧 Emails — limit 2 latest
+    {
+      model: model.ProfileEmail,
+      as: "profileEmails",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      limit: 2,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "emailIdNumber"],
+        ["emailId", "emailId"],
+        ["emailType", "emailType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 🌐 Websites — limit 1 latest
+    {
+      model: model.ProfileWebsite,
+      as: "profileWebsites",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      limit: 1,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "websiteId"],
+        ["website", "website"],
+        ["websiteType", "websiteType"],
+        ["checkBoxStatus", "checkBoxStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 💬 Social Media Links — already working fine
+    {
+      model: model.ProfileSocialMediaLink,
+      as: "profileSocialMediaLinks",
+      where: { activeStatus: true },
+      required: false,
+      separate: true,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "profileSocialMediaLinkId"],
+        ["profileSocialMediaId", "profileSocialMediaId"],
+        ["socialMediaName", "socialMediaName"],
+        ["enableStatus", "enableStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+
+    // 💰 Digital Payment Links — only latest unique entries
+    {
+      model: model.ProfileDigitalPaymentLink,
+      as: "profileDigitalPaymentLinks",
+      where: {
+        activeStatus: true,
+        id: latestIds, //  only include latest IDs we fetched
+      },
+      required: false,
+      separate: true,
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        ["id", "profileDigitalPaymentLinkId"],
+        ["profileDigitalPaymentsId", "profileDigitalPaymentsId"],
+        ["digitalPaymentLink", "digitalPaymentLink"],
+        ["enableStatus", "enableStatus"],
+        ["activeStatus", "activeStatus"],
+      ],
+    },
+  ],
+});
 
     if (!profile) {
       throw new Error("Unable to find profile");
     }
 
-    // console.log(profile,"prof data");
-
-    const brandImgPath = profile.dataValues.brandingLogo;
-    if (brandImgPath !== "") {
-      const SignedImage = await generateSignedUrl(brandImgPath);
-      profile.dataValues.brandingLogoUrl = SignedImage;
+    // ✅ Generate Signed Branding Logo URL (if exists)
+    if (profile.brandingLogo) {
+      const signedUrl = await generateSignedUrl(profile.brandingLogo);
+      profile.dataValues.brandingLogoUrl = signedUrl;
     }
 
-
+    // 🖼️ Get Profile Images — latest first
     const profileImgs = await model.ProfileImages.findAll({
-      where: {
-        profileId: profileId,
-      },
+      where: { profileId },
+      order: [["updatedAt", "DESC"]],
     });
 
-    const checkProfileId = await model.Profile.findOne({
-      where: {
-        id: profileId,
-      },
-    });
-    let deviceUid;
-    if (checkProfileId) {
-      const checkDeviceLinkId = await model.DeviceLink.findOne({
-        where: {
-          profileId: checkProfileId.id,
-        },
+    // 🔗 Fetch Device UID
+    let deviceUid = null;
+    const deviceLink = await model.DeviceLink.findOne({ where: { profileId } });
+
+    if (deviceLink) {
+      const accountDeviceLink = await model.AccountDeviceLink.findOne({
+        where: { id: deviceLink.accountDeviceLinkId },
       });
-      if (checkDeviceLinkId) {
-        const checkAccountId = await model.AccountDeviceLink.findOne({
-          where: {
-            id: checkDeviceLinkId.accountDeviceLinkId,
-          },
+
+      if (accountDeviceLink) {
+        deviceUid = await model.Device.findOne({
+          where: { id: accountDeviceLink.deviceId },
         });
-        if (checkAccountId) {
-          deviceUid = await model.Device.findOne({
-            where: {
-              id: checkAccountId.deviceId,
-            },
-          });
-        }
       }
     }
+
+    // ✅ Remove Duplicate Social Media Links (same URL)
+    const uniqueSocialLinks = [];
+    const seen = new Set();
+
+    for (const link of profile.profileSocialMediaLinks || []) {
+      if (!seen.has(link.socialMediaName)) {
+        seen.add(link.socialMediaName);
+        uniqueSocialLinks.push(link);
+      }
+    }
+    profile.dataValues.profileSocialMediaLinks = uniqueSocialLinks;
 
     return res.json({
       success: true,
@@ -2163,16 +2205,15 @@ async function getProfile(req, res) {
       },
     });
   } catch (error) {
-    console.log(error);
-    loggers.error(error + "from getProfile function");
+    console.error(error);
+    loggers.error(`${error} from getProfile function`);
     return res.json({
       success: false,
-      data: {
-        message: error.message,
-      },
+      data: { message: error.message },
     });
   }
 }
+
 
 async function getProfileOne(req, res) {
   // const userId = req.user.id;
