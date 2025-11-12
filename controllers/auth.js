@@ -44,7 +44,6 @@ import { verifyFacebookAccount } from "../middleware/facebook.js";
 import { verifyLinkedinAccount } from "../middleware/linkedin.js";
 import loggers from "../config/logger.js";
 import MobileOnboardingProfileCreate from "../helper/mobileOnboard.js";
-import { access } from "fs";
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000);
