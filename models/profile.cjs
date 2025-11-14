@@ -106,18 +106,18 @@ module.exports = (sequelize, Sequelize) => {
       
         brandingAccentColor: {
           type: Sequelize.STRING,
-          allowNull: false,
+          allowNull: true,
           defaultValue: "#60449a",
         },
         brandingBackGroundColor: {
           type: Sequelize.STRING,
-          allowNull: false,
-          defaultValue: null,
+          allowNull: true,
+          defaultValue: "",
         },
         brandingFontColor: {
           type: Sequelize.STRING,
-          allowNull: false,
-          defaultValue: null,
+          allowNull: true,
+          defaultValue: "",
         },
         // darkMode: {
         //   type: Sequelize.BOOLEAN,
