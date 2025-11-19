@@ -38,6 +38,10 @@ import { authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
 
+
+router.get("/", getProfileByDevice);
+// router.get("/m", getProfileByMode);
+
 router.post("/checkProfileName", authenticateToken, getProfileName);
 
 router.post("/create", authenticateToken, createProfile);
@@ -49,8 +53,7 @@ router.post("/create", authenticateToken, createProfile);
 router.get("/all", authenticateToken, findAllProfiles);
 
 router.get("/findAll", authenticateToken, findAllProfilesForMob);
-router.get("/", getProfileByDevice);
-// router.get("/m", getProfileByMode);
+
 router.put("/update", authenticateToken, updateProfile);
 router.put("/update-profile", authenticateToken, updateProfileLatest);
 
