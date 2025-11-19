@@ -1356,23 +1356,21 @@ async function getProfileByDevice(req, res) {
     if (deviceUid) {
       const device = await model.Device.findOne({ where: { deviceUid } });
 
-      if (device && !device.isActive) {
+      if (!device) {
+        return res.status(404).json({
+          success: false,
+          data: { message: "Device NOT found" },
+        });
+      }
+
+
+      if (!device.isActive) {
         return res.status(403).json({
           success: false,
           data: { message: "Device is inactive. Please contact support." },
         });
       }
 
-      if (!device) {
-        const decryptedProfileId = decryptProfileId(deviceUid);
-        if (!decryptedProfileId) {
-          return res.status(404).json({
-            success: false,
-            data: { message: "Unable to find the device/profile" },
-          });
-        }
-        profileId = decryptedProfileId;
-      } else {
         const accountDeviceLink = await model.AccountDeviceLink.findOne({
           where: { deviceId: device.id, isDeleted: false },
         });
@@ -1392,7 +1390,7 @@ async function getProfileByDevice(req, res) {
         });
 
         if (!deviceLink) {
-          return res.status(404).json({
+          return res.status(204).json({
             success: false,
             data: { message: "Device is not attached to a profile" },
           });
@@ -1400,7 +1398,7 @@ async function getProfileByDevice(req, res) {
 
         profileId = deviceLink.profileId;
         deviceLinkId = deviceLink.id;
-      }
+
     }
     // Determine profile and deviceLinkId based on uniqueName
     else if (uniqueName) {
