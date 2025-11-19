@@ -1266,7 +1266,7 @@ async function verifyGoogleUserLatest(req, res) {
     const payloadLastName = payload.family_name;
 
     let checkEmail = await model.User.findOne({
-      where: { email: payloadEmail, google: true },
+      where: { email: payloadEmail },
     });
 
     if (!checkEmail) {
