@@ -104,16 +104,25 @@ const checkUser = await model.User.findOne({
     },
   ],
 });   
-console.log(checkUser);
 
 if (!checkUser) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
         data: {
-          message: "Email or password is incorrect",
+          message: "User not found",
         },
       });
     }
+
+ if (!checkUser?.local) {
+  const provider = checkUser?.google ? "Google" : "Apple";
+
+  return res.status(400).json({
+    success: false,
+    data: { message: `Please sign in using ${provider} login` },
+  });
+}
+
     // For Mobile
     const Profile = await model.Profile.findOne({
       where: { userId: checkUser.id },
@@ -262,6 +271,8 @@ if (!checkUser) {
     }
   } catch (error) {
     loggers.error(error + "from login function");
+    console.log(error);
+    
     return res.status(500).json({
       success: false,
       data: {
@@ -2375,7 +2386,7 @@ async function changePassword(req, res) {
     if (checkUser && checkUser.forgotPasswordId === forgotPasswordId) {
       const hashedPassword = await hashPassword(newPassword);
       await model.User.update(
-        { password: hashedPassword },
+        { password: hashedPassword,local:true },
         { where: { id: checkUser.id } }
       );
       return res.json({
