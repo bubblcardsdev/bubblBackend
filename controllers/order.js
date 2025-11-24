@@ -3,6 +3,7 @@ import { generateSignedUrl } from "../middleware/fileUpload.js";
 import model from "../models/index.js";
 import {
   checkOutValidation,
+  createPlanOrderValidation,
   getOrderValidation,
   getPromoValidation,
 } from "../validations/orderShipping.js";
@@ -1178,6 +1179,97 @@ async function createOrder(req, res) {
   }
 }
 
+async function createPlanOrder(req, res) {
+  try {
+    const userId = req.user.id; // logged-in user
+
+    // Step 1: Validate request body
+    const { error, value } = createPlanOrderValidation.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
+
+    const { planId, planType } = value;
+
+    // Step 2: Check if user already has an active plan
+    const userPlan = await model.BubblPlanManagement.findOne({
+      where: { userId },
+    });
+
+    if (userPlan) {
+      // If user is already on PRO
+      if (userPlan.planId === planId && userPlan.isValid === true) {
+        return res.status(400).json({
+          success: false,
+          message: "You already have an active subscription.",
+        });
+      }
+    }
+
+    // Step 3: Fetch plan details
+    const plan = await model.Plan.findOne({ where: { id: planId } });
+
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid plan selected",
+      });
+    }
+
+    // Step 4: Determine price
+    let soldPrice = 0;
+
+    if (planType === "monthly") soldPrice = plan.monthlyPrice;
+    else soldPrice = plan.annualPrice;
+  
+
+    // Step 5: Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(soldPrice * 100),
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+      payment_capture: 1,
+    });
+
+    // Step 6: Store PlanOrder in DB
+    const planOrder = await model.PlanOrder.create({
+      userId,
+      planId,
+      planType,
+      soldPrice,
+      orderStatusId: 1, // Pending
+      razorpayOrderID: razorpayOrder.id,
+    });
+
+    // Step 7: Response
+    return res.status(200).json({
+      success: true,
+      message: "Plan order created successfully",
+      data: {
+        orderId: planOrder.id,
+        razorpayOrderId: razorpayOrder.id,
+        amount: soldPrice,
+        currency: "INR",
+        key: process.env.RAZORPAY_KEY_ID,
+      },
+      userPlan
+    });
+
+  } catch (err) {
+    console.log(err, "err in console");
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
 async function getPromo(req, res) {
   let transaction;
   try {
@@ -1657,5 +1749,6 @@ export {
   checkOutNonUser,
   getNonUserOrderById,
   createOrder,
+  createPlanOrder,
   getPromo,
 };

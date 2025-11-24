@@ -54,6 +54,8 @@ import _planDescription from "./planDescription.cjs";
 import _promoCodeType from "./promoCodeType.cjs";
 import _promoCode from "./promocodes.cjs";
 import _promoCodeUsage from "./promoCodeUsage.cjs";
+import _planOrders from "./planOrder.cjs";
+import orderstatusmaster from "./orderstatusmaster.cjs";
 
 export default function dbModel(sequelize, Sequelize) {
   const User = _user(sequelize, Sequelize);
@@ -68,6 +70,7 @@ export default function dbModel(sequelize, Sequelize) {
     sequelize,
     Sequelize
   );
+
   const ProfileImages = _profileImages(sequelize, Sequelize);
   // const ProfileInfo = _profileInfo(sequelize, Sequelize);
   const Device = _device(sequelize, Sequelize);
@@ -117,6 +120,8 @@ export default function dbModel(sequelize, Sequelize) {
   const PromoCodeType = _promoCodeType(sequelize, Sequelize);
   const PromoCode = _promoCode(sequelize, Sequelize);
   const PromoCodeUsage = _promoCodeUsage(sequelize, Sequelize);
+  const PlanOrder = _planOrders(sequelize, Sequelize);
+
 
   User.hasMany(Profile, { as: "userProfiles" });
   User.hasMany(AccountDeviceLink, { as: "userAccountDeviceLinks" });
@@ -246,6 +251,24 @@ export default function dbModel(sequelize, Sequelize) {
     foreignKey: "customerId",
   });
 
+
+// PlanOrder belongs to Users
+PlanOrder.belongsTo(User, {
+  foreignKey: "userId",
+});
+
+// PlanOrder belongs to Plans
+PlanOrder.belongsTo(Plan, {
+  foreignKey: "planId",
+});
+
+// PlanOrder belongs to OrderStatus
+PlanOrder.belongsTo(OrderStatusMaster, {
+  foreignKey: "orderStatusId",
+});
+
+  
+
   return {
     User,
     Profile,
@@ -302,5 +325,6 @@ export default function dbModel(sequelize, Sequelize) {
     PromoCodeType,
     PromoCode,
     PromoCodeUsage,
+    PlanOrder
   };
 }
