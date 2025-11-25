@@ -8,7 +8,9 @@ import {
   updateDeviceController,
   getAllServicesController,
   createDeviceBulkController,
+  bulkDeviceInsertCsv,
 } from "../../controllers/admin/deviceController.js";
+import { csvUpload } from "../../middleware/fileUpload.js";
 
 const deviceRouter = express.Router();
 deviceRouter.post("/createDevice", createDeviceController);
@@ -19,5 +21,7 @@ deviceRouter.put("/replaceDevice", replaceDeviceController);
 deviceRouter.put("/deActiveDevice", deActiveDeviceController);
 deviceRouter.put("/activateDevice", activateDeviceController);
 deviceRouter.get("/allDevice", getAllServicesController);
+deviceRouter.post("/bulkDeviceInsertCsv", csvUpload.single("file"), bulkDeviceInsertCsv);
+
 
 export default deviceRouter;
