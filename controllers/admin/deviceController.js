@@ -196,7 +196,6 @@ async function bulkDeviceInsertCsv(req, res) {
     });
   }
 }
-
 async function bulkDeviceInsertCsv(req, res) {
   try {
     if (!req.file || !req.file.buffer) {
