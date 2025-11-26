@@ -197,8 +197,6 @@ async function bulkDeviceInsertCsv(req, res) {
   }
 }
 
-
-
 export {
   deviceController,
   replaceDeviceController,
