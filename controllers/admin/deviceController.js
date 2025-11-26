@@ -197,6 +197,63 @@ async function bulkDeviceInsertCsv(req, res) {
   }
 }
 
+async function bulkDeviceInsertCsv(req, res) {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    // Read the Excel file
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(sheet);
+
+    if (!data.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Excel is empty",
+      });
+    }
+
+    // Validate data and transform
+    const devices = data
+      .map((row) => ({
+        deviceUid: row.deviceUid,
+        deviceType: row.deviceType,
+        // deviceNickName: row.deviceNickName || null,
+        // isActive: 1,
+      }))
+      .filter((d) => d.deviceUid && d.deviceType); // Remove invalid rows
+
+    if (devices.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid rows found",
+      });
+    }
+
+    // BULK INSERT — Much faster!
+    const result = await model.Device.bulkCreate(devices);
+
+    return res.json({
+      success: true,
+      message: "Devices inserted successfully",
+      inserted: result.length,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+}
+
+
 export {
   deviceController,
   replaceDeviceController,

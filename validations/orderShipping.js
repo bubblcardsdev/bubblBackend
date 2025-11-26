@@ -51,4 +51,12 @@ const getPromoValidation = Joi.object({
   promoCode: Joi.string().optional().allow(""), 
 });
 
-export { checkOutValidation, getOrderValidation, getPromoValidation };
+const createPlanOrderValidation = Joi.object({
+  planId: Joi.number()
+    .valid(2, 3)
+    .required(),
+ planType: Joi.string()
+    .valid("monthly", "yearly")
+    .required()
+}).strict();
+export { checkOutValidation, getOrderValidation, getPromoValidation,createPlanOrderValidation };

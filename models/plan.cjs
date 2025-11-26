@@ -35,11 +35,11 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
-      discountPercentage: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
+      // discountPercentage: {
+      //   type: Sequelize.INTEGER,
+      //   allowNull: false,
+      //   defaultValue: 0,
+      // },
     },
     {
       sequelize,
