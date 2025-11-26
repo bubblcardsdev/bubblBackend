@@ -26,6 +26,8 @@ const s3Storage = multerS3({
     cb(null, keyName);
   },
 });
+const csvUpload = multer({ storage: multer.memoryStorage() });
+
 
 const upload = multer({ storage: s3Storage });
 
@@ -75,4 +77,4 @@ async function uploadFileToS3(res, userId, filePath,email="") {
   // });
 }
 
-export { upload, generateSignedUrl, uploadFileToS3 };
+export { upload, generateSignedUrl, uploadFileToS3,csvUpload };
