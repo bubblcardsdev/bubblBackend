@@ -1185,8 +1185,9 @@ async function productPaymentService(paymentData) {
 async function verifyPlanPayment(req, res) {
   try {
     const userId = req.user.id;
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+    const { razorpay_payment_id, razorpay_order_id } = req.body;
 
+    // Validate body
     const { error } = verifyPaymentValidation.validate(req.body, {
       abortEarly: false,
     });
@@ -1194,73 +1195,124 @@ async function verifyPlanPayment(req, res) {
       return res.status(400).json({ success: false, error: error.details });
     }
 
-
-     const orderRecord = await model.PlanOrder.findOne({
+    // Find order
+    const orderRecord = await model.PlanOrder.findOne({
       where: {
-        razorpayOrderId: razorpay_order_id,
+        razorpayOrderID: razorpay_order_id,
         userId,
         orderStatusId: { [Op.in]: [1, 2, 4] },
       },
     });
 
-     if (!orderRecord) {
+    if (!orderRecord) {
       return res
         .status(400)
         .json({ success: false, message: "Order not found" });
     }
-   const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
+
+    // Fetch Razorpay order
+    const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
 
     // Validate amount
     const amountFromRazorpay = Number((razorpayOrder.amount / 100).toFixed(2));
     if (Number(orderRecord.soldPrice) !== amountFromRazorpay) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Order amount mismatch" });
+      return res.status(400).json({
+        success: false,
+        message: "Order amount mismatch",
+      });
     }
 
-const isSignatureValid = verifyRazorpaySignature(req.body);
+    // Verify signature
+    const isSignatureValid = verifyRazorpaySignature(req.body);
     if (!isSignatureValid) {
       return res
         .status(400)
         .json({ success: false, message: "Payment signature mismatch" });
     }
 
-       const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
-       if (paymentDetails.status !== "captured") {
+    // Verify actual payment
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    if (paymentDetails.status !== "captured") {
       return res
         .status(400)
         .json({ success: false, message: "Payment not captured" });
     }
-const acquirerData = paymentDetails.acquirer_data || {};
 
+    const acquirerData = paymentDetails.acquirer_data || {};
+
+    // Save payment record
     await model.PlanPayment.create({
       transactionId: razorpay_payment_id,
-      userId: userId,
+      userId,
       paymentStatus: true,
       totalPrice: orderRecord.soldPrice,
-      planId:orderRecord.planId,
-      failureMessage:null,
+      planId: orderRecord.planId,
+      failureMessage: null,
       bankRefNo: acquirerData.rrn || acquirerData.auth_code || null,
-      // bankRefNo: razorpay_signature, // bank ref no store as rzpay signature for now
+    });
 
-    })
-
+    // Update order status to "Paid: 3"
     await model.PlanOrder.update(
       { orderStatusId: 3 },
       { where: { id: orderRecord.id } }
     );
 
- return res.json({
+    // --------------------------
+    // PLAN DURATION CALCULATION
+    // --------------------------
+    const planStartDate = new Date();
+    let planEndDate = null;
+
+    if (orderRecord.planType === "monthly") {
+      planEndDate = new Date(planStartDate);
+      planEndDate.setDate(planEndDate.getDate() + 30);
+    } 
+    else if (orderRecord.planType === "yearly") {
+      planEndDate = new Date(planStartDate);
+      planEndDate.setFullYear(planEndDate.getFullYear() + 1);
+    } 
+
+    // --------------------------
+    // UPDATE OR CREATE PLAN MGMT
+    // --------------------------
+    const existingPlan = await model.BubblPlanManagement.findOne({
+      where: { userId },
+    });
+
+    if (existingPlan) {
+      await model.BubblPlanManagement.update(
+        {
+          planId: orderRecord.planId,
+          subscriptionType: "pro",  // currently only "pro"
+          planStartDate,
+          planEndDate,
+          isValid: true,
+        },
+        { where: { userId } }
+      );
+    } else {
+      await model.BubblPlanManagement.create({
+        userId,
+        planId: orderRecord.planId,
+        subscriptionType: "pro",
+        planStartDate,
+        planEndDate,
+        isValid: true,
+      });
+    }
+
+    return res.json({
       success: true,
       message: "Payment verified successfully",
-      order_id: orderRecord?.id,
+      order_id: orderRecord.id,
     });
 
   } catch (err) {
-    console.error("verifyPayment error:", err);
+    console.error("verifyPlanPayment error:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 }
+
 
 export {
   initialePay,
