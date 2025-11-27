@@ -21,7 +21,7 @@ deviceRouter.put("/replaceDevice", replaceDeviceController);
 deviceRouter.put("/deActiveDevice", deActiveDeviceController);
 deviceRouter.put("/activateDevice", activateDeviceController);
 deviceRouter.get("/allDevice", getAllServicesController);
-deviceRouter.post("/bulkDeviceInsertCsv", csvUpload.single("file"), bulkDeviceInsertCsv);
+// deviceRouter.post("/bulkDeviceInsertCsv", csvUpload.single("file"), bulkDeviceInsertCsv);
 
 
 export default deviceRouter;
