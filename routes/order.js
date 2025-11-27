@@ -9,7 +9,8 @@ import {
   checkOutNonUser,
   getNonUserOrderById,
   createOrder,
-  getPromo
+  getPromo,
+  createPlanOrder
 } from "../controllers/order.js";
 import { authenticateCheckoutToken, authenticateToken } from "../middleware/token.js";
 
@@ -31,6 +32,7 @@ router.post("/nonUser/one", getNonUserOrderById);
 
 router.post("/createOrder",authenticateToken,createOrder);
 router.post("/applyPromo", authenticateToken, getPromo);
+router.post("/createPlanOrder",authenticateToken,createPlanOrder)
 
 
 

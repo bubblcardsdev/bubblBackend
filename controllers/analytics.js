@@ -13,6 +13,7 @@ import {
   getUserDevicesService,
   getDeviceTypeService,
 } from "../services/analyticsService.js";
+import { createLeadSchema, updateLeadSchema } from "../validations/lead.js";
 
 //TODO: Chnage name to create tap details
 async function createTapDetails(req, res) {
@@ -123,7 +124,15 @@ async function createLead (req, res)  {
   const userId = req.user.id;
   const { name, emailId, mobileNumber, location, where_you_met, company } = req.body;
   try {
-
+ const { error } = createLeadSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
     const lead = await model.LeadGen.create({
       userId,
       name,
@@ -153,6 +162,14 @@ async function createLead (req, res)  {
 async function deleteLead(req, res) {
   const userId = req.user.id; 
   const { leadId } = req.query;
+
+ if (!leadId) {
+  return res.status(400).json({
+    success: false,
+    message: "leadId is required to delete a lead",
+  });
+}
+
 
   try {
     // First find the lead that belongs to the user and isManual
@@ -194,6 +211,16 @@ async function updateLead(req, res) {
   const { id, name, emailId, mobileNumber, location, where_you_met, company } = req.body;
 
   try {
+     const { error } = updateLeadSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        data: { error: error.details },
+      });
+    }
+
     const [rowsUpdated] = await model.LeadGen.update(
       {
         name,
@@ -232,8 +259,6 @@ async function updateLead(req, res) {
     });
   }
 }
-
-
 
 async function getLeadsDetails(req, res) {
   try {

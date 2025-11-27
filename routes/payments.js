@@ -1,6 +1,6 @@
 import express from "express";
 
-import {initialePay,verifyPayment, getShippingCharge,initialePayLatest,initiatePayNew, initiatePayRazorPay, verifyPaymentRazorPay, handlePaymentFailure} from "../controllers/payment.js";
+import {initialePay,verifyPayment, getShippingCharge,initialePayLatest,initiatePayNew, initiatePayRazorPay, verifyPaymentRazorPay, handlePaymentFailure, verifyPlanPayment} from "../controllers/payment.js";
 import { authenticateToken } from "../middleware/token.js";
 
 const router = express.Router();
@@ -21,6 +21,8 @@ router.post("/shippingCharge", getShippingCharge);
 router.post("/initiatePay",initiatePayRazorPay)
 router.post("/verifyPayment",authenticateToken,verifyPaymentRazorPay) // send mail to user
 router.post("/failurePayment",authenticateToken,handlePaymentFailure)
+router.post("/verifyPlanPayment",authenticateToken,verifyPlanPayment)
+
 
 
 

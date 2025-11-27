@@ -25,6 +25,10 @@ module.exports = (sequelize, Sequelize) => {
           isEmail: true,
         },
       },
+      phoneNumber: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       message: {
         type: Sequelize.TEXT,
         allowNull: false,
